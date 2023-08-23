@@ -1,0 +1,21 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 16
+      python: '3.10'
+    commands:
+      - pwd
+      - ls
+      - echo Printing variables $account_id $region $sagemaker_endpoint
+  build:
+    commands:
+      - git clone https://github.com/Fraser27/llms-with-serverless-rag.git
+      - ls
+      - cd llms-with-serverless-rag
+      - pip install --upgrade --quiet sagemaker
+      - cd artifacts/sagemaker_deploy/
+      - python Llama2_deploy.py $sagemaker_endpoint
+  post_build:
+    commands:
+      - echo Llama2 deployed on `date`

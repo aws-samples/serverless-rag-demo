@@ -1,0 +1,89 @@
+{
+  "app": "python3 app.py",
+  "watch": {
+    "include": [
+      "**"
+    ],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "requirements*.txt",
+      "source.bat",
+      "**/__init__.py",
+      "python/__pycache__",
+      "tests"
+    ]
+  },
+  "context": {
+    "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/core:target-partitions": [
+      "aws",
+      "aws-cn"
+    ],
+    "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": true,
+    "@aws-cdk/aws-ec2:uniqueImdsv2TemplateName": true,
+    "@aws-cdk/aws-ecs:arnFormatIncludesClusterName": true,
+    "@aws-cdk/aws-iam:minimizePolicies": true,
+    "@aws-cdk/core:validateSnapshotRemovalPolicy": true,
+    "@aws-cdk/aws-codepipeline:crossAccountKeyAliasStackSafeResourceName": true,
+    "@aws-cdk/aws-s3:createDefaultLoggingPolicy": true,
+    "@aws-cdk/aws-sns-subscriptions:restrictSqsDescryption": true,
+    "@aws-cdk/aws-apigateway:disableCloudWatchRole": true,
+    "@aws-cdk/core:enablePartitionLiterals": true,
+    "@aws-cdk/aws-events:eventsTargetQueueSameAccount": true,
+    "@aws-cdk/aws-iam:standardizedServicePrincipals": true,
+    "@aws-cdk/aws-ecs:disableExplicitDeploymentControllerForCircuitBreaker": true,
+    "@aws-cdk/aws-iam:importedRoleStackSafeDefaultPolicyName": true,
+    "@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": true,
+    "@aws-cdk/aws-route53-patters:useCertificate": true,
+    "@aws-cdk/customresources:installLatestAwsSdkDefault": false,
+    "@aws-cdk/aws-rds:databaseProxyUniqueResourceName": true,
+    "@aws-cdk/aws-codedeploy:removeAlarmsFromDeploymentGroup": true,
+    "@aws-cdk/aws-apigateway:authorizerChangeDeploymentLogicalId": true,
+    "@aws-cdk/aws-ec2:launchTemplateDefaultUserData": true,
+    "@aws-cdk/aws-secretsmanager:useAttachedSecretResourcePolicyForSecretTargetAttachments": true,
+    "@aws-cdk/aws-redshift:columnId": true,
+    "@aws-cdk/aws-stepfunctions-tasks:enableEmrServicePolicyV2": true,
+    "@aws-cdk/aws-ec2:restrictDefaultSecurityGroup": true,
+    "@aws-cdk/aws-apigateway:requestValidatorUniqueId": true,
+    "@aws-cdk/aws-kms:aliasNameRef": true,
+    "@aws-cdk/aws-autoscaling:generateLaunchTemplateInsteadOfLaunchConfig": true,
+    "@aws-cdk/core:includePrefixInUniqueNameGeneration": true,
+    "@aws-cdk/aws-opensearchservice:enableOpensearchMultiAzWithStandby": true,
+
+    "dev": {
+      "ecr_repository_name": "lambda_rag_repo_dev",
+      "lambda_role_name": "lambda_llm_rag_dev",
+      "lambda_function_name": "llm_rag_example_dev",
+      "collection_name": "sample-vector-store-dev",
+      "index_name": "sample-embeddings-dev",
+      "opensearch_endpoint": "",
+      "sagemaker_endpoint": "llama2-7b-endpoint",
+      "sagemaker_role_name": "sagemaker_llm_role_dev",
+      "model_path": "/var/task/sentencetransformers/" 
+    },
+    "qa": {
+      "ecr_repository_name": "lambda_rag_repo_qa",
+      "lambda_role_name": "lambda_llm_rag_qa",
+      "lambda_function_name": "llm_rag_example_qa",
+      "collection_name": "sample-vector-store-qa",
+      "index_name": "sample-embeddings-qa",
+      "opensearch_endpoint": "",
+      "sagemaker_endpoint": "llama2-7b-endpoint",
+      "sagemaker_role_name": "sagemaker_llm_role_qa",
+      "model_path": "/var/task/sentencetransformers/"
+    },
+    "sandbox": {
+      "ecr_repository_name": "lambda_rag_repo_sandbox",
+      "lambda_role_name": "lambda_llm_rag_sandbox",
+      "lambda_function_name": "llm_rag_example_sandbox",
+      "collection_name": "sample-vector-store-sandbox",
+      "index_name": "sample-embeddings-sandbox",
+      "opensearch_endpoint": "",
+      "sagemaker_endpoint": "llama2-7b-endpoint",
+      "sagemaker_role_name": "sagemaker_llm_role_sandbox",
+      "model_path": "/var/task/sentencetransformers/"
+    }
+  }
+}
