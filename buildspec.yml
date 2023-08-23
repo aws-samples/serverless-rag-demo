@@ -16,7 +16,7 @@ phases:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
-      - cd llms-with-serverless-rag
+      - cd serverless-rag-demo
       - echo Build started on `date`
       - echo Building the Docker image...
       - cd artifacts/lambda/    
