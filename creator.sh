@@ -30,8 +30,10 @@ cdk bootstrap aws://$(aws sts get-caller-identity --query "Account" --output tex
 cd serverless-rag-demo
 echo "--- pip install requirements ---"
 python3 -m pip install -r requirements.txt
+
 echo "--- CDK synthesize ---"
 cdk synth -c environment_name=$1 -c current_timestamp=$CURRENT_UTC_TIMESTAMP
+
 echo "--- CDK deploy ---"
 CURRENT_UTC_TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
 echo Setting Tagging Lambda Image with timestamp $CURRENT_UTC_TIMESTAMP
@@ -51,7 +53,7 @@ else
     echo "Build started successfully."
 fi
 
-echo "Check build status every 30 seconds"
+echo "Check build status every 30 seconds. Wait for codebuild to finish"
 j=0
 while [ $j -lt 50 ];
 do 
@@ -86,7 +88,7 @@ then
         exit 1
     else
         echo "Build started successfully."
-        echo "Check Sagemaker Model deployment status every 30 seconds"
+        echo "Check Sagemaker Model deployment status every 30 seconds. Wait for codebuild to finish."
         j=0
         while [ $j -lt 10 ];
         do 
