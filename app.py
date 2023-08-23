@@ -13,7 +13,11 @@ def tag_my_stack(stack):
     tags = Tags.of(stack)
     tags.add("project", "llms-with-serverless-rag")
 
-LlmsWithServerlessRagStack(app, "LlmsWithServerlessRagStack",
+account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
+region = os.getenv('CDK_DEFAULT_REGION')
+env=cdk.Environment(account=account_id, region=region)
+
+LlmsWithServerlessRagStack(app, "LlmsWithServerlessRagStack", env=env
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.
