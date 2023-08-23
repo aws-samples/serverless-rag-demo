@@ -28,6 +28,8 @@ echo "--- Bootstrapping CDK on account in region $deployment_region ---"
 cdk bootstrap aws://$(aws sts get-caller-identity --query "Account" --output text)/$deployment_region
 
 cd serverless-rag-demo
+echo "--- pip install requirements ---"
+python3 -m pip install -r requirements.txt
 echo "--- CDK synthesize ---"
 cdk synth -c environment_name=$1 -c current_timestamp=$CURRENT_UTC_TIMESTAMP
 echo "--- CDK deploy ---"
