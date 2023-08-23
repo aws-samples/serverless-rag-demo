@@ -12,7 +12,7 @@ phases:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
-      - cd llms-with-serverless-rag
+      - cd serverless-rag-demo
       - pip install --upgrade --quiet sagemaker
       - cd artifacts/sagemaker_deploy/
       - python Llama2_deploy.py $sagemaker_endpoint
