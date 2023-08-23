@@ -10,7 +10,7 @@ phases:
       - echo Printing variables $account_id $region $sagemaker_endpoint
   build:
     commands:
-      - git clone https://github.com/Fraser27/llms-with-serverless-rag.git
+      - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
       - cd llms-with-serverless-rag
       - pip install --upgrade --quiet sagemaker

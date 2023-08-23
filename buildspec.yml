@@ -14,7 +14,7 @@ phases:
       - aws ecr get-login-password --region $region | docker login --username AWS --password-stdin $account_id.dkr.ecr.$region.amazonaws.com
   build:
     commands:
-      - git clone https://github.com/Fraser27/llms-with-serverless-rag.git
+      - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
       - cd llms-with-serverless-rag
       - echo Build started on `date`

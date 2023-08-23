@@ -27,7 +27,7 @@ sudo npm install -g aws-cdk@2.91.0
 echo "--- Bootstrapping CDK on account in region $deployment_region ---"
 cdk bootstrap aws://$(aws sts get-caller-identity --query "Account" --output text)/$deployment_region
 
-cd llms-with-serverless-rag
+cd serverless-rag-demo
 echo "--- CDK synthesize ---"
 cdk synth -c environment_name=$1 -c current_timestamp=$CURRENT_UTC_TIMESTAMP
 echo "--- CDK deploy ---"
