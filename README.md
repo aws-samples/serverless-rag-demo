@@ -8,4 +8,4 @@
 With RAG, you retrive data from multiple sources outside the foundational model and augment your prompts by adding relevant data in context.
 
 ### Architecture
-![architecture]()
+![architecture](https://github.com/aws-samples/serverless-rag-demo/blob/8d679f3846239d4f41fb93c4545ecdcdf406254b/architecture.png)
