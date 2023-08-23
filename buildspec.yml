@@ -1,0 +1,32 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 16
+      python: '3.10'
+    commands:
+      - pwd
+      - ls
+      - echo Printing variables  $ecr_repo $account_id $region
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $region | docker login --username AWS --password-stdin $account_id.dkr.ecr.$region.amazonaws.com
+  build:
+    commands:
+      - git clone https://github.com/Fraser27/llms-with-serverless-rag.git
+      - ls
+      - cd llms-with-serverless-rag
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - cd artifacts/lambda/    
+      - unzip embed_model.zip
+      - rm -rf embed_model.zip
+      - ls
+      - docker build -t $ecr_repo .
+      - docker images
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $ecr_repo
