@@ -98,8 +98,9 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 
 
 3. Git Clone the serverless-rag-demo repository from aws-samples
-   
-   $ git clone https://github.com/aws-samples/serverless-rag-demo
+   ```
+    git clone https://github.com/aws-samples/serverless-rag-demo.git
+   ```
 
 5. Go to the directory where we have the downloaded files.
    ```
@@ -111,7 +112,8 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
      sh creator.sh dev us-east-1
    ```
 
-  ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%206.03.50%20PM.png)
+  <img width="1432" alt="Screenshot 2023-08-26 at 1 00 53 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/80c12612-3327-4edf-8c10-2efa23504d62">
+
 
 7. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
 rag-llm-api-{env_name}. Get the invoke URL for the API
