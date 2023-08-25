@@ -36,9 +36,7 @@ Familiarity with below Services.
 
 ### Deploying the Solution to your account
 
-#### Section1
-
-#### Create an IAM user with Administrator permissions. 
+#### Section1 - Create an IAM user with Administrator permissions. 
 
 1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Users“ tab under ”Access Management” and Click on “Create User”
 
@@ -77,7 +75,7 @@ Familiarity with below Services.
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.49%20PM.png)
 
 
-#### Section 2
+#### Section 2 - Deploy a RAG based Solution
 
 1. Open AWS Cloudshell where you can execute AWS CLI commands. AWS CloudShell is a browser-based, pre-authenticated shell that you can launch directly from the AWS Management Console.
 
