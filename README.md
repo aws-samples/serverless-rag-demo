@@ -77,6 +77,45 @@ Familiarity with below Services.
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.49%20PM.png)
 
 
+#### Section 2
+
+1. Open AWS Cloudshell where you can execute AWS CLI commands. AWS CloudShell is a browser-based, pre-authenticated shell that you can launch directly from the AWS Management Console.
+
+![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%204.15.58%20PM.png)
+
+2. Now we need to configure AWS CLI using the credentials we downloaded in our last section. Use the command " aws configure " and the in the prompts that appear enter the access key and the secret key. You can leave the default region and output format as empty and press enter.
+
+![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%204.50.17%20PM.png)
+
+3. Now clone the repository from AWS-Samples
+   
+   $ git clone https://github.com/aws-samples/serverless-rag-demo
+
+5. Go to the directory where we have the downloaded files.
+
+   $ cd serverless-rag-demo
+
+6. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Region can be any of those supported by Amazon Opensearch Serverless [refer](https://aws.amazon.com/about-aws/whats-new/2023/01/amazon-opensearch-serverless-available)
+   
+   $ sh creator.sh dev us-east-1 
+
+  ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%206.03.50%20PM.png)
+
+7. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
+rag-llm-api-{env_name}. Get the invoke URL for the API
+
+8. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
+
+   eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
+
+   ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%206.14.26%20PM.png)
+
+
+
+
+ 
+
+
 
 
 
