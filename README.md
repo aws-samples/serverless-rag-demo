@@ -84,7 +84,7 @@ Familiarity with below Services.
 
 #### Section 2 - Deploy a RAG based Solution
 
-1. Open AWS Cloudshell where you can execute AWS CLI commands. AWS CloudShell is a browser-based shell that you can launch directly from the AWS Management Console. Now we need to configure AWS CLI using the credentials we downloaded in our last section. Use the command " aws configure " and the in the prompts that appear enter the access key and the secret key. You can leave the default region and output format as empty and press enter.
+1. Search for AWS Cloudshell. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell
    ```
       aws configure
    ```
@@ -92,7 +92,7 @@ Familiarity with below Services.
 <img width="1118" alt="LLMAdminConfigureCloudShell" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/58175b14-259d-4d7d-b3e4-bb75fb48e998">
 
 
-3. Clone the below opensource repository from aws-samples
+3. Git Clone the serverless-rag-demo repository from aws-samples
    
    $ git clone https://github.com/aws-samples/serverless-rag-demo
 
