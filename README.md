@@ -32,7 +32,7 @@ Familiarity with below Services.
 
 
 ### Architecture
-![architecture](https://github.com/aws-samples/serverless-rag-demo/blob/8d679f3846239d4f41fb93c4545ecdcdf406254b/architecture.png)
+![architecture](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%204.03.45%20PM.png)
 
 ### Deploying the Solution to your account
 
