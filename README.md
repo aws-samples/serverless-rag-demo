@@ -106,7 +106,7 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
 
-   ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%206.14.26%20PM.png)
+   ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%206.48.38%20PM.png)
 
 
 
