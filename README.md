@@ -10,7 +10,11 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 [Amazon Opensearch Serverless offers vector engine to store embeddings for faster similarity searches](https://aws.amazon.com/blogs/big-data/introducing-the-vector-engine-for-amazon-opensearch-serverless-now-in-preview/). The vector engine provides a simple, scalable, and high-performing similarity search capability in Amazon OpenSearch Serverless that makes it easy for you to build generative artificial intelligence (AI) applications without having to manage the underlying vector database infrastructure. 
 
-[![demo](https://github.com/aws-samples/serverless-rag-demo/blob/43cc79cacc94338f3b798177d11e05e8b82f83fe/media/demo_v1.mp4)]
+
+https://github.com/aws-samples/serverless-rag-demo/assets/25897220/b41b6882-53d8-4bab-8996-a5accde65a6a
+
+
+
 
 This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-customize-rag.html) with Amazon Opensearch Serverless Vector DB and [Llama2 LLM](https://ai.meta.com/llama/)
 
