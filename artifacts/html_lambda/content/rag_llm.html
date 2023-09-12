@@ -104,14 +104,27 @@
           
       </div>
       <div style="padding-bottom: 10px;"></div>
-      <div id="query-button" style="padding-left: 10px;"><a href="javascript:query()">Query data</a></div>
+      <div id="query-button" style="padding-left: 10px;">
+        <button type="button" class="btn btn-info" onclick="javascript:query('normal')">Normal Assistant</button>
+        <button type="button" class="btn btn-info" onclick="javascript:query('pirate')">Pirate Assistant</button>
+        <button type="button" class="btn btn-info" onclick="javascript:query('jarvis')">Jarvis Assistant</button>
+      </div>
       
       <div style="padding-bottom: 30px;"></div>
       
       <div style="padding-left: 10px;">
-      <div>
-        <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea>
-      </div>
+      
+      <table>
+        <tr>
+          <td>
+          <div>
+            <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea>
+          </div>
+          </td>
+        </tr>
+      </table>
+
+      
         
       
       
@@ -211,6 +224,11 @@
           staticPageUrl: '<apiGatewayUrl>'
       };
 
+      function clickedme(content) {
+        alert(content)
+
+      }
+
       function indexDocuments() {
 
         $('#custom-spinner').css('visibility','visible');
@@ -276,13 +294,13 @@
 
 
 
-      function query() {
+      function query(assistant_type) {
         $('#custom-spinner').css('visibility','visible');
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
         $.ajax({
-          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val(),
+          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val() + '&behaviour=' + assistant_type,
           contentType: "text/json",
           dataType: 'json',
           success: function (result) {

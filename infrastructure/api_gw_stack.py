@@ -140,6 +140,14 @@ class ApiGw_Stack(Stack):
             operation_name="index document",
             method_responses=method_responses,
         )
+        index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
+        index_sample_data_api.add_method(
+            "POST",
+            lambda_integration,
+            operation_name="index sample document",
+            method_responses=method_responses,
+        )
+
         index_docs_api.add_method(
             "DELETE",
             lambda_integration,
@@ -148,6 +156,7 @@ class ApiGw_Stack(Stack):
         )
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
+        self.add_cors_options(index_sample_data_api)
 
     def add_cors_options(self, apiResource: _cdk.aws_apigateway.IResource):
         apiResource.add_method(

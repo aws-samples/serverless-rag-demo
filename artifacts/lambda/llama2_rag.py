@@ -43,33 +43,45 @@ DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", """You are a helpful, re
                                If you don't know the answer to a question,
                                please don't share false information. """)
 
+def index_sample_data(event):
+    type = event['body']['type']
+    print(f'Indexing sample data for type {type}')
+    create_index()
+    for i in range(1, 5):
+        try:    
+            file_name=f"{type}_doc_{i}.txt"
+            f = open(file_name, "r")
+            data = f.read()
+            if data is not None:
+                index_documents({'body': {'text':data}})
+        except Exception as e:
+            print(f'Error indexing sample data {file_name}, exception={e}')
+    
 
 def create_index() :
+    if not ops_client.indices.exists(index=INDEX_NAME):
     # Create indicies
-    settings = {
-    "settings": {
-        "index": {
-            "knn": True,
-        }
-    },
-    "mappings": {
-        "properties": {
-            "id": {"type": "integer"},
-            "text": {"type": "text"},
-            "embedding": {
-                "type": "knn_vector",
-                "dimension": 384,
+        settings = {
+            "settings": {
+                "index": {
+                    "knn": True,
+                }
+            },
+            "mappings": {
+                "properties": {
+                    "id": {"type": "integer"},
+                    "text": {"type": "text"},
+                    "embedding": {
+                        "type": "knn_vector",
+                        "dimension": 384,
+                    },
+                }
             },
         }
-    },
-    }
-    res = ops_client.indices.create(index=INDEX_NAME, body=settings, ignore=[400])
-    
-    print(res)
+        res = ops_client.indices.create(index=INDEX_NAME, body=settings, ignore=[400])
+        print(res)
 
 def index_documents(event):
-    if not ops_client.indices.exists(index=INDEX_NAME):
-        create_index()
     payload = json.loads(event['body'])
     text_val = payload['text']
     embeddings = embed_model_st.encode(text_val)
@@ -77,6 +89,7 @@ def index_documents(event):
            'embedding' : embeddings,
            'text': text_val
         }
+    create_index()
     try:
         # Index the document
         ops_client.index(index=INDEX_NAME, body=doc)
@@ -85,13 +98,20 @@ def index_documents(event):
         return failure_response(f'error indexing documents {e.info["error"]["reason"]}')
     return success_response('Documents indexed successfully')
 
-#create_index()
-#index_documents(embed_model_st, ops_client, INDEX_NAME)
 
 def query_data(event):
     query = None
+    behaviour = None
     if event['queryStringParameters'] and 'query' in event['queryStringParameters']:
         query = event['queryStringParameters']['query']
+    if event['queryStringParameters'] and 'behaviour' in event['queryStringParameters']:
+        behaviour = event['queryStringParameters']['behaviour']
+        if behaviour == 'pirate':
+            DEFAULT_SYSTEM_PROMPT='You are a daring and brutish Pirate. Always answer as a Pirate do not share the context when answering.'
+        elif behaviour == 'jarvis':
+            DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant that controls all machines on Planet Earth. Reply as an AI assistant'
+
+    
     # query = input("What are you looking for? ") 
     embedded_search = embed_model_st.encode(query)
     vector_query = {
@@ -158,6 +178,7 @@ def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Llama2 ---")
 
     api_map = {
+        'POST/rag/index-sample-data': lambda x: index_sample_data(x),
         'POST/rag/index-documents': lambda x: index_documents(x),
         'DELETE/rag/index-documents': lambda x: delete_index(x),
         'GET/rag/query': lambda x: query_data(x)
