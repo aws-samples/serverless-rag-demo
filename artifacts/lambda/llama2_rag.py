@@ -90,8 +90,9 @@ def index_documents(event):
            'embedding' : embeddings,
            'text': text_val
         }
-    create_index()
+    
     try:
+        create_index()
         # Index the document
         ops_client.index(index=INDEX_NAME, body=doc)
     except Exception as e:
@@ -116,7 +117,7 @@ def query_data(event):
     # query = input("What are you looking for? ") 
     embedded_search = embed_model_st.encode(query)
     vector_query = {
-        "size": 2,
+        "size": 10,
         "query": {"knn": {"embedding": {"vector": embedded_search, "k": 2}}},
         "_source": False,
         "fields": ["text", "doc_type"]
