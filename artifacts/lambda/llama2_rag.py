@@ -44,7 +44,8 @@ DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", """You are a helpful, re
                                please don't share false information. """)
 
 def index_sample_data(event):
-    type = event['body']['type']
+    payload = json.loads(event['body'])
+    type = payload['type']
     print(f'Indexing sample data for type {type}')
     create_index()
     for i in range(1, 5):
