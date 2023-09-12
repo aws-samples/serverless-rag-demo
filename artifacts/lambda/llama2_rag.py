@@ -50,7 +50,7 @@ def index_sample_data(event):
     create_index()
     for i in range(1, 5):
         try:    
-            file_name=f"{type}_doc_{i}.txt"
+            file_name=f"sample_data/{type}_doc_{i}.txt"
             f = open(file_name, "r")
             data = f.read()
             if data is not None:
