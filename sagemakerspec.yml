@@ -11,9 +11,9 @@ phases:
   build:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
-      - git checkout sample_data_indexing
       - ls
       - cd serverless-rag-demo
+      - git checkout sample_data_indexing
       - pip install --upgrade --quiet sagemaker
       - cd artifacts/sagemaker_deploy/
       - python Llama2_deploy.py $sagemaker_endpoint
