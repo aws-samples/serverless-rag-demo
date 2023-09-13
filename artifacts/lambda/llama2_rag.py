@@ -45,9 +45,9 @@ DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", """You are a helpful, re
                                please don't share false information. """)
 
 def index_sample_data(event):
+    print(f'In index_sample_data {event}')
     payload = json.loads(event['body'])
     type = payload['type']
-    print(f'Indexing sample data for type {type}')
     create_index()
     for i in range(1, 5):
         try:    
@@ -55,12 +55,13 @@ def index_sample_data(event):
             f = open(file_name, "r")
             data = f.read()
             if data is not None:
-                index_documents(json.dumps({'body': {'text':data}}))
+                index_documents({"body": json.dumps({"text": data}) })
         except Exception as e:
             print(f'Error indexing sample data {file_name}, exception={e}')
     
 
 def create_index() :
+    print(f'In create index')
     if not ops_client.indices.exists(index=INDEX_NAME):
     # Create indicies
         settings = {
@@ -84,6 +85,7 @@ def create_index() :
         print(res)
 
 def index_documents(event):
+    print(f'In index documents {event}')
     payload = json.loads(event['body'])
     text_val = payload['text']
     embeddings = embed_model_st.encode(text_val)
