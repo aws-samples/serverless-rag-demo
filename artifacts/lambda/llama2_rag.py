@@ -14,6 +14,7 @@ LOG.setLevel(logging.INFO)
 # Self managed or cluster based OPENSEARCH
 endpoint = getenv("OPENSEARCH_ENDPOINT", "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
 sagemaker_endpoint=getenv("SAGEMAKER_ENDPOINT", "llama2-7b-endpoint")
+SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
 path = os.environ['MODEL_PATH']
 tokens = int(getenv("MAX_TOKENS", "1000"))
 temperature = float(getenv("TEMPERATURE", "0.9"))
@@ -50,7 +51,7 @@ def index_sample_data(event):
     create_index()
     for i in range(1, 5):
         try:    
-            file_name=f"sample_data/{type}_doc_{i}.txt"
+            file_name=f"{SAMPLE_DATA_DIR}/{type}_doc_{i}.txt"
             f = open(file_name, "r")
             data = f.read()
             if data is not None:
@@ -104,6 +105,7 @@ def index_documents(event):
 def query_data(event):
     query = None
     behaviour = None
+    global DEFAULT_SYSTEM_PROMPT
     if event['queryStringParameters'] and 'query' in event['queryStringParameters']:
         query = event['queryStringParameters']['query']
     if event['queryStringParameters'] and 'behaviour' in event['queryStringParameters']:
