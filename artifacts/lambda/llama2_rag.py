@@ -14,7 +14,7 @@ LOG.setLevel(logging.INFO)
 # Self managed or cluster based OPENSEARCH
 endpoint = getenv("OPENSEARCH_ENDPOINT", "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
 sagemaker_endpoint=getenv("SAGEMAKER_ENDPOINT", "llama2-7b-endpoint")
-SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
+SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "/var/task")
 path = os.environ['MODEL_PATH']
 tokens = int(getenv("MAX_TOKENS", "1000"))
 temperature = float(getenv("TEMPERATURE", "0.9"))
@@ -55,7 +55,7 @@ def index_sample_data(event):
             f = open(file_name, "r")
             data = f.read()
             if data is not None:
-                index_documents({'body': {'text':data}})
+                index_documents(json.dumps({'body': {'text':data}}))
         except Exception as e:
             print(f'Error indexing sample data {file_name}, exception={e}')
     
