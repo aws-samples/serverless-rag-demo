@@ -58,6 +58,7 @@ def index_sample_data(event):
                 index_documents({"body": json.dumps({"text": data}) })
         except Exception as e:
             print(f'Error indexing sample data {file_name}, exception={e}')
+    return success_response('Sample Documents Indexed Successfully')
     
 
 def create_index() :
