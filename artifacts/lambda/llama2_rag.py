@@ -124,19 +124,25 @@ def query_data(event):
         "_source": False,
         "fields": ["text", "doc_type"]
     }
+    content=None
+    print('Search for context from Opensearch serverless vector collections')
     try:
         response = ops_client.search(body=vector_query, index=INDEX_NAME)
         print(response["hits"]["hits"])
-        content = None
         for data in response["hits"]["hits"]:
             if content is None:
                 content = data['fields']['text'][0]
             else: 
                 content = content + ' ' + data['fields']['text'][0]
-        if content is None:
-            content='Hello World'
         print(f'content -> {content}')
-        print(' Pass content to Llama2 ')
+    except Exception as e:
+        print('Vector Index does not exist. Please index some documents')
+    
+    if content is None:
+        print('Set a default context')
+        content='Tell me about generative AI'
+    try:    
+        print(f' Pass content to Llama2 -> {content}')
         dialog = [
             {"role": "system", "content": DEFAULT_SYSTEM_PROMPT + f""" 
                 {content}
@@ -153,10 +159,11 @@ def query_data(event):
             result['generation']['role'].capitalize(): result['generation']['content']
         }
         response_list.append(resp)
-        print(f'response from llm : {response_list}')
+        print(f'Response from llm : {response_list}')
         return success_response(response_list)
     except Exception as e:
-        success_response('Vector Index does not exist. Please index some documents')
+        print(f'Exception {e}')
+        return failure_response(f'Exception occured when querying LLM: {e}')
     
 
 def query_endpoint(payload):
