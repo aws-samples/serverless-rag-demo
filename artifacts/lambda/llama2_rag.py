@@ -36,13 +36,14 @@ ops_client = client = OpenSearch(
         timeout=300
     )
 INDEX_NAME = getenv("INDEX_NAME", "sample-embeddings-store-dev")
-DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", """You are a helpful, respectful and honest assistant.
-                               Always answer as helpfully as possible, while being safe.
-                               Please ensure that your responses are socially unbiased and positive in nature.
-                               If a question does not make any sense, or is not factually coherent,
-                               explain why instead of answering something not correct.
-                               If you don't know the answer to a question,
-                               please don't share false information. """)
+DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
+                    Always answer as helpfully as possible, while being safe.
+                    Please ensure that your responses are socially unbiased and positive in nature.
+                    If a question does not make any sense, or is not factually coherent,
+                    explain why instead of answering something not correct.
+                    If you don't know the answer to a question,
+                    please don't share false information. """
+DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", DEFAULT_PROMPT)
 
 def index_sample_data(event):
     print(f'In index_sample_data {event}')
@@ -117,12 +118,13 @@ def query_data(event):
             DEFAULT_SYSTEM_PROMPT='You are a daring and brutish Pirate. Always answer as a Pirate do not share the context when answering.'
         elif behaviour == 'jarvis':
             DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant that controls all machines on Planet Earth. Reply as an AI assistant'
-
+        else:
+            DEFAULT_SYSTEM_PROMPT = DEFAULT_PROMPT
     
     # query = input("What are you looking for? ") 
     embedded_search = embed_model_st.encode(query)
     vector_query = {
-        "size": 10,
+        "size": 4,
         "query": {"knn": {"embedding": {"vector": embedded_search, "k": 2}}},
         "_source": False,
         "fields": ["text", "doc_type"]
