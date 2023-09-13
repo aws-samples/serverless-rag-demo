@@ -1,0 +1,11 @@
+Aditya-L1 is a coronagraphy spacecraft to study the solar atmosphere, designed and developed by the Indian Space Research Organisation (ISRO) and various other Indian research institutes.[1] It will be orbiting at about 1.5 million km from Earth in a halo orbit around the L1 Lagrange point between the Earth and the Sun where it will study the solar atmosphere, solar magnetic storms, and their impact on the environment around the Earth
+
+It is the first Indian mission dedicated to observing the Sun. Nigar Shaji is the project's director. Aditya-L1 was launched aboard the PSLV C57 at 11:50 IST on 2 September 2023,[12][4][5] ten days after the successful landing of ISRO's Moon mission, Chandrayaan-3. It successfully achieved its intended orbit nearly an hour later, and separated from its fourth stage at 12:57 IST.
+
+Aditya-L1's main science objectives are:
+
+To observe the dynamics of the Sun's chromosphere and corona
+To study chromospheric and coronal heating, the physics of partially ionised plasma, of coronal mass ejections (CMEs) and their origins, of the coronal magnetic field and heat transfer mechanisms, and flare exchanges
+To observe of the physical particle environment around its position
+To determine the sequence of processes in multiple layers below the corona that lead to solar eruptions
+To find out space weather, and the origin, composition and dynamics of solar wind

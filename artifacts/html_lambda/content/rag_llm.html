@@ -18,18 +18,29 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
      integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
       crossorigin="anonymous"></script>
+    <style>
+      .toast-config {
+        width: 25vw;
+        margin-left: 76vw;
+        z-index: 1000;
+        position: absolute;
+      }
+    </style>
 
 
 </head>
 
 <body>
   <div class="p-3 mb-2 bg-light text-dark">
+  <div id="alert-placeholder"></div>
   <center>
     <h1>Llama2-7b with Opensearch Serverless vector db demo</h1>
-  </center>
+    </center>
 
   <div style="padding-bottom: 10px;"></div>
   <div style="padding-bottom: 10px;"></div>
+  
+  
   <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button" role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
@@ -50,20 +61,36 @@
           <tr>
             <th>Index Documents</th>
             <th style="padding-left: 100px;"></th>
-            <th>Response</th>
+            <th>Create Sample Indexes</th>
           </tr>
           <tr>
             <td>
               <div>
-                <textarea placeholder="Add text here for indexing. Limit to 100 characters" id="index_txt" name="request"
+                <textarea placeholder="Add text here for indexing. Limit to 5000 characters" id="index_txt" name="request"
                   rows="10" cols="60"></textarea>
               </div>
             </td>
             <td style="padding-left: 0px;"></td>
             <td>
-              <div>
-                <textarea id="response" name="response" rows="10" cols="60" readonly=""></textarea>
-              </div>
+                 <table style="margin-top:-10vh">
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-movie" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-isro" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1, Chandrayan-3)</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-health" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('health')">Index a brand new disease (FrostFlu)</button>
+                    </td>
+                  </tr>
+
+                 </table>
+            
             </td>
           </tr>
           <tr>
@@ -77,10 +104,10 @@
         <tbody>
           <tr>
             <td style="padding-left: 20px;">
-              <div id="index-button"><a href="javascript:indexDocuments()">Index Documents</a></div>
+              <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index Documents</button>
             </td>
             <td style="padding-left: 20px;">
-              <div id="delete-button"><a href="javascript:reset()">Delete Index</a></div>
+              <button id="delete-button" type="button" class="btn btn-danger" onclick="javascript:reset()">Reset</button>
             </td>
             <td style="padding-left: 20px;">
   
@@ -104,18 +131,25 @@
           
       </div>
       <div style="padding-bottom: 10px;"></div>
-      <div id="query-button" style="padding-left: 10px;"><a href="javascript:query()">Query data</a></div>
+      <div id="query-button" style="padding-left: 10px;">
+        <button type="button" class="btn btn-info" onclick="javascript:query('normal')">Normal Assistant</button>
+        <button type="button" class="btn btn-info" onclick="javascript:query('pirate')">Pirate Assistant</button>
+        <button type="button" class="btn btn-info" onclick="javascript:query('jarvis')">Jarvis Assistant</button>
+      </div>
       
       <div style="padding-bottom: 30px;"></div>
       
       <div style="padding-left: 10px;">
-      <div>
-        <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea>
-      </div>
-        
       
-      
-
+      <table>
+        <tr>
+          <td>
+          <div>
+            <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea>
+          </div>
+          </td>
+        </tr>
+      </table>
     </div>
     
   </div>
@@ -203,7 +237,7 @@
       // do stuff
       $(document).ready(function () {
         $('#custom-spinner').css('visibility','hidden');
-
+        
       });
 
       var awsData = {
@@ -212,7 +246,7 @@
       };
 
       function indexDocuments() {
-
+        
         $('#custom-spinner').css('visibility','visible');
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
@@ -229,7 +263,7 @@
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
-            $('#response').val(result['result'])
+            alertbuilder(result['result'])
           },
           error: function (err) {
             $('#custom-spinner').css('visibility','hidden');
@@ -238,7 +272,7 @@
             $('#delete-button').css('visibility','visible');
             console.log('Error on making API gateway call to index documents ..');
             console.log(err.responseText);
-            $('#response').html(err.responseText.replaceAll('"', ''));
+            alertbuilder(err.responseText.replaceAll('"', ''))
           }
         });
       }
@@ -249,6 +283,7 @@
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
+        $('#response').css('visibility','hidden');
         $.ajax({
           type: "DELETE",
           url: awsData.apiGatewayUrl + '/index-documents',
@@ -260,6 +295,8 @@
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
+            alertbuilder(result['result'])
+            
           },
           error: function (err) {
             $('#custom-spinner').css('visibility','hidden');
@@ -268,21 +305,57 @@
             $('#delete-button').css('visibility','visible');
             console.log('Error on making API gateway call to delete index..');
             console.log(err.responseText);
-            $('#response').html(err.responseText.replaceAll('"', ''));
+            alertbuilder(err.responseText.replaceAll('"', ''))
           }
         });
 
       }
 
-
-
-      function query() {
+      function alertbuilder(message) {
+        $('#alert-placeholder').append('<div id="alertdiv" class="alert alert-success toast-config"><a class="close" data-dismiss="alert"></a><span>'+message+'</span></div>')
+        setTimeout(() => {
+              $('#alertdiv').remove();
+            }, 3000)
+      }
+      
+      function indexSampleDocument(type) {
         $('#custom-spinner').css('visibility','visible');
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
         $.ajax({
-          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val(),
+          type: "POST",
+          url: awsData.apiGatewayUrl + '/index-sample-data',
+          contentType: "text/json",
+          dataType: 'json',
+          data: JSON.stringify({ "type": type }),
+          success: function (result) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            alertbuilder('Indexed Successfully')
+          },
+          error: function (err) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            console.log('Error on making API gateway call to index documents ..');
+            console.log(err.responseText);
+            alertbuilder(err.responseText.replaceAll('"', ''))
+          }
+        });
+        
+      }
+
+      function query(assistant_type) {
+        $('#custom-spinner').css('visibility','visible');
+        $('#index-button').css('visibility','hidden');
+        $('#query-button').css('visibility','hidden');
+        $('#delete-button').css('visibility','hidden');
+        $.ajax({
+          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val() + '&behaviour=' + assistant_type,
           contentType: "text/json",
           dataType: 'json',
           success: function (result) {
