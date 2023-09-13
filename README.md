@@ -52,7 +52,7 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 ### Architecture
 ![architecture](https://github.com/aws-samples/serverless-rag-demo/blob/afef61049b4ddea4190f1fe500770919a0bf7e80/architecture.png)
 
-### Deploying the Solution to your account
+### Deploying the Solution to your account with AWS Cloudshell
 
 #### Section1 - Create an IAM user with Administrator permissions. 
 
@@ -94,7 +94,7 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.49%20PM.png)
 
 
-#### Section 2 - Deploy a RAG based Solution
+#### Section 2 - Deploy a RAG based Solution (The below commands should be executed in the region of deployment)
 
 1. Search for AWS Cloudshell. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell
    ```
