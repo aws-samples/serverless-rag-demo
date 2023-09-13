@@ -133,6 +133,8 @@ def query_data(event):
                 content = data['fields']['text'][0]
             else: 
                 content = content + ' ' + data['fields']['text'][0]
+        if content is None:
+            content='Hello World'
         print(f'content -> {content}')
         print(' Pass content to Llama2 ')
         dialog = [
