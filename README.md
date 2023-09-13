@@ -11,6 +11,13 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 [Amazon Opensearch Serverless offers vector engine to store embeddings for faster similarity searches](https://aws.amazon.com/blogs/big-data/introducing-the-vector-engine-for-amazon-opensearch-serverless-now-in-preview/). The vector engine provides a simple, scalable, and high-performing similarity search capability in Amazon OpenSearch Serverless that makes it easy for you to build generative artificial intelligence (AI) applications without having to manage the underlying vector database infrastructure. 
 
 
+#### New UX/UI (13-Sept-2023): Index Sample Data across different domains. Support multiple-assistant behaviours (Normal/Pirate/Jarvis Assistant modes)
+
+   <img width="500" alt="Sample_Indexes" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/404ed22f-c61a-4c12-9b57-3a7eca871bee">
+   <img width="500" alt="QueryBehaviour" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/647ea08c-0eca-472e-8457-3ef6c4d5d6e6">
+
+
+#### Video Demo
 https://github.com/aws-samples/serverless-rag-demo/assets/25897220/b41b6882-53d8-4bab-8996-a5accde65a6a
 
 
@@ -45,7 +52,7 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 ### Architecture
 ![architecture](https://github.com/aws-samples/serverless-rag-demo/blob/afef61049b4ddea4190f1fe500770919a0bf7e80/architecture.png)
 
-### Deploying the Solution to your account
+### Deploying the Solution to your account with AWS Cloudshell
 
 #### Section1 - Create an IAM user with Administrator permissions. 
 
@@ -87,7 +94,7 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.49%20PM.png)
 
 
-#### Section 2 - Deploy a RAG based Solution
+#### Section 2 - Deploy a RAG based Solution (The below commands should be executed in the region of deployment)
 
 1. Search for AWS Cloudshell. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell
    ```
