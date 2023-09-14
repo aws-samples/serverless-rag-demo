@@ -129,7 +129,7 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
      sh creator.sh dev us-east-1
    ```
    
-7. Select the LLM you want to deploy 
+7. Select the LLM you want to deploy (sh creator.sh dev us-east-1)
 
    <img width="1088" alt="Screenshot 2023-09-14 at 8 48 50 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/78492d0a-e9d0-481c-b2cd-09bd63ae61ee">
 
