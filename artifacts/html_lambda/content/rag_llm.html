@@ -34,7 +34,7 @@
   <div class="p-3 mb-2 bg-light text-dark">
   <div id="alert-placeholder"></div>
   <center>
-    <h1>Llama2-7b with Opensearch Serverless vector db demo</h1>
+    <h1><span id="model-name">Llama2-7b<span></h1>
     </center>
 
   <div style="padding-bottom: 10px;"></div>
@@ -234,15 +234,18 @@
 
   <footer>
     <script type="text/javascript">
+      var model_name = 'Llama2-7B'
+      var vector_text = ' with Opensearch Serverless vector db demo'
       // do stuff
       $(document).ready(function () {
         $('#custom-spinner').css('visibility','hidden');
-        
+        document.getElementById("model-name").innerHTML=awsData.htmlheader + vector_text
       });
 
       var awsData = {
           apiGatewayUrl: '<apiGatewayUrl>',
-          staticPageUrl: '<apiGatewayUrl>'
+          staticPageUrl: '<apiGatewayUrl>',
+          htmlheader: '<htmlheader>'
       };
 
       function indexDocuments() {

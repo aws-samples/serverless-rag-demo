@@ -19,6 +19,7 @@ class ApiGw_Stack(Stack):
         region=os.getenv('CDK_DEFAULT_REGION')
         collection_endpoint = 'random'
         llm_model_id = 'random'
+        html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
@@ -32,16 +33,22 @@ class ApiGw_Stack(Stack):
         sagemaker_endpoint_name=env_params['sagemaker_endpoint']
         if 'llama-2-7b' in llm_model_id:
             sagemaker_endpoint_name=env_params['llama2_7b_sagemaker_endpoint']
+            html_header_name = 'Llama2-7B'
         elif 'llama-2-13b' in llm_model_id:
             sagemaker_endpoint_name=env_params['llama2_13b_sagemaker_endpoint']
+            html_header_name = 'Llama2-13B'
         elif 'llama-2-70b' in llm_model_id:
             sagemaker_endpoint_name=env_params['llama2_70b_sagemaker_endpoint']
+            html_header_name = 'Llama2-70B'
         elif 'falcon-7b' in llm_model_id:
             sagemaker_endpoint_name=env_params['falcon_7b_sagemaker_endpoint']
+            html_header_name = 'Falcon-7B'
         elif 'falcon-40b' in llm_model_id:
             sagemaker_endpoint_name=env_params['falcon_40b_sagemaker_endpoint']
+            html_header_name = 'Falcon-40B'
         elif 'falcon-180b' in llm_model_id:
             sagemaker_endpoint_name=env_params['falcon_180b_sagemaker_endpoint']
+            html_header_name = 'Falcon-180B'
 
 
         
@@ -122,7 +129,7 @@ class ApiGw_Stack(Stack):
                                             handler='llm_html_generator.handler',
                                             timeout=_cdk.Duration.minutes(1),
                                             code=_cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/html_lambda/')),
-                                            environment={ 'ENVIRONMENT': env_name, 'LLM_MODEL_ID': llm_model_id})        
+                                            environment={ 'ENVIRONMENT': env_name, 'LLM_MODEL_NAME': html_header_name})        
     
         oss_policy = _iam.PolicyStatement(
             actions=[
