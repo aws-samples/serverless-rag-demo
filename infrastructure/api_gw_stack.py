@@ -18,13 +18,33 @@ class ApiGw_Stack(Stack):
         current_timestamp = self.node.try_get_context('current_timestamp')
         region=os.getenv('CDK_DEFAULT_REGION')
         collection_endpoint = 'random'
+        llm_model_id = 'random'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
+            llm_model_id = self.node.get_context("llm_model_id")
         except Exception as e:
             pass
         env_params = self.node.try_get_context(env_name)
         print(f'Collection_endpoint= {collection_endpoint}.')
+        print(f'LLM Model Id = {llm_model_id}')
+        
+        sagemaker_endpoint_name=env_params['sagemaker_endpoint']
+        if 'llama-2-7b' in llm_model_id:
+            sagemaker_endpoint_name=env_params['llama2_7b_sagemaker_endpoint']
+        elif 'llama-2-13b' in llm_model_id:
+            sagemaker_endpoint_name=env_params['llama2_13b_sagemaker_endpoint']
+        elif 'llama-2-70b' in llm_model_id:
+            sagemaker_endpoint_name=env_params['llama2_70b_sagemaker_endpoint']
+        elif 'falcon-7b' in llm_model_id:
+            sagemaker_endpoint_name=env_params['falcon_7b_sagemaker_endpoint']
+        elif 'falcon-40b' in llm_model_id:
+            sagemaker_endpoint_name=env_params['falcon_40b_sagemaker_endpoint']
+        elif 'falcon-180b' in llm_model_id:
+            sagemaker_endpoint_name=env_params['falcon_180b_sagemaker_endpoint']
+
+
+        
 
         # Define API's
         # Base URL
@@ -89,7 +109,8 @@ class ApiGw_Stack(Stack):
                           'MAX_TOKENS': "2000",
                           'TEMPERATURE': "0.9",
                           'TOP_P': "0.6",
-                          'SAGEMAKER_ENDPOINT': env_params['sagemaker_endpoint']
+                          'SAGEMAKER_ENDPOINT': sagemaker_endpoint_name,
+                          'LLM_MODEL_ID': llm_model_id
                         }
         )
 
@@ -101,7 +122,7 @@ class ApiGw_Stack(Stack):
                                             handler='llm_html_generator.handler',
                                             timeout=_cdk.Duration.minutes(1),
                                             code=_cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/html_lambda/')),
-                                            environment={ 'ENVIRONMENT': env_name})        
+                                            environment={ 'ENVIRONMENT': env_name, 'LLM_MODEL_ID': llm_model_id})        
     
         oss_policy = _iam.PolicyStatement(
             actions=[

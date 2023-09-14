@@ -60,6 +60,12 @@
       "index_name": "sample-embeddings-dev",
       "opensearch_endpoint": "",
       "sagemaker_endpoint": "llama2-7b-endpoint",
+      "llama2_7b_sagemaker_endpoint": "llama2-7b-endpoint",
+      "llama2_13b_sagemaker_endpoint": "llama2-13b-endpoint",
+      "llama2_70b_sagemaker_endpoint": "llama2-70b-endpoint",
+      "falcon_7b_sagemaker_endpoint": "falcon-7b-endpoint",
+      "falcon_40b_sagemaker_endpoint": "falcon-40b-endpoint",
+      "falcon_180b_sagemaker_endpoint": "falcon-180b-endpoint",
       "sagemaker_role_name": "sagemaker_llm_role_dev",
       "model_path": "/var/task/sentencetransformers/" 
     },

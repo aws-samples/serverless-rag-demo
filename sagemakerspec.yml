@@ -7,15 +7,16 @@ phases:
     commands:
       - pwd
       - ls
-      - echo Printing variables $account_id $region $sagemaker_endpoint
+      - echo Printing variables $account_id $region $sagemaker_endpoint $llm_model_id
   build:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
       - cd serverless-rag-demo
+      - git checkout sample_data_indexing
       - pip install --upgrade --quiet sagemaker
       - cd artifacts/sagemaker_deploy/
-      - python Llama2_deploy.py $sagemaker_endpoint
+      - python Llama2_deploy.py $sagemaker_endpoint $llm_model_id
   post_build:
     commands:
       - echo Llama2 deployed on `date`

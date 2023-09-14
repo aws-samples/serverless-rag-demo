@@ -16,6 +16,7 @@ endpoint = getenv("OPENSEARCH_ENDPOINT", "https://admin:P@@search-opsearch-publi
 sagemaker_endpoint=getenv("SAGEMAKER_ENDPOINT", "llama2-7b-endpoint")
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "/var/task")
 path = os.environ['MODEL_PATH']
+LLM_MODEL_ID = getenv("LLM_MODEL_ID", "llama-2-7b")
 tokens = int(getenv("MAX_TOKENS", "1000"))
 temperature = float(getenv("TEMPERATURE", "0.9"))
 top_p = float(getenv("TOP_P", "0.6"))
@@ -180,6 +181,7 @@ def query_endpoint(payload):
         CustomAttributes="accept_eula=true",
     )
     response = response["Body"].read().decode("utf8")
+    print(f'Query Output {response}')
     response = json.loads(response)
     return response
     
