@@ -16,6 +16,28 @@ class SagemakerLLMStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         env_name = self.node.try_get_context('environment_name')
         config_details = self.node.try_get_context(env_name)
+        llm_model_id = 'random'
+        try:
+            llm_model_id = self.node.get_context('llm_model_id')
+        except Exception as e:
+            pass
+
+        print(f'LLM Model Id = {llm_model_id}')
+        sagemaker_endpoint_name=config_details['sagemaker_endpoint']
+        
+        if 'llama-2-7b' in llm_model_id:
+            sagemaker_endpoint_name=config_details['llama2_7b_sagemaker_endpoint']
+        elif 'llama-2-13b' in llm_model_id:
+            sagemaker_endpoint_name=config_details['llama2_13b_sagemaker_endpoint']
+        elif 'llama-2-70b' in llm_model_id:
+            sagemaker_endpoint_name=config_details['llama2_70b_sagemaker_endpoint']
+        elif 'falcon-7b' in llm_model_id:
+            sagemaker_endpoint_name=config_details['falcon_7b_sagemaker_endpoint']
+        elif 'falcon-40b' in llm_model_id:
+            sagemaker_endpoint_name=config_details['falcon_40b_sagemaker_endpoint']
+        elif 'falcon-180b' in llm_model_id:
+            sagemaker_endpoint_name=config_details['falcon_180b_sagemaker_endpoint']
+
         # Create ECR Repo
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
         region = os.getenv("CDK_DEFAULT_REGION")
@@ -33,7 +55,7 @@ class SagemakerLLMStack(Stack):
                         _iam.ServicePrincipal('sagemaker.amazonaws.com')
                     )
         )
-        sagemaker_policy = _iam.PolicyStatement(actions=["sagemaker:*", "s3:*", "iam:*"], resources=["*"])
+        sagemaker_policy = _iam.PolicyStatement(actions=["sagemaker:*", "s3:*", "iam:*", "ecr:*"], resources=["*"])
         custom_sm_role.add_to_policy(sagemaker_policy)
         # Trigger CodeBuild job
         sagemaker_deploy_job =_codebuild.Project(
@@ -47,7 +69,8 @@ class SagemakerLLMStack(Stack):
             environment_variables={
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_ACCOUNT")),
                 "region": _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_REGION")),
-                "sagemaker_endpoint": _codebuild.BuildEnvironmentVariable(value = config_details['sagemaker_endpoint'])
+                "sagemaker_endpoint": _codebuild.BuildEnvironmentVariable(value = sagemaker_endpoint_name),
+                "llm_model_id": _codebuild.BuildEnvironmentVariable(value = llm_model_id)
             })
         )
 

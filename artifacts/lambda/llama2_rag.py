@@ -16,9 +16,11 @@ endpoint = getenv("OPENSEARCH_ENDPOINT", "https://admin:P@@search-opsearch-publi
 sagemaker_endpoint=getenv("SAGEMAKER_ENDPOINT", "llama2-7b-endpoint")
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "/var/task")
 path = os.environ['MODEL_PATH']
+LLM_MODEL_ID = getenv("LLM_MODEL_ID", "llama-2-7b")
 tokens = int(getenv("MAX_TOKENS", "1000"))
 temperature = float(getenv("TEMPERATURE", "0.9"))
 top_p = float(getenv("TOP_P", "0.6"))
+top_k = int(getenv("TOP_K", "10"))
 embed_model_st = SentenceTransformer(path)
 
 client = boto3.client('opensearchserverless')
@@ -44,6 +46,9 @@ DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
                     If you don't know the answer to a question,
                     please don't share false information. """
 DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", DEFAULT_PROMPT)
+
+FALCON_PROMPT = """ Answer the question truthfully using the provided text, and if the answer is not contained within the text below, say "I don't know """
+DEFAULT_FALCON_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", FALCON_PROMPT)
 
 def index_sample_data(event):
     print(f'In index_sample_data {event}')
@@ -105,7 +110,15 @@ def index_documents(event):
         return failure_response(f'error indexing documents {e.info["error"]["reason"]}')
     return success_response('Documents indexed successfully')
 
-
+def query_falcon(encoded_json):
+    client = boto3.client("runtime.sagemaker")
+    response = client.invoke_endpoint(
+        EndpointName=sagemaker_endpoint, ContentType="application/json", Body=encoded_json
+    )
+    model_predictions = json.loads(response["Body"].read().decode("utf8"))
+    txt = model_predictions[0]["generated_text"]
+    return txt
+    
 def query_data(event):
     query = None
     behaviour = None
@@ -116,10 +129,13 @@ def query_data(event):
         behaviour = event['queryStringParameters']['behaviour']
         if behaviour == 'pirate':
             DEFAULT_SYSTEM_PROMPT='You are a daring and brutish Pirate. Always answer as a Pirate do not share the context when answering.'
+            DEFAULT_FALCON_PROMPT="Answer the question as a daring and brutish Pirate, and if the answer is not contained within the text below, rudely reply 'I dont know' "
         elif behaviour == 'jarvis':
             DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant that controls all machines on Planet Earth. Reply as an AI assistant'
+            DEFAULT_FALCON_PROMPT="Answer the question as a sophisticated artificial intelligence assistant that controls all machines on Planet Earth, and if the answer is not contained within the text below, politely decline to comment "
         else:
             DEFAULT_SYSTEM_PROMPT = DEFAULT_PROMPT
+            DEFAULT_FALCON_PROMPT = FALCON_PROMPT
     
     # query = input("What are you looking for? ") 
     embedded_search = embed_model_st.encode(query)
@@ -145,27 +161,49 @@ def query_data(event):
     
     if content is None:
         print('Set a default context')
-        content='Tell me about generative AI'
-    try:    
-        print(f' Pass content to Llama2 -> {content}')
-        dialog = [
-            {"role": "system", "content": DEFAULT_SYSTEM_PROMPT + f""" 
-                {content}
-                """},
-            {"role": "user", "content": f"{query} ? "}
-        ]
-        payload = {
+        content=" "
+    try:
+        if  'llama' in LLM_MODEL_ID:
+            print(f' Pass content to Llama2 -> {content}')
+            dialog = [
+                {"role": "system", "content": DEFAULT_SYSTEM_PROMPT + f""" 
+                    {content}
+                    """},
+                {"role": "user", "content": f"{query} ? "}
+            ]
+            payload = {
                 "inputs": [dialog], 
                 "parameters": {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "return_full_text": False}
-        }
-        response_list = []
-        result = query_endpoint(payload)[0]
-        resp = {
-            result['generation']['role'].capitalize(): result['generation']['content']
-        }
-        response_list.append(resp)
-        print(f'Response from llm : {response_list}')
-        return success_response(response_list)
+            }
+            response_list = []
+            result = query_endpoint(payload)[0]
+            resp = {
+                result['generation']['role'].capitalize(): result['generation']['content']
+            }
+            response_list.append(resp)
+            print(f'Response from Llama2 llm : {response_list}')
+            return success_response(response_list)
+        elif 'falcon' in LLM_MODEL_ID:
+            print(f' Pass content to Falcon -> {content}')
+            query = query
+            template = """ {behaviour}
+
+                  Context:
+                      {context}
+
+                 {query}""".strip()
+            template = template.replace('{behaviour}', DEFAULT_FALCON_PROMPT)
+            template = template.replace('{context}', content)
+            template = template.replace('{query}', query)
+            params = {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "top_k": top_k, "num_return_sequences": 1}
+            response_list = []
+            result = query_falcon(json.dumps({"inputs": template , "parameters": params}).encode("utf-8"))
+            resp = {
+                "Assistant" : result
+            }
+            response_list.append(resp)
+            print(f'Response from Falcon llm : {response_list}')
+            return success_response(response_list)
     except Exception as e:
         print(f'Exception {e}')
         return failure_response(f'Exception occured when querying LLM: {e}')
@@ -180,6 +218,7 @@ def query_endpoint(payload):
         CustomAttributes="accept_eula=true",
     )
     response = response["Body"].read().decode("utf8")
+    print(f'Query Output {response}')
     response = json.loads(response)
     return response
     
@@ -193,7 +232,7 @@ def delete_index(event):
     return success_response('Index deleted successfully')
 
 def handler(event, context):
-    LOG.info("---  Amazon Opensearch Serverless vector db example with Llama2 ---")
+    LOG.info("---  Amazon Opensearch Serverless vector db example with Llama2 / Falcon models ---")
 
     api_map = {
         'POST/rag/index-sample-data': lambda x: index_sample_data(x),
