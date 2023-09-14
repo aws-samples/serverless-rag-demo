@@ -25,7 +25,7 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 
 #### Video Demo
-    https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d9162e43-59f5-400c-80d4-3f1545535b66
+https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d9162e43-59f5-400c-80d4-3f1545535b66
 
 
 
