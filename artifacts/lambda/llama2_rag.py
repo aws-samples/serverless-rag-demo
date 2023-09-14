@@ -199,7 +199,7 @@ def query_data(event):
             response_list = []
             result = query_falcon(json.dumps({"inputs": template , "parameters": params}).encode("utf-8"))
             resp = {
-                "ASSISTANT" : result
+                "Assistant" : result
             }
             response_list.append(resp)
             print(f'Response from Falcon llm : {response_list}')
