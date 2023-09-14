@@ -64,7 +64,7 @@ echo ' '
 echo '*************************************************************'
 echo ' '
 echo ' '
-read -p "Press any key to proceed with deployment else ctrl+c to cancel"
+read -p "Press Enter to proceed with deployment else ctrl+c to cancel"
 
 cd ..
 echo "--- Upgrading npm ---"
