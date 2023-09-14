@@ -21,7 +21,7 @@ class SagemakerLLMStack(Stack):
             llm_model_id = self.node.get_context('llm_model_id')
         except Exception as e:
             pass
-        
+
         print(f'LLM Model Id = {llm_model_id}')
         sagemaker_endpoint_name=config_details['sagemaker_endpoint']
         
@@ -55,7 +55,7 @@ class SagemakerLLMStack(Stack):
                         _iam.ServicePrincipal('sagemaker.amazonaws.com')
                     )
         )
-        sagemaker_policy = _iam.PolicyStatement(actions=["sagemaker:*", "s3:*", "iam:*"], resources=["*"])
+        sagemaker_policy = _iam.PolicyStatement(actions=["sagemaker:*", "s3:*", "iam:*", "ecr:*"], resources=["*"])
         custom_sm_role.add_to_policy(sagemaker_policy)
         # Trigger CodeBuild job
         sagemaker_deploy_job =_codebuild.Project(
