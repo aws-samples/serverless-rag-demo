@@ -62,7 +62,8 @@ echo ' '
 echo  !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase
 echo ' '
 echo '*************************************************************'
-echo $model_id
+echo ' '
+echo ' '
 read -p "Press any key to proceed with deployment else ctrl+c to cancel"
 
 cd ..
