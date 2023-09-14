@@ -46,6 +46,9 @@ DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
                     please don't share false information. """
 DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", DEFAULT_PROMPT)
 
+FALCON_PROMPT = """ Answer the question truthfully using the provided text, and if the answer is not contained within the text below, say "I don't know """
+DEFAULT_FALCON_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", FALCON_PROMPT)
+
 def index_sample_data(event):
     print(f'In index_sample_data {event}')
     payload = json.loads(event['body'])
@@ -117,10 +120,13 @@ def query_data(event):
         behaviour = event['queryStringParameters']['behaviour']
         if behaviour == 'pirate':
             DEFAULT_SYSTEM_PROMPT='You are a daring and brutish Pirate. Always answer as a Pirate do not share the context when answering.'
+            DEFAULT_FALCON_PROMPT="Answer the question as a daring and brutish Pirate, and if the answer is not contained within the text below, say 'I dont know' "
         elif behaviour == 'jarvis':
             DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant that controls all machines on Planet Earth. Reply as an AI assistant'
+            DEFAULT_FALCON_PROMPT="Answer the question as a sophisticated artificial intelligence assistant that controls all machines on Planet Earth, and if the answer is not contained within the text below, politely decline to comment "
         else:
             DEFAULT_SYSTEM_PROMPT = DEFAULT_PROMPT
+            DEFAULT_FALCON_PROMPT = FALCON_PROMPT
     
     # query = input("What are you looking for? ") 
     embedded_search = embed_model_st.encode(query)
@@ -146,27 +152,41 @@ def query_data(event):
     
     if content is None:
         print('Set a default context')
-        content='Tell me about generative AI'
-    try:    
-        print(f' Pass content to Llama2 -> {content}')
-        dialog = [
-            {"role": "system", "content": DEFAULT_SYSTEM_PROMPT + f""" 
-                {content}
-                """},
-            {"role": "user", "content": f"{query} ? "}
-        ]
-        payload = {
+        content=" "
+    try:
+        if  'llama' in LLM_MODEL_ID:
+            print(f' Pass content to Llama2 -> {content}')
+            dialog = [
+                {"role": "system", "content": DEFAULT_SYSTEM_PROMPT + f""" 
+                    {content}
+                    """},
+                {"role": "user", "content": f"{query} ? "}
+            ]
+            payload = {
                 "inputs": [dialog], 
                 "parameters": {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "return_full_text": False}
-        }
-        response_list = []
-        result = query_endpoint(payload)[0]
-        resp = {
-            result['generation']['role'].capitalize(): result['generation']['content']
-        }
-        response_list.append(resp)
-        print(f'Response from llm : {response_list}')
-        return success_response(response_list)
+            }
+            response_list = []
+            result = query_endpoint(payload)[0]
+            resp = {
+                result['generation']['role'].capitalize(): result['generation']['content']
+            }
+            response_list.append(resp)
+            print(f'Response from llm : {response_list}')
+            return success_response(response_list)
+        elif 'falcon' in LLM_MODEL_ID:
+            query = query
+            template = """ {behaviour}
+
+                  Context:
+                      {context}
+
+                 {query}""".strip()
+            template = template.replace('{behaviour}', DEFAULT_FALCON_PROMPT)
+            template = template.replace('{context}', content)
+            template = template.replace('{query}', query)
+
+
     except Exception as e:
         print(f'Exception {e}')
         return failure_response(f'Exception occured when querying LLM: {e}')
