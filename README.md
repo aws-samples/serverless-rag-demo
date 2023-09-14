@@ -125,14 +125,12 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
    ```
      sh creator.sh dev us-east-1
    ```
-
-  <img width="1432" alt="Screenshot 2023-08-26 at 1 00 53 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/80c12612-3327-4edf-8c10-2efa23504d62">
-
+   
 7. Select the LLM you want to deploy 
 
    <img width="1088" alt="Screenshot 2023-09-14 at 8 48 50 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/78492d0a-e9d0-481c-b2cd-09bd63ae61ee">
 
-7. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
+8. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
 rag-llm-api-{env_name}. Get the invoke URL for the API
 
   <img width="1407" alt="ApiGw1" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/623344df-adf0-41b0-a90f-16b8cec62f25">
@@ -143,7 +141,7 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev**/rag**
 
-   ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-25%20at%206.48.38%20PM.png)
+   <img width="1238" alt="Screenshot 2023-09-14 at 8 52 09 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9e5c3e4d-e211-4727-ab57-ecd188565a64">
 
 
 
