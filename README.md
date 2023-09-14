@@ -139,7 +139,7 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
 9. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
    * _Do not forget to append_ **"rag"** _at the end of the API-GW url_
 
-   eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev**/rag**
+   eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
 
    <img width="1238" alt="Screenshot 2023-09-14 at 8 52 09 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9e5c3e4d-e211-4727-ab57-ecd188565a64">
 
