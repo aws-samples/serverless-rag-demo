@@ -21,6 +21,8 @@ tokens = int(getenv("MAX_TOKENS", "1000"))
 temperature = float(getenv("TEMPERATURE", "0.9"))
 top_p = float(getenv("TOP_P", "0.6"))
 top_k = int(getenv("TOP_K", "10"))
+
+ANSWER_BASED_ON_PROVIDED_CONTEXT = getenv("ANSWER_BASED_ON_PROVIDED_CONTEXT",".Answer strictly based on above provided context only")
 embed_model_st = SentenceTransformer(path)
 
 client = boto3.client('opensearchserverless')
@@ -145,6 +147,8 @@ def query_data(event):
         "_source": False,
         "fields": ["text", "doc_type"]
     }
+    # Modify the Query here to answer only based on provided context
+    query = query + ANSWER_BASED_ON_PROVIDED_CONTEXT
     content=None
     print('Search for context from Opensearch serverless vector collections')
     try:
@@ -162,6 +166,7 @@ def query_data(event):
     if content is None:
         print('Set a default context')
         content=" "
+    
     try:
         if  'llama' in LLM_MODEL_ID:
             print(f' Pass content to Llama2 -> {content}')
