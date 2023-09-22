@@ -138,7 +138,7 @@ then
         echo "Build started successfully."
         echo "Check Sagemaker Model deployment status every 30 seconds. Wait for codebuild to finish."
         j=0
-        while [ $j -lt 30 ];
+        while [ $j -lt 500 ];
         do 
             sleep 30
             echo 'Wait for 30 seconds. Build job typically takes 20 minutes to complete...'
