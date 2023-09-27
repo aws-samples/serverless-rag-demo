@@ -53,7 +53,7 @@ FALCON_PROMPT = """ Answer the question truthfully using the provided text, and 
 DEFAULT_FALCON_PROMPT = FALCON_PROMPT
 
 BEHAVIOUR = getenv("DEFAULT_SYSTEM_PROMPT", '')
-BEHAVIOUR_OVERRIDE = getenv("OVERRIDE", "False")
+BEHAVIOUR_OVERRIDE = getenv("BEHAVIOUR_OVERRIDE", "False")
 
 def index_sample_data(event):
     print(f'In index_sample_data {event}')
