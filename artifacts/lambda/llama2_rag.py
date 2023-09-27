@@ -47,10 +47,13 @@ DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
                     explain why instead of answering something not correct.
                     If you don't know the answer to a question,
                     please don't share false information. """
-DEFAULT_SYSTEM_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", DEFAULT_PROMPT)
+DEFAULT_SYSTEM_PROMPT = DEFAULT_PROMPT
 
 FALCON_PROMPT = """ Answer the question truthfully using the provided text, and if the answer is not contained within the text below, say "I don't know """
-DEFAULT_FALCON_PROMPT = getenv("DEFAULT_SYSTEM_PROMPT", FALCON_PROMPT)
+DEFAULT_FALCON_PROMPT = FALCON_PROMPT
+
+BEHAVIOUR = getenv("DEFAULT_SYSTEM_PROMPT", '')
+BEHAVIOUR_OVERRIDE = getenv("OVERRIDE", "False")
 
 def index_sample_data(event):
     print(f'In index_sample_data {event}')
@@ -130,14 +133,26 @@ def query_data(event):
     if event['queryStringParameters'] and 'behaviour' in event['queryStringParameters']:
         behaviour = event['queryStringParameters']['behaviour']
         if behaviour == 'pirate':
-            DEFAULT_SYSTEM_PROMPT='You are a daring and brutish Pirate. Always answer as a Pirate do not share the context when answering.'
-            DEFAULT_FALCON_PROMPT="Answer the question as a daring and brutish Pirate, and if the answer is not contained within the text below, rudely reply 'I dont know' "
+            if 'False' in BEHAVIOUR_OVERRIDE:
+                DEFAULT_SYSTEM_PROMPT='You are a daring and brutish Pirate. Always answer as a Pirate do not share the context when answering.' + BEHAVIOUR
+                DEFAULT_FALCON_PROMPT="Answer the question as a daring and brutish Pirate, and if the answer is not contained within the text below, rudely reply 'I dont know' " + BEHAVIOUR
+            else:
+                DEFAULT_SYSTEM_PROMPT = BEHAVIOUR
+                DEFAULT_FALCON_PROMPT = BEHAVIOUR
         elif behaviour == 'jarvis':
-            DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant that controls all machines on Planet Earth. Reply as an AI assistant'
-            DEFAULT_FALCON_PROMPT="Answer the question as a sophisticated artificial intelligence assistant that controls all machines on Planet Earth, and if the answer is not contained within the text below, politely decline to comment "
+            if 'False' in BEHAVIOUR_OVERRIDE:
+                DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant that controls all machines on Planet Earth. Reply as an AI assistant' + BEHAVIOUR
+                DEFAULT_FALCON_PROMPT="Answer the question as a sophisticated artificial intelligence assistant that controls all machines on Planet Earth, and if the answer is not contained within the text below, politely decline to comment " + BEHAVIOUR
+            else:
+                DEFAULT_SYSTEM_PROMPT = BEHAVIOUR
+                DEFAULT_FALCON_PROMPT = BEHAVIOUR
         else:
-            DEFAULT_SYSTEM_PROMPT = DEFAULT_PROMPT
-            DEFAULT_FALCON_PROMPT = FALCON_PROMPT
+            if 'False' in BEHAVIOUR_OVERRIDE:
+                DEFAULT_SYSTEM_PROMPT = DEFAULT_PROMPT + BEHAVIOUR
+                DEFAULT_FALCON_PROMPT = FALCON_PROMPT + BEHAVIOUR
+            else:
+                DEFAULT_SYSTEM_PROMPT = BEHAVIOUR
+                DEFAULT_FALCON_PROMPT = BEHAVIOUR
     
     # query = input("What are you looking for? ") 
     embedded_search = embed_model_st.encode(query)
