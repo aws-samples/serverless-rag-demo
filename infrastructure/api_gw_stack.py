@@ -97,40 +97,34 @@ class ApiGw_Stack(Stack):
                 )
 
         lambda_function = None
-        bedrock_querying_lambda_function = None
-
+        bedrock_query_lambda_integration = None
+        bedrock_index_lambda_integration = None
         if llm_model_id == 'Amazon Bedrock':
-            print('--- Amazon Bedrock Deployment ---')
-            bedrock_indexing_lambda_function = _lambda.DockerImageFunction( self,
-            f"llm_rag_{env_name}",
-            memory_size=1024,
-            timeout=_cdk.Duration.minutes(10),
-            role=custom_lambda_role,
-            function_name=env_params['bedrock_indexing_function_name'],
-            code=_lambda.DockerImageCode.from_ecr(
-                repository=_ecr.Repository.from_repository_name(
-                    self,
-                    f"lambda_rag_{env_name}",
-                    env_params["ecr_repository_name"],
-                ),
-                tag_or_digest=str(current_timestamp)
-            ),
-            environment={ 'INDEX_NAME': env_params['index_name'],
-                          'OPENSEARCH_ENDPOINT': collection_endpoint,
-                          'MODEL_PATH': env_params['model_path'],
-                          'REGION': region
-                        }
-            )
-            
-            lambda_function = bedrock_indexing_lambda_function
             # These are created in buildspec-bedrock.yml file.
             boto3_bedrock_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'boto3-bedrock-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:boto3-bedrock-layer:1')
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["boto3_bedrock_layer"]}:1')
             
             
             opensearchpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'opensearchpy-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:opensearchpy-layer:1')
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["opensearchpy_layer"]}:1')
         
+            
+            print('--- Amazon Bedrock Deployment ---')
+            
+            bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
+                                  function_name=env_params['bedrock_indexing_function_name'],
+                                  code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/index_lambda/')),
+                                  runtime=_lambda.Runtime.PYTHON_3_10,
+                                  handler="index.handler",
+                                  timeout=_cdk.Duration.seconds(300),
+                                  description="Create embeddings in Amazon Bedrock",
+                                  environment={ 'INDEX_NAME': env_params['index_name'],
+                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                                'REGION': region
+                                  },
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer])
+            
+            lambda_function = bedrock_indexing_lambda_function
             bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
                                   function_name=env_params['bedrock_querying_function_name'],
                                   code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/query_lambda/')),
@@ -138,8 +132,26 @@ class ApiGw_Stack(Stack):
                                   handler="query_rag_bedrock.handler",
                                   timeout=_cdk.Duration.seconds(300),
                                   description="Query Models in Amazon Bedrock",
+                                  environment={ 'INDEX_NAME': env_params['index_name'],
+                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                                'REGION': region
+                                  },
                                   layers= [boto3_bedrock_layer , opensearchpy_layer]
                                 )
+            bedrock_oss_policy = _iam.PolicyStatement(
+                actions=[
+                    "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles" ],
+                resources=["*"],
+            )
+            bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
+            bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
+
+            bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
+            bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
+
+            bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
+            bedrock_indexing_lambda_function, proxy=True, allow_test_invoke=True)
+
 
         else:
             print('-- Deployment for Llama2/Falcon GPU hosted models ---')
@@ -190,24 +202,12 @@ class ApiGw_Stack(Stack):
             resources=["*"],
         )
 
-        bedrock_oss_policy = _iam.PolicyStatement(
-            actions=[
-                "aoss:*",
-                "bedrock:*",
-                "iam:ListUsers",
-                "iam:ListRoles",
-            ],
-            resources=["*"],
-        )
         lambda_function.add_to_role_policy(oss_policy)
-        bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
+        
 
         lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             lambda_function, proxy=True, allow_test_invoke=True
         )
-
-        bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
-            bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
 
         html_generation_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             html_generation_function, proxy=True, allow_test_invoke=True
@@ -218,6 +218,8 @@ class ApiGw_Stack(Stack):
                                 method_responses=method_responses)
 
         query_api = rag_llm_api.add_resource("query")
+        index_docs_api = rag_llm_api.add_resource("index-documents")
+        index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
         
         if llm_model_id == 'Amazon Bedrock':
             query_api.add_method(
@@ -226,6 +228,25 @@ class ApiGw_Stack(Stack):
                 operation_name="Query Amazon Bedrock Models with Augmented Enriched Prompt",
                 method_responses=method_responses,
             )    
+            index_docs_api.add_method(
+                "POST",
+                bedrock_index_lambda_integration,
+                operation_name="index document",
+                method_responses=method_responses,
+            )
+            index_docs_api.add_method(
+                "DELETE",
+                bedrock_index_lambda_integration,
+                operation_name="delete document index",
+                method_responses=method_responses,
+            )
+        
+            index_sample_data_api.add_method(
+                "POST",
+                bedrock_index_lambda_integration,
+                operation_name="index sample document",
+                method_responses=method_responses,
+            )
         else:
             query_api.add_method(
                 "GET",
@@ -233,27 +254,28 @@ class ApiGw_Stack(Stack):
                 operation_name="Query LLM with Augmented Enriched Prompt",
                 method_responses=method_responses,
             )
-        index_docs_api = rag_llm_api.add_resource("index-documents")
-        index_docs_api.add_method(
-            "POST",
-            lambda_integration,
-            operation_name="index document",
-            method_responses=method_responses,
-        )
-        index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
-        index_sample_data_api.add_method(
-            "POST",
-            lambda_integration,
-            operation_name="index sample document",
-            method_responses=method_responses,
-        )
 
-        index_docs_api.add_method(
-            "DELETE",
-            lambda_integration,
-            operation_name="delete document index",
-            method_responses=method_responses,
-        )
+            index_docs_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="index document",
+                method_responses=method_responses,
+            )
+
+            index_docs_api.add_method(
+                "DELETE",
+                lambda_integration,
+                operation_name="delete document index",
+                method_responses=method_responses,
+            )
+        
+            index_sample_data_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="index sample document",
+                method_responses=method_responses,
+            )
+        
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)

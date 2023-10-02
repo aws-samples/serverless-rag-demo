@@ -1,5 +1,4 @@
 from os import getenv
-from sentence_transformers import SentenceTransformer
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
 import os
@@ -16,14 +15,15 @@ endpoint = getenv("OPENSEARCH_ENDPOINT", "https://admin:P@@search-opsearch-publi
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "/var/task")
 INDEX_NAME = getenv("INDEX_NAME", "sample-embeddings-store-dev")
 path = os.environ['MODEL_PATH']
-embed_model_st = SentenceTransformer(path)
-client = boto3.client('opensearchserverless')
 credentials = boto3.Session().get_credentials()
 service = 'aoss'
 region = getenv("REGION", "us-east-1")
 awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
                    region, service, session_token=credentials.token)
-ops_client = client = OpenSearch(
+
+bedrock_client = boto3.client('bedrock-runtime')
+
+ops_client = OpenSearch(
         hosts=[{'host': endpoint, 'port': 443}],
         http_auth=awsauth,
         use_ssl=True,
@@ -78,7 +78,23 @@ def index_documents(event):
     print(f'In index documents {event}')
     payload = json.loads(event['body'])
     text_val = payload['text']
-    embeddings = embed_model_st.encode(text_val)
+
+    body = json.dumps({"inputText": text_val})
+    model_id = 'amazon.titan-embed-text-v1'
+    
+    try:
+        response = bedrock_client.invoke_model(
+            body = body,
+            modelId = model_id,
+            accept = 'application/json',
+            contentType = 'application/json'
+        )
+        result = json.loads(response['body'].read())
+        embeddings = result.get('embedding')
+        LOG.debug(embeddings)
+    except Exception as e:
+        return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
+
     doc = {
            'embedding' : embeddings,
            'text': text_val
@@ -93,6 +109,7 @@ def index_documents(event):
         return failure_response(f'error indexing documents {e.info["error"]["reason"]}')
     return success_response('Documents indexed successfully')
 
+
 def delete_index(event):
     try:
         res = ops_client.indices.delete(index=INDEX_NAME)
@@ -100,6 +117,7 @@ def delete_index(event):
     except Exception as e:
         return failure_response(f'error deleting index. {e.info["error"]["reason"]}')
     return success_response('Index deleted successfully')
+
 
 def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
