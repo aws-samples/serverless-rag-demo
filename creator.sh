@@ -63,7 +63,7 @@ done
 
 echo '*************************************************************'
 echo ' '
-if [ $opt != "Amazon Bedrock" ]
+if $opt != "Amazon Bedrock"
 then
     echo  !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase
 else

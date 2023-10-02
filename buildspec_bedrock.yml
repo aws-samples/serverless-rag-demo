@@ -17,6 +17,7 @@ phases:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
       - cd serverless-rag-demo
+      - git checkout Bedrock
       - echo Build started on `date`
       - echo Building the Docker image...
       - cd artifacts/bedrock_lambda/index_lambda    
