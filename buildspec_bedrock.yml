@@ -1,0 +1,43 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 16
+      python: '3.10'
+    commands:
+      - pwd
+      - ls
+      - echo Printing variables  $ecr_repo $account_id $region
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $region | docker login --username AWS --password-stdin $account_id.dkr.ecr.$region.amazonaws.com
+  build:
+    commands:
+      - git clone https://github.com/aws-samples/serverless-rag-demo.git
+      - ls
+      - cd serverless-rag-demo
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - cd artifacts/bedrock_lambda/index_lambda    
+      - unzip embed_model.zip
+      - rm -rf embed_model.zip
+      - ls
+      - docker build -t $ecr_repo .
+      - docker images
+      - echo Build a Opensearchpy lambda layer to be used by the Amazon Bedrock Querying lambda
+      - mkdir python
+      - python3 -m pip install opensearch-py -t python/
+      - zip -r opensearch_layer.zip python
+      - aws lambda publish-layer-version --layer-name opensearchpy-layer --zip-file fileb://opensearch_layer.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+      - rm -rf python opensearch_layer.zip
+      - echo Build latest Boto3 layer to get Bedrock access
+      - mkdir python
+      - python3 -m pip install boto3==1.28.57 -t python/
+      - zip -r boto3_bedrock.zip python
+      - aws lambda publish-layer-version --layer-name boto3-bedrock-layer --zip-file fileb://boto3_bedrock.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $ecr_repo

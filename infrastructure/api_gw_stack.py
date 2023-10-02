@@ -49,6 +49,8 @@ class ApiGw_Stack(Stack):
         elif 'falcon-180b' in llm_model_id:
             sagemaker_endpoint_name=env_params['falcon_180b_sagemaker_endpoint']
             html_header_name = 'Falcon-180B'
+        elif 'Amazon Bedrock' in llm_model_id:
+            html_header_name = 'Amazon Bedrock'
 
 
         
@@ -93,14 +95,17 @@ class ApiGw_Stack(Stack):
                     ]
                 )
 
-        
-        lambda_function = _lambda.DockerImageFunction(
-            self,
+        lambda_function = None
+        bedrock_querying_lambda_function = None
+
+        if llm_model_id == 'Amazon Bedrock':
+            print('--- Amazon Bedrock Deployment ---')
+            bedrock_indexing_lambda_function = _lambda.DockerImageFunction( self,
             f"llm_rag_{env_name}",
             memory_size=1024,
             timeout=_cdk.Duration.minutes(10),
             role=custom_lambda_role,
-            function_name=env_params['lambda_function_name'],
+            function_name=env_params['bedrock_indexing_function_name'],
             code=_lambda.DockerImageCode.from_ecr(
                 repository=_ecr.Repository.from_repository_name(
                     self,
@@ -112,14 +117,49 @@ class ApiGw_Stack(Stack):
             environment={ 'INDEX_NAME': env_params['index_name'],
                           'OPENSEARCH_ENDPOINT': collection_endpoint,
                           'MODEL_PATH': env_params['model_path'],
-                          'REGION': region,
-                          'MAX_TOKENS': "2000",
-                          'TEMPERATURE': "0.9",
-                          'TOP_P': "0.6",
-                          'SAGEMAKER_ENDPOINT': sagemaker_endpoint_name,
-                          'LLM_MODEL_ID': llm_model_id
+                          'REGION': region
                         }
-        )
+            )
+            
+            lambda_function = bedrock_indexing_lambda_function
+
+            bedrock_querying_lambda_function = _lambda.Function(scope, f'gvr_fms_customer_migration_worker-{env_name}',
+                                  function_name=env_params['bedrock_querying_function_name'],
+                                  code=_lambda.Code.from_asset("artifacts/bedrock_lambda/query_lambda"),
+                                  # code=Code.from_inline("def handler: print('OK')"),
+                                  runtime=_lambda.Runtime.PYTHON_3_10,
+                                  handler="lambda_handler.handler",
+                                  timeout=_lambda.Duration.seconds(300),
+                                  description="Query Models in Amazon Bedrock")
+
+        else:
+            print('-- Deployment for Llama2/Falcon GPU hosted models ---')
+            lambda_function = _lambda.DockerImageFunction(
+                self,
+                f"llm_rag_{env_name}",
+                memory_size=1024,
+                timeout=_cdk.Duration.minutes(10),
+                role=custom_lambda_role,
+                function_name=env_params['lambda_function_name'],
+                code=_lambda.DockerImageCode.from_ecr(
+                    repository=_ecr.Repository.from_repository_name(
+                        self,
+                        f"lambda_rag_{env_name}",
+                        env_params["ecr_repository_name"],
+                    ),
+                    tag_or_digest=str(current_timestamp)
+                ),
+                environment={   'INDEX_NAME': env_params['index_name'],
+                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                'MODEL_PATH': env_params['model_path'],
+                                'REGION': region,
+                                'MAX_TOKENS': "2000",
+                                'TEMPERATURE': "0.9",
+                                'TOP_P': "0.6",
+                                'SAGEMAKER_ENDPOINT': sagemaker_endpoint_name,
+                                'LLM_MODEL_ID': llm_model_id
+                        }
+            )
 
 
         html_generation_function = _cdk.aws_lambda.Function(self, f'llm_html_function_{env_name}',
@@ -140,11 +180,25 @@ class ApiGw_Stack(Stack):
             ],
             resources=["*"],
         )
+
+        bedrock_oss_policy = _iam.PolicyStatement(
+            actions=[
+                "aoss:*",
+                "bedrock:*",
+                "iam:ListUsers",
+                "iam:ListRoles",
+            ],
+            resources=["*"],
+        )
         lambda_function.add_to_role_policy(oss_policy)
+        bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
 
         lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             lambda_function, proxy=True, allow_test_invoke=True
         )
+
+        bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
+            bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
 
         html_generation_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             html_generation_function, proxy=True, allow_test_invoke=True
@@ -155,12 +209,21 @@ class ApiGw_Stack(Stack):
                                 method_responses=method_responses)
 
         query_api = rag_llm_api.add_resource("query")
-        query_api.add_method(
-            "GET",
-            lambda_integration,
-            operation_name="Query LLM with enhanced Prompt",
-            method_responses=method_responses,
-        )
+        
+        if llm_model_id == 'Amazon Bedrock':
+            query_api.add_method(
+                "GET",
+                bedrock_query_lambda_integration,
+                operation_name="Query Amazon Bedrock Models with Augmented Enriched Prompt",
+                method_responses=method_responses,
+            )    
+        else:
+            query_api.add_method(
+                "GET",
+                lambda_integration,
+                operation_name="Query LLM with Augmented Enriched Prompt",
+                method_responses=method_responses,
+            )
         index_docs_api = rag_llm_api.add_resource("index-documents")
         index_docs_api.add_method(
             "POST",

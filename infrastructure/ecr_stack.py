@@ -19,6 +19,12 @@ class Ecr_stack(NestedStack):
         env_name = self.node.try_get_context('environment_name')
         config_details = self.node.try_get_context(env_name)
         ecr_repo_name = config_details['ecr_repository_name']
+        llm_model_id = 'random'
+        try:
+            llm_model_id = self.node.get_context("llm_model_id")
+        except Exception as e:
+            pass
+
         # Create ECR Repo
         _ecr.Repository(self, ecr_repo_name, repository_name=ecr_repo_name)
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
@@ -26,13 +32,21 @@ class Ecr_stack(NestedStack):
         current_timestamp = self.node.try_get_context('current_timestamp')
         # Generate ECR Full repo name
         full_ecr_repo_name = f'{account_id}.dkr.ecr.{region}.amazonaws.com/{ecr_repo_name}:{current_timestamp}'
-    
+        
         build_spec_yml = ''
-        with open("buildspec.yml", "r") as stream:
-            try:
-                build_spec_yml = yaml.safe_load(stream)
-            except yaml.YAMLError as exc:
-                print(exc)
+        if llm_model_id == 'Amazon Bedrock':
+            with open("buildspec_bedrock.yml", "r") as stream:
+                try:
+                    build_spec_yml = yaml.safe_load(stream)
+                except yaml.YAMLError as exc:
+                    print(exc)
+        else:
+            with open("buildspec.yml", "r") as stream:
+                try:
+                    build_spec_yml = yaml.safe_load(stream)
+                except yaml.YAMLError as exc:
+                    print(exc)
+                    
         print(build_spec_yml)
 
         # Trigger CodeBuild job
