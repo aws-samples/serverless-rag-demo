@@ -46,7 +46,7 @@ class Ecr_stack(NestedStack):
                     build_spec_yml = yaml.safe_load(stream)
                 except yaml.YAMLError as exc:
                     print(exc)
-                    
+
         print(build_spec_yml)
 
         # Trigger CodeBuild job
@@ -66,7 +66,8 @@ class Ecr_stack(NestedStack):
 
         ecr_policy = _iam.PolicyStatement(actions=[
         "ecr:BatchCheckLayerAvailability", "ecr:CompleteLayerUpload", "ecr:GetAuthorizationToken",
-        "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart", "ecr:CreateRepository"
+        "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart", "ecr:CreateRepository",
+        "lambda:PublishLayerVersion"
         ], resources=["*"])
         containerize_build_job.add_to_role_policy(ecr_policy)
         
