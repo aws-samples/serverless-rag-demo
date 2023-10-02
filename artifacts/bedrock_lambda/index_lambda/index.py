@@ -12,10 +12,10 @@ LOG.setLevel(logging.INFO)
 # http endpoint for your cluster (opensearch required for vector index usage)
 # Self managed or cluster based OPENSEARCH
 endpoint = getenv("OPENSEARCH_ENDPOINT", "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
-SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "/var/task")
+SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
 INDEX_NAME = getenv("INDEX_NAME", "sample-embeddings-store-dev")
-path = os.environ['MODEL_PATH']
 credentials = boto3.Session().get_credentials()
+
 service = 'aoss'
 region = getenv("REGION", "us-east-1")
 awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
