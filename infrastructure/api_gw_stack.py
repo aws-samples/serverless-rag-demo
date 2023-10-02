@@ -18,17 +18,17 @@ class ApiGw_Stack(Stack):
         current_timestamp = self.node.try_get_context('current_timestamp')
         region=os.getenv('CDK_DEFAULT_REGION')
         collection_endpoint = 'random'
-        llm_model_id = 'random'
+        llm_model_id = self.node.try_get_context("llm_model_id")
         html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
-            llm_model_id = self.node.get_context("llm_model_id")
         except Exception as e:
             pass
+
         env_params = self.node.try_get_context(env_name)
-        print(f'Collection_endpoint= {collection_endpoint}.')
-        print(f'LLM_Model_Id= {llm_model_id}')
+        print(f'Collection_endpoint={collection_endpoint}')
+        print(f'LLM_Model_Id={llm_model_id}')
         
         sagemaker_endpoint_name=env_params['sagemaker_endpoint']
         if 'llama-2-7b' in llm_model_id:
@@ -123,13 +123,13 @@ class ApiGw_Stack(Stack):
             
             lambda_function = bedrock_indexing_lambda_function
 
-            bedrock_querying_lambda_function = _lambda.Function(scope, f'gvr_fms_customer_migration_worker-{env_name}',
+            bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
                                   function_name=env_params['bedrock_querying_function_name'],
                                   code=_lambda.Code.from_asset("artifacts/bedrock_lambda/query_lambda"),
                                   # code=Code.from_inline("def handler: print('OK')"),
                                   runtime=_lambda.Runtime.PYTHON_3_10,
                                   handler="lambda_handler.handler",
-                                  timeout=_lambda.Duration.seconds(300),
+                                  timeout=_cdk.Duration.seconds(300),
                                   description="Query Models in Amazon Bedrock")
 
         else:

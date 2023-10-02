@@ -90,12 +90,12 @@ echo "--- pip install requirements ---"
 python3 -m pip install -r requirements.txt
 
 echo "--- CDK synthesize ---"
-cdk synth -c environment_name=$1 -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id=$model_id
+cdk synth -c environment_name=$1 -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id"
 
 echo "--- CDK deploy ---"
 CURRENT_UTC_TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
 echo Setting Tagging Lambda Image with timestamp $CURRENT_UTC_TIMESTAMP
-cdk deploy -c environment_name=$1 -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id=$model_id LlmsWithServerlessRagStack --require-approval never
+cdk deploy -c environment_name=$1 -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" LlmsWithServerlessRagStack --require-approval never
 echo "--- Get Build Container ---"
 project=lambdaragllmcontainer"$1"
 echo project: $project
@@ -132,10 +132,10 @@ if [ $build_status = "SUCCEEDED" ]
 then
     COLLECTION_NAME=$(jq '.context.'$1'.collection_name' cdk.json -r)
     COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
-    cdk deploy -c environment_name=$1 -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id=$model_id ApiGwLlmsLambda"$1"Stack --require-approval never
+    cdk deploy -c environment_name=$1 -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" ApiGwLlmsLambda"$1"Stack --require-approval never
     if [ $opt != "Amazon Bedrock" ]
     then
-        cdk deploy -c environment_name=$1 -c llm_model_id=$model_id SagemakerLlmdevStack --require-approval never
+        cdk deploy -c environment_name=$1 -c llm_model_id="$model_id" SagemakerLlmdevStack --require-approval never
         echo "--- Get Sagemaker Deployment Container ---"
         project=sagemakerdeploy"$1"
         build_container=$(aws codebuild list-projects|grep -o $project'[^,"]*')
