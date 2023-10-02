@@ -8,14 +8,13 @@ from decimal import Decimal
 import logging
 
 bedrock_client = boto3.client('bedrock-runtime')
-model_id = 'amazon.titan-embed-text-v1'
+embed_model_id = 'amazon.titan-embed-text-v1'
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 endpoint = getenv("OPENSEARCH_ENDPOINT",
                   "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
 SAMPLE_DATA_DIR = getenv("SAMPLE_DATA_DIR", "/var/task")
 INDEX_NAME = getenv("INDEX_NAME", "sample-embeddings-store-dev")
-path = os.environ['MODEL_PATH']
 credentials = boto3.Session().get_credentials()
 service = 'aoss'
 region = getenv("REGION", "us-east-1")
@@ -46,6 +45,8 @@ def query_data(event):
     query = None
     behaviour = None
     global DEFAULT_SYSTEM_PROMPT
+    global embed_model_id
+    global bedrock_client
     if event['queryStringParameters'] and 'query' in event['queryStringParameters']:
         query = event['queryStringParameters']['query']
     if event['queryStringParameters'] and 'behaviour' in event['queryStringParameters']:
@@ -70,7 +71,7 @@ def query_data(event):
         # Get the query embedding from amazon-titan-embed model
         response = bedrock_client.invoke_model(
             body=json.dumps({"inputText": query}),
-            modelId=model_id,
+            modelId=embed_model_id,
             accept='application/json',
             contentType='application/json'
         )
@@ -109,6 +110,8 @@ def query_data(event):
             model_id = event['queryStringParameters']['model_id']
 
             if model_id in ['amazon.titan-text-lite-v1',
+                            'amazon.titan-text-express-v1',
+                            'amazon.titan-text-agile-v1',
                             'anthropic.claude-v2',
                             'anthropic.claude-v1',
                             'anthropic.claude-instant-v1',
