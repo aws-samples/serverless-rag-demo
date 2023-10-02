@@ -49,7 +49,7 @@ def query_data(event):
         behaviour = event['queryStringParameters']['behaviour']
         prompt = DEFAULT_PROMPT
         if behaviour in ['english', 'hindi', 'thai', 'spanish', 'bengali']:
-            prompt = DEFAULT_PROMPT + f'. You will always reply in {behaviour}'
+            prompt = DEFAULT_PROMPT + f'. You will always reply in {behaviour} language only.'
         elif behaviour == 'sentiment':
             prompt = DEFAULT_PROMPT + '. You will identify the sentiment of the below context.'
         elif behaviour == 'legal':

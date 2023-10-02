@@ -47,6 +47,7 @@ def index_sample_data(event):
                 index_documents({"body": json.dumps({"text": data}) })
         except Exception as e:
             print(f'Error indexing sample data {file_name}, exception={e}')
+            return failure_response('Sample data could not be indexed')
     return success_response('Sample Documents Indexed Successfully')
     
 
@@ -66,7 +67,7 @@ def create_index() :
                     "text": {"type": "text"},
                     "embedding": {
                         "type": "knn_vector",
-                        "dimension": 384,
+                        "dimension": 1536,
                     },
                 }
             },
@@ -91,7 +92,7 @@ def index_documents(event):
         )
         result = json.loads(response['body'].read())
         embeddings = result.get('embedding')
-        LOG.debug(embeddings)
+        print(f'Embeddings -> {embeddings}')
     except Exception as e:
         return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
 
