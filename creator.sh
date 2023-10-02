@@ -133,7 +133,7 @@ then
     COLLECTION_NAME=$(jq '.context.'$1'.collection_name' cdk.json -r)
     COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
     cdk deploy -c environment_name=$1 -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" ApiGwLlmsLambda"$1"Stack --require-approval never
-    if [ $opt != "Amazon Bedrock" ]
+    if [ "$opt" != "Amazon Bedrock" ]
     then
         cdk deploy -c environment_name=$1 -c llm_model_id="$model_id" SagemakerLlmdevStack --require-approval never
         echo "--- Get Sagemaker Deployment Container ---"
