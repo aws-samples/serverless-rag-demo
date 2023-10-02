@@ -63,11 +63,12 @@ done
 
 echo '*************************************************************'
 echo ' '
-if $opt != "Amazon Bedrock"
+
+if [ $opt != "Amazon Bedrock" ]
 then
     echo  !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase
 else
-    echo !!! Attention $opt stack will be deployed. Please ensure you have access to models in $opt
+    echo !!! Attention Provisioning $opt infrastructure. Please ensure you have access to models in $opt
 fi
 echo ' '
 echo '*************************************************************'
