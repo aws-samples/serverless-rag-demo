@@ -17,6 +17,7 @@ class ApiGw_Stack(Stack):
         env_name = self.node.try_get_context("environment_name")
         current_timestamp = self.node.try_get_context('current_timestamp')
         region=os.getenv('CDK_DEFAULT_REGION')
+        account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
         collection_endpoint = 'random'
         llm_model_id = self.node.try_get_context("llm_model_id")
         html_header_name = 'Llama2-7B'
@@ -122,15 +123,20 @@ class ApiGw_Stack(Stack):
             )
             
             lambda_function = bedrock_indexing_lambda_function
+            # These are created in buildspec-bedrock.yml file.
+            boto3_bedrock_layer = f'arn:aws:lambda:{region}:{account_id}:layer:boto3-bedrock-layer:1'
+            opensearchpy_layer = f'arn:aws:lambda:{region}:{account_id}:layer:opensearchpy-layer:1'
+
 
             bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
                                   function_name=env_params['bedrock_querying_function_name'],
-                                  code=_lambda.Code.from_asset("artifacts/bedrock_lambda/query_lambda"),
-                                  # code=Code.from_inline("def handler: print('OK')"),
+                                  code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/query_lambda/')),
                                   runtime=_lambda.Runtime.PYTHON_3_10,
-                                  handler="lambda_handler.handler",
+                                  handler="query_rag_bedrock.handler",
                                   timeout=_cdk.Duration.seconds(300),
-                                  description="Query Models in Amazon Bedrock")
+                                  description="Query Models in Amazon Bedrock",
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer]
+                                )
 
         else:
             print('-- Deployment for Llama2/Falcon GPU hosted models ---')

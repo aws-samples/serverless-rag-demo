@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<!-- saved from url=(0062)https://5fzlbtf429.execute-api.us-east-1.amazonaws.com/dev/rag -->
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=yes">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/css/bootstrap.min.css"
+    integrity="sha384-r4NyP46KrjDleawBgD5tp8Y7UzmLA05oM1iAEQ17CSuDqnUK2+k9luXQOfXJCJ4I" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+    integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+    crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js"
+    integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/"
+    crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
+     integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
+      crossorigin="anonymous"></script>
+    <style>
+      .toast-config {
+        width: 25vw;
+        margin-left: 76vw;
+        z-index: 1000;
+        position: absolute;
+      }
+    </style>
+
+
+</head>
+
+<body>
+  <div class="p-3 mb-2 bg-light text-dark">
+  <div id="alert-placeholder"></div>
+  <center>
+    <h1><span id="model-name">Llama2-7b<span></h1>
+    </center>
+
+  <div style="padding-bottom: 10px;"></div>
+  <div style="padding-bottom: 10px;"></div>
+  
+  
+  <ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button" role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-div" type="button" role="tab" aria-controls="Query" aria-selected="false">Query Data</button>
+    </li>
+  </ul>
+  <div class="tab-content" id="myTabContent">
+    <div class="tab-pane fade show active" id="index-div" role="tabpanel" aria-labelledby="index-tab">
+      <div style="padding-bottom: 10px;"></div>
+      <div class="alert alert-primary" role="alert">
+        Index your documents here. Initial indexing requests could timeout due to time take by Amazon OSS to warm up.
+      </div>
+      <div style="padding-bottom: 10px;"></div>
+      <table>
+        <tbody>
+          <tr>
+            <th>Index Documents</th>
+            <th style="padding-left: 100px;"></th>
+            <th>Create Sample Indexes</th>
+          </tr>
+          <tr>
+            <td>
+              <div>
+                <textarea placeholder="Add text here for indexing. Limit to 5000 characters" id="index_txt" name="request"
+                  rows="10" cols="60"></textarea>
+              </div>
+            </td>
+            <td style="padding-left: 0px;"></td>
+            <td>
+                 <table style="margin-top:-10vh">
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-movie" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-isro" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1, Chandrayan-3)</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-health" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('health')">Index a brand new disease (FrostFlu)</button>
+                    </td>
+                  </tr>
+
+                 </table>
+            
+            </td>
+          </tr>
+          <tr>
+    
+          </tr>
+    
+    
+        </tbody>
+      </table>
+      <table>
+        <tbody>
+          <tr>
+            <td style="padding-left: 20px;">
+              <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index Documents</button>
+            </td>
+            <td style="padding-left: 20px;">
+              <button id="delete-button" type="button" class="btn btn-danger" onclick="javascript:reset()">Reset</button>
+            </td>
+            <td style="padding-left: 20px;">
+  
+            </td>
+  
+          </tr>
+  
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="tab-pane fade" id="query-div" role="tabpanel" aria-labelledby="query-tab">
+      <div style="padding-bottom: 10px;"></div>
+      <div class="alert alert-primary" role="alert">
+        Once you've indexed documents, you can query your data here
+      </div>
+      <div style="padding-bottom: 10px;"></div>
+      <div style="padding-left: 10px;">
+        <textarea id="query" style="width: 34vw;" name="response" rows="5" cols="20"
+        placeholder="Query your data here"></textarea>  
+      </div>
+      <div style="padding-bottom: 10px;"></div>
+      
+      <div class="dropdown" style="padding-left: 10px; padding-bottom: 10px;">
+        <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          Select Model on Amazon Bedrock
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" onclick="model_selected('Titan')">Amazon Titan</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('Claude 2')">Anthropic Claude 2</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('AI21')">AI21</a></li>
+        </ul>
+
+        <span id="set_model"></span>
+
+      </div>
+
+      <div id="query-button" style="padding-left: 10px;" data-toggle="tooltip" title="Select an Amazon Bedrock Model to continue" data-placement="left">
+        <button type="button" id="english" class="btn btn-info assistant" onclick="javascript:query('english')">English</button>
+        <button type="button" id="hindi" class="btn btn-info assistant" onclick="javascript:query('hindi')">Hindi</button>
+        <button type="button" id="thai" class="btn btn-info assistant" onclick="javascript:query('thai')">Thai</button>
+        <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('spanish')">Spanish</button>
+        <button type="button" id="bengali" class="btn btn-info assistant" onclick="javascript:query('bengali')">Bengali</button>
+        <button type="button" id="sentiment" class="btn btn-info assistant" onclick="javascript:query('sentiment')">Sentiment Analysis</button>
+        <button type="button" id="behaviour" class="btn btn-info assistant" onclick="javascript:query('legal')">Legal Assistant</button>
+        <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">PII Data</button>
+      </div>
+      
+      <div style="padding-bottom: 30px;"></div>
+      
+      <div style="padding-left: 10px;">
+      
+      <table>
+        <tr>
+          <td>
+          <div>
+            <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea>
+          </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+    
+  </div>
+
+
+
+  <div id="err"></div>
+
+
+  <div class="d-flex justify-content-center" id="custom-spinner">
+    <div class="spinner-border" role="status">
+      <span class="sr-only">Loading...</span>
+    </div>
+  </div>
+
+  <div id="sse"></div>
+  </div>
+
+  <footer>
+    <script type="text/javascript">
+      var model_name = 'Llama2-7B'
+      var vector_text = ' with Opensearch Serverless vector db demo'
+      // do stuff
+      $(document).ready(function () {
+        $('#custom-spinner').css('visibility','hidden');
+        document.getElementById("model-name").innerHTML=awsData.htmlheader + vector_text
+        $("button.assistant").prop('disabled', true)
+        $('[data-toggle="tooltip"]').tooltip();
+      });
+
+      var awsData = {
+          apiGatewayUrl: '<apiGatewayUrl>',
+          staticPageUrl: '<apiGatewayUrl>',
+          htmlheader: '<htmlheader>'
+      };
+
+      function indexDocuments() {
+        
+        $('#custom-spinner').css('visibility','visible');
+        $('#index-button').css('visibility','hidden');
+        $('#query-button').css('visibility','hidden');
+        $('#delete-button').css('visibility','hidden');
+        //Retrieve list of dashboards that the user can access from QuickSight.
+        $.ajax({
+          type: "POST",
+          url: awsData.apiGatewayUrl + '/index-documents',
+          contentType: "text/json",
+          dataType: 'json',
+          data: JSON.stringify({ "text": $('#index_txt').val() }),
+          success: function (result) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            alertbuilder(result['result'])
+          },
+          error: function (err) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            console.log('Error on making API gateway call to index documents ..');
+            console.log(err.responseText);
+            alertbuilder(err.responseText.replaceAll('"', ''))
+          }
+        });
+      }
+
+
+      function reset() {
+        $('#custom-spinner').css('visibility','visible');
+        $('#index-button').css('visibility','hidden');
+        $('#query-button').css('visibility','hidden');
+        $('#delete-button').css('visibility','hidden');
+        $('#response').css('visibility','hidden');
+        $.ajax({
+          type: "DELETE",
+          url: awsData.apiGatewayUrl + '/index-documents',
+          contentType: "text/json",
+          dataType: 'json',
+          success: function (result) {
+            $('#response').val(result['result'])
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            alertbuilder(result['result'])
+            
+          },
+          error: function (err) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            console.log('Error on making API gateway call to delete index..');
+            console.log(err.responseText);
+            alertbuilder(err.responseText.replaceAll('"', ''))
+          }
+        });
+
+      }
+
+      function alertbuilder(message) {
+        $('#alert-placeholder').append('<div id="alertdiv" class="alert alert-success toast-config"><a class="close" data-dismiss="alert"></a><span>'+message+'</span></div>')
+        setTimeout(() => {
+              $('#alertdiv').remove();
+            }, 5000)
+      }
+
+      function model_selected(val) {
+        $('#set_model').text('Model selected : ' + val)
+        alertbuilder('Model Selected: ' + val)
+        $("button.assistant").prop('disabled', false)
+      }
+      
+      function indexSampleDocument(type) {
+        $('#custom-spinner').css('visibility','visible');
+        $('#index-button').css('visibility','hidden');
+        $('#query-button').css('visibility','hidden');
+        $('#delete-button').css('visibility','hidden');
+        $.ajax({
+          type: "POST",
+          url: awsData.apiGatewayUrl + '/index-sample-data',
+          contentType: "text/json",
+          dataType: 'json',
+          data: JSON.stringify({ "type": type }),
+          success: function (result) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            alertbuilder('Indexed Successfully')
+          },
+          error: function (err) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            console.log('Error on making API gateway call to index documents ..');
+            console.log(err.responseText);
+            alertbuilder(err.responseText.replaceAll('"', ''))
+          }
+        });
+        
+      }
+
+      function query(assistant_type) {
+        $('#custom-spinner').css('visibility','visible');
+        $('#index-button').css('visibility','hidden');
+        $('#query-button').css('visibility','hidden');
+        $('#delete-button').css('visibility','hidden');
+        $.ajax({
+          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val() + '&behaviour=' + assistant_type,
+          contentType: "text/json",
+          dataType: 'json',
+          success: function (result) {
+            $('#query-response').val(result['result'][0]['Assistant'])
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+          },
+          error: function (err) {
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            console.log('Error on making API gateway call to retrieve Dashboard list..');
+            console.log(err.responseText);
+            err_msg = err.responseText + " . Have you indexed documents ?"
+            $('#query-response').html(err_msg.replaceAll('"', ''));
+          }
+        });
+
+      }
+
+    </script>
+
+
+  </footer>
+
+</body>
+
+</html>

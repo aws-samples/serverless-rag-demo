@@ -11,6 +11,9 @@ def handler(event, context):
     print(context)
     runtime_region = os.environ['AWS_REGION']
     htmlFile = open('content/rag_llm.html', 'r')
+    if html_header == 'Amazon Bedrock':
+        htmlFile = open('content/rag_bedrock.html', 'r')    
+    
     apiGatewayUrl = 'https://' + event['requestContext']['apiId'] + '.execute-api.' + runtime_region + '.amazonaws.com' + event['requestContext']['path']
 
     #Read contents of sample html file
