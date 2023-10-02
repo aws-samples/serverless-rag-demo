@@ -136,9 +136,19 @@
           Select Model on Amazon Bedrock
         </button>
         <ul class="dropdown-menu">
-          <li><a class="dropdown-item" onclick="model_selected('Titan')">Amazon Titan</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('Claude 2')">Anthropic Claude 2</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('AI21')">AI21</a></li>
+          <!-- AI21 -->
+          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li>
+          <!-- Amazon -->
+          <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li>
+          <!-- Anthropic -->
+          <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v1')">Anthropic	Claude V1</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic	Claude V2</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic	Claude Instant</a></li>
+          <!-- Cohere -->
+          <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li>
         </ul>
 
         <span id="set_model"></span>
@@ -199,10 +209,12 @@
         $('[data-toggle="tooltip"]').tooltip();
       });
 
+      var model_id = null;
       var awsData = {
           apiGatewayUrl: '<apiGatewayUrl>',
           staticPageUrl: '<apiGatewayUrl>',
-          htmlheader: '<htmlheader>'
+          htmlheader: '<htmlheader>',
+          
       };
 
       function indexDocuments() {
@@ -280,6 +292,7 @@
 
       function model_selected(val) {
         $('#set_model').text('Model selected : ' + val)
+        model_id = val
         alertbuilder('Model Selected: ' + val)
         $("button.assistant").prop('disabled', false)
       }
@@ -321,7 +334,7 @@
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
         $.ajax({
-          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val() + '&behaviour=' + assistant_type,
+          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val() + '&behaviour=' + assistant_type + '&model_id=' + model_id,
           contentType: "text/json",
           dataType: 'json',
           success: function (result) {

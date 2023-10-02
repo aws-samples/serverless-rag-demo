@@ -7,10 +7,13 @@ import json
 from decimal import Decimal
 import logging
 
+bedrock_client = boto3.client('bedrock-runtime')
+model_id = 'amazon.titan-embed-text-v1'
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
-endpoint = getenv("OPENSEARCH_ENDPOINT", "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
-SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "/var/task")
+endpoint = getenv("OPENSEARCH_ENDPOINT",
+                  "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
+SAMPLE_DATA_DIR = getenv("SAMPLE_DATA_DIR", "/var/task")
 INDEX_NAME = getenv("INDEX_NAME", "sample-embeddings-store-dev")
 path = os.environ['MODEL_PATH']
 credentials = boto3.Session().get_credentials()
@@ -28,13 +31,13 @@ DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
                     please don't share false information. """
 
 ops_client = client = OpenSearch(
-        hosts=[{'host': endpoint, 'port': 443}],
-        http_auth=awsauth,
-        use_ssl=True,
-        verify_certs=True,
-        connection_class=RequestsHttpConnection,
-        timeout=300
-    )
+    hosts=[{'host': endpoint, 'port': 443}],
+    http_auth=awsauth,
+    use_ssl=True,
+    verify_certs=True,
+    connection_class=RequestsHttpConnection,
+    timeout=300
+)
 
 bedrock_client = boto3.client('bedrock-runtime')
 
@@ -49,7 +52,8 @@ def query_data(event):
         behaviour = event['queryStringParameters']['behaviour']
         prompt = DEFAULT_PROMPT
         if behaviour in ['english', 'hindi', 'thai', 'spanish', 'bengali']:
-            prompt = DEFAULT_PROMPT + f'. You will always reply in {behaviour} language only.'
+            prompt = DEFAULT_PROMPT + \
+                f'. You will always reply in {behaviour} language only.'
         elif behaviour == 'sentiment':
             prompt = DEFAULT_PROMPT + '. You will identify the sentiment of the below context.'
         elif behaviour == 'legal':
@@ -62,18 +66,26 @@ def query_data(event):
             prompt = DEFAULT_PROMPT + '. You will identify PII data from the below given context'
         else:
             prompt = DEFAULT_PROMPT
-    
-    # query = input("What are you looking for? ") 
-    embedded_search = embed_model_st.encode(query)
+    try:
+        # Get the query embedding from amazon-titan-embed model
+        response = bedrock_client.invoke_model(
+            body=json.dumps({"inputText": query}),
+            modelId=model_id,
+            accept='application/json',
+            contentType='application/json'
+        )
+        result = json.loads(response['body'].read())
+        embedded_search = result.get('embedding')
+    except Exception as e:
+        return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
+
     vector_query = {
-        "size": 4,
+        "size": 10,
         "query": {"knn": {"embedding": {"vector": embedded_search, "k": 2}}},
         "_source": False,
         "fields": ["text", "doc_type"]
     }
-    # Modify the Query here to answer only based on provided context
-    query = query + ANSWER_BASED_ON_PROVIDED_CONTEXT
-    content=None
+    content = None
     print('Search for context from Opensearch serverless vector collections')
     try:
         response = ops_client.search(body=vector_query, index=INDEX_NAME)
@@ -81,72 +93,86 @@ def query_data(event):
         for data in response["hits"]["hits"]:
             if content is None:
                 content = data['fields']['text'][0]
-            else: 
+            else:
                 content = content + ' ' + data['fields']['text'][0]
         print(f'content -> {content}')
     except Exception as e:
         print('Vector Index does not exist. Please index some documents')
-    
+
     if content is None:
         print('Set a default context')
-        content=" "
-    
+        content = " "
+
     try:
-        if  'llama' in LLM_MODEL_ID:
-            print(f' Pass content to Llama2 -> {content}')
-            dialog = [
-                {"role": "system", "content": DEFAULT_SYSTEM_PROMPT + f""" 
-                    {content}
-                    """},
-                {"role": "user", "content": f"{query} ? "}
-            ]
-            payload = {
-                "inputs": [dialog], 
-                "parameters": {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "return_full_text": False}
-            }
-            response_list = []
-            result = query_endpoint(payload)[0]
-            resp = {
-                result['generation']['role'].capitalize(): result['generation']['content']
-            }
-            response_list.append(resp)
-            print(f'Response from Llama2 llm : {response_list}')
-            return success_response(response_list)
-        elif 'falcon' in LLM_MODEL_ID:
-            print(f' Pass content to Falcon -> {content}')
-            query = query
-            template = """ {behaviour}
+        response = None
+        if event['queryStringParameters'] and 'model' in event['queryStringParameters']:
+            model_id = event['queryStringParameters']['model_id']
 
-                  Context:
-                      {context}
+            if model_id in ['amazon.titan-text-lite-v1',
+                            'anthropic.claude-v2',
+                            'anthropic.claude-v1',
+                            'anthropic.claude-instant-v1',
+                            'cohere.command-text-v14',
+                            'amazon.titan-text-express-v1',
+                            'ai21.j2-ultra-v1',
+                            'ai21.j2-mid-v1']:
+                prompt_template = prepare_prompt_template(model_id, prompt, query)
+                print(prompt_template)
+                response = query_bedrock_models(model_id, prompt_template)
+            else:
+                print('Defaulting to Amazon Titan(titan-text-lite-v1) model, Model_id not passed.')
+                prompt_template = prepare_prompt_template('amazon.titan-text-lite-v1', prompt, query)
+                print(prompt_template)
+                response = query_bedrock_models('amazon.titan-text-lite-v1', prompt_template)
 
-                 {query}""".strip()
-            template = template.replace('{behaviour}', DEFAULT_FALCON_PROMPT)
-            template = template.replace('{context}', content)
-            template = template.replace('{query}', query)
-            params = {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "top_k": top_k, "num_return_sequences": 1}
-            response_list = []
-            result = query_falcon(json.dumps({"inputs": template , "parameters": params}).encode("utf-8"))
-            resp = {
-                "Assistant" : result
-            }
-            response_list.append(resp)
-            print(f'Response from Falcon llm : {response_list}')
-            return success_response(response_list)
+        return success_response(response)
+
     except Exception as e:
         print(f'Exception {e}')
         return failure_response(f'Exception occured when querying LLM: {e}')
- 
+
+
+def query_bedrock_models(model, prompt):
+    response = bedrock_client.invoke_model(
+        body=json.dumps({"inputText": prompt}),
+        modelId=model,
+        accept='application/json',
+        contentType='application/json'
+    )
+    return json.loads(response['body'].read())
+
+
+def prepare_prompt_template(model, prompt, query):
+    prompt_template = {"inputText": f"""{prompt}
+                            {query}
+                            """}
+    if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
+        prompt_template = {"prompt": f"""Human:{prompt}
+                      Assistant:"""}
+    elif model_id == 'cohere.command-text-v14':
+        prompt_template = {"prompt": f"""{prompt}
+                              {query}"""}
+    elif model_id == 'amazon.titan-text-express-v1':
+        prompt_template = {"inputText": f"""{prompt}
+                            {query}
+                            """}
+    elif model_id in ['ai21.j2-ultra-v1', 'ai21.j2-mid-v1']:
+        prompt_template = {
+            "prompt": f"""{prompt}
+                            {query}
+                            """
+        }
+    return prompt_template
+
 
 def handler(event, context):
-    LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
+    LOG.info(
+        "---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
 
     api_map = {
-        'POST/rag/index-sample-data': lambda x: index_sample_data(x),
-        'POST/rag/index-documents': lambda x: index_documents(x),
-        'DELETE/rag/index-documents': lambda x: delete_index(x)
+        'GET/rag/query': lambda x: query_data(x)
     }
-    
+
     http_method = event['httpMethod'] if 'httpMethod' in event else ''
     api_path = http_method + event['resource']
     try:
@@ -163,11 +189,14 @@ def handler(event, context):
 
 def failure_response(error_message):
     return {"success": False, "errorMessage": error_message, "statusCode": "400"}
-   
+
+
 def success_response(result):
     return {"success": True, "result": result, "statusCode": "200"}
 
 # Hack
+
+
 class CustomJsonEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Decimal):
@@ -178,6 +207,8 @@ class CustomJsonEncoder(json.JSONEncoder):
         return super(CustomJsonEncoder, self).default(obj)
 
 # JSON REST output builder method
+
+
 def respond(err, res=None):
     return {
         'statusCode': '400' if err else res['statusCode'],
