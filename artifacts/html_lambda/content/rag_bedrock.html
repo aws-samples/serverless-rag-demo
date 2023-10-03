@@ -333,21 +333,17 @@
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
-
+        query_str = " " + $('#query').val()
+        data = '{"query": "'+query_str + '",  "behaviour": "'+ assistant_type + '", "model_id": "'+ model_id + '" ,"action": "bedrock"}'
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
           if (ws == null) {
             ws = new WebSocket(awsData.websocketUrl);
+          } else {
+            ws.send(data);
           }
-          query_str = $('#query').val()
+          
           ws.onopen = function() {
-
-            data = `{
-              "query": {{query_str}},
-              "behaviour": {{assistant_type}},
-              "model_id": {{model_id}},
-              "action": "bedrock"
-            }`
             ws.send(data);
           }
         }

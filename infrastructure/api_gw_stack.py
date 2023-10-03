@@ -163,7 +163,7 @@ class ApiGw_Stack(Stack):
             )
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
-            bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url)
+            bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
 
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             bedrock_indexing_lambda_function, proxy=True, allow_test_invoke=True)

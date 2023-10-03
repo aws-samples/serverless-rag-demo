@@ -144,14 +144,37 @@ def query_bedrock_models(model, prompt, connect_id):
         accept='application/json',
         contentType='application/json'
     )
+    print('EventStream')
+    print(dir(response['body']))
 
-    for evt in json.loads(response['body'].read()):
+    for evt in response['body']:
         print('---- evt ----')
         print(dir(evt))
-        chunk = evt['chunk']['bytes']
-        print(f'chunk {bytes}')
-        result = parse_response(chunk)
-        websocket_send(connect_id, { "text": result } )
+        if 'chunk' in evt:
+            chunk = evt['chunk']['bytes']
+            print(f'Chunk JSON {json.loads(str(chunk, "UTF-8"))}' )
+            chunk_str = json.loads(str(chunk, 'UTF-8'))['completion']
+            print(f'chunk string {chunk_str}')
+            #result = parse_response(model, chunk_str)
+            websocket_send(connect_id, { "text": chunk_str } )
+            #websocket_send(connect_id, { "text": result } )
+        elif 'internalServerException' in evt:
+            result = evt['internalServerException']['message']
+            websocket_send(connect_id, { "text": result } )
+            break
+        elif 'modelStreamErrorException' in evt:
+            result = evt['modelStreamErrorException']['message']
+            websocket_send(connect_id, { "text": result } )
+            break
+        elif 'throttlingException' in evt:
+            result = evt['throttlingException']['message']
+            websocket_send(connect_id, { "text": result } )
+            break
+        elif 'validationException' in evt:
+            result = evt['validationException']['message']
+            websocket_send(connect_id, { "text": result } )
+            break
+        
         # call websocket here
 
 def parse_response(model_id, response): 
@@ -201,10 +224,12 @@ def handler(event, context):
     
     if routeKey != '$connect': 
         if 'body' in event:
-            query = event['body']['query']
-            behaviour = event['body']['behaviour']
-            model_id = event['body']['model_id']
+            input_to_llm = json.loads(event['body'])
+            query = input_to_llm['query']
+            behaviour = input_to_llm['behaviour']
+            model_id = input_to_llm['model_id']
             query_data(query, behaviour, model_id, connect_id)
+    return {'statusCode': '200', 'body': 'Bedrock says hello' }
 
     
 
@@ -219,6 +244,9 @@ def success_response(connect_id, result):
     websocket_send(connect_id, success_msg)
 
 def websocket_send(connect_id, message):
+    global websocket_client
+    global wss_url
+    print(f'WSS URL {wss_url}, connect_id {connect_id}')
     response = websocket_client.post_to_connection(
                 Data=str.encode(json.dumps(message, indent=4)),
                 ConnectionId=connect_id
