@@ -203,7 +203,17 @@ class ApiGw_Stack(Stack):
                                             api_id=websocket_api.ref, route_key="$default",
                                             authorization_type="NONE",
                                             target="integrations/" + websocket_integrations.ref)
+            websocket_bedrock_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="bedrock",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            
+            
             deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
+            deployment.add_dependency(websocket_connect_route)
+            deployment.add_dependency(websocket_disconnect_route)
+            deployment.add_dependency(websocket_bedrock_route)
+            deployment.add_dependency(websocket_default_route)
             
             websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bedrock-streaming-stage-{env_name}', 
                                            api_id=websocket_api.ref,
@@ -211,8 +221,6 @@ class ApiGw_Stack(Stack):
                                            deployment_id= deployment.ref,
                                            stage_name= env_name) 
             
-            
-
         else:
             print('-- Deployment for Llama2/Falcon GPU hosted models ---')
             lambda_function = _lambda.DockerImageFunction(
