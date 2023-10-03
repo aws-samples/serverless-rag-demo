@@ -10,7 +10,7 @@ from aws_cdk import (
 
 import aws_cdk as _cdk
 import os
-from constructs import Construct
+from constructs import Construct, DependencyGroup
 
 
 class ApiGw_Stack(Stack):
@@ -163,6 +163,7 @@ class ApiGw_Stack(Stack):
                                             authorization_type="NONE",
                                             target="integrations/" + websocket_integrations.ref)
             
+            
             websocket_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-disconnect-route-{env_name}',
                                             api_id=websocket_api.ref, route_key="$disconnect",
                                             authorization_type="NONE",
@@ -173,9 +174,8 @@ class ApiGw_Stack(Stack):
                                             target="integrations/" + websocket_integrations.ref)
             
             deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
-            deployment.add_dependency(websocket_connect_route)
-            deployment.add_dependency(websocket_disconnect_route)
-            deployment.add_dependency(websocket_default_route)
+            
+            DependencyGroup(websocket_connect_route, websocket_disconnect_route, websocket_default_route, deployment)
             websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bedrock-streaming-stage-{env_name}', 
                                            api_id=websocket_api.ref,
                                            auto_deploy=True,
