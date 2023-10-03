@@ -1,0 +1,21 @@
+The mission objectives of Chandrayaan-3 are:
+
+To demonstrate Safe and Soft Landing on Lunar Surface
+To demonstrate Rover roving on the moon and
+To conduct in-situ scientific experiments.
+
+To achieve the mission objectives, several advanced technologies are present in Lander such as,
+
+Altimeters: Laser & RF based Altimeters
+Velocimeters: Laser Doppler Velocimeter & Lander Horizontal Velocity Camera
+Inertial Measurement: Laser Gyro based Inertial referencing and Accelerometer package
+Propulsion System: 800N Throttleable Liquid Engines, 58N attitude thrusters & Throttleable Engine Control Electronics
+Navigation, Guidance & Control (NGC): Powered Descent Trajectory design and associate software elements
+Hazard Detection and Avoidance: Lander Hazard Detection & Avoidance Camera and Processing Algorithm
+Landing Leg Mechanism.
+
+To demonstrate the above said advanced technologies in earth condition, several Lander special tests have been planned and carried out successfully viz.
+
+Integrated Cold Test - For the demonstration of Integrated Sensors & Navigation performance test using helicopter as test platform
+Integrated Hot test – For the demonstration of closed loop performance test with sensors, actuators and NGC using Tower crane as test platform
+Lander Leg mechanism performance test on a lunar simulant test bed simulating different touch down conditions.
