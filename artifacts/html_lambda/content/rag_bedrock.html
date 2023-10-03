@@ -117,6 +117,12 @@
   
         </tbody>
       </table>
+
+      <div class="d-flex justify-content-center" id="index-spinner">
+        <div class="spinner-border" role="status">
+          <span class="sr-only">Loading...</span>
+        </div>
+      </div>
     </div>
     
     <div class="tab-pane fade" id="query-div" role="tabpanel" aria-labelledby="query-tab">
@@ -204,6 +210,7 @@
       // do stuff
       $(document).ready(function () {
         $('#custom-spinner').css('visibility','hidden');
+        $('#index-spinner').css('visibility','hidden');
         document.getElementById("model-name").innerHTML=awsData.htmlheader + vector_text
         $("button.assistant").prop('disabled', true)
         $('[data-toggle="tooltip"]').tooltip();
@@ -221,7 +228,7 @@
 
       function indexDocuments() {
         
-        $('#custom-spinner').css('visibility','visible');
+        $('#index-spinner').css('visibility','visible');
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
@@ -233,14 +240,14 @@
           dataType: 'json',
           data: JSON.stringify({ "text": $('#index_txt').val() }),
           success: function (result) {
-            $('#custom-spinner').css('visibility','hidden');
+            $('#index-spinner').css('visibility','hidden');
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
             alertbuilder(result['result'])
           },
           error: function (err) {
-            $('#custom-spinner').css('visibility','hidden');
+            $('#index-spinner').css('visibility','hidden');
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
@@ -257,7 +264,7 @@
       }
 
       function reset() {
-        $('#custom-spinner').css('visibility','visible');
+        $('#index-spinner').css('visibility','visible');
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
@@ -269,7 +276,7 @@
           dataType: 'json',
           success: function (result) {
             $('#response').val(result['result'])
-            $('#custom-spinner').css('visibility','hidden');
+            $('#index-spinner').css('visibility','hidden');
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
@@ -277,7 +284,7 @@
             
           },
           error: function (err) {
-            $('#custom-spinner').css('visibility','hidden');
+            $('#index-spinner').css('visibility','hidden');
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
@@ -304,7 +311,7 @@
       }
       
       function indexSampleDocument(type) {
-        $('#custom-spinner').css('visibility','visible');
+        $('#index-spinner').css('visibility','visible');
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
@@ -315,14 +322,14 @@
           dataType: 'json',
           data: JSON.stringify({ "type": type }),
           success: function (result) {
-            $('#custom-spinner').css('visibility','hidden');
+            $('#index-spinner').css('visibility','hidden');
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
             alertbuilder('Indexed Successfully')
           },
           error: function (err) {
-            $('#custom-spinner').css('visibility','hidden');
+            $('#index-spinner').css('visibility','hidden');
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
