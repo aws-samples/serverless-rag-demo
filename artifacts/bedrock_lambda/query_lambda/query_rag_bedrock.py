@@ -60,7 +60,7 @@ def query_data(query, behaviour, model_id, connect_id):
             During the presentation of your case and also while acting before a court, you should act in a dignified manner. You should at all times conduct himself with self-respect. However, whenever there is proper ground for serious complaint against a judicial officer, You have a right and duty to submit your grievance to proper authorities.
             '''
     elif behaviour == 'pii':
-        prompt = 'You will identify PII data from the below given context'
+        prompt = 'Does the below text contain PII data. If so list the type of PII data'
     else:
         prompt = DEFAULT_PROMPT
     
