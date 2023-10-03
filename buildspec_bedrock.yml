@@ -1,0 +1,37 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: 16
+      python: '3.10'
+    commands:
+      - pwd
+      - ls
+      - echo Printing variables  $boto3_bedrock_layer_name $opensearchpy_layer_name $aws4auth_layer_name $account_id $region 
+  build:
+    commands:
+      - git clone https://github.com/aws-samples/serverless-rag-demo.git
+      - ls
+      - cd serverless-rag-demo
+      - git checkout Bedrock
+      - echo Build a Opensearchpy lambda layer to be used by the Amazon Bedrock Querying lambda
+      - mkdir python
+      - python3 -m pip install opensearch-py -t python/
+      - zip -r opensearch_layer.zip python
+      - aws lambda publish-layer-version --layer-name $opensearchpy_layer_name --zip-file fileb://opensearch_layer.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+      - rm -rf python opensearch_layer.zip
+      - echo Build latest Boto3 layer to get Bedrock access
+      - mkdir python
+      - python3 -m pip install boto3 -t python/
+      - zip -r boto3_bedrock.zip python
+      - aws lambda publish-layer-version --layer-name $boto3_bedrock_layer_name --zip-file fileb://boto3_bedrock.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+      - rm -rf python boto3_bedrock.zip
+      - echo Build aws4auth lambda layer
+      - mkdir python
+      - python3 -m pip install requests-aws4auth -t python/
+      - zip -r aws4auth.zip python
+      - aws lambda publish-layer-version --layer-name $aws4auth_layer_name --zip-file fileb://aws4auth.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      

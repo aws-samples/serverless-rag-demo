@@ -4,11 +4,14 @@ from aws_cdk import (
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_ecr as _ecr,
+    aws_apigatewayv2,
+    
+    
 )
 
 import aws_cdk as _cdk
 import os
-from constructs import Construct
+from constructs import Construct, DependencyGroup
 
 
 class ApiGw_Stack(Stack):
@@ -17,18 +20,19 @@ class ApiGw_Stack(Stack):
         env_name = self.node.try_get_context("environment_name")
         current_timestamp = self.node.try_get_context('current_timestamp')
         region=os.getenv('CDK_DEFAULT_REGION')
+        account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
         collection_endpoint = 'random'
-        llm_model_id = 'random'
+        llm_model_id = self.node.try_get_context("llm_model_id")
         html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
-            llm_model_id = self.node.get_context("llm_model_id")
         except Exception as e:
             pass
+
         env_params = self.node.try_get_context(env_name)
-        print(f'Collection_endpoint= {collection_endpoint}.')
-        print(f'LLM_Model_Id= {llm_model_id}')
+        print(f'Collection_endpoint={collection_endpoint}')
+        print(f'LLM_Model_Id={llm_model_id}')
         
         sagemaker_endpoint_name=env_params['sagemaker_endpoint']
         if 'llama-2-7b' in llm_model_id:
@@ -49,6 +53,8 @@ class ApiGw_Stack(Stack):
         elif 'falcon-180b' in llm_model_id:
             sagemaker_endpoint_name=env_params['falcon_180b_sagemaker_endpoint']
             html_header_name = 'Falcon-180B'
+        elif 'Amazon Bedrock' in llm_model_id:
+            html_header_name = 'Amazon Bedrock'
 
 
         
@@ -93,33 +99,148 @@ class ApiGw_Stack(Stack):
                     ]
                 )
 
-        
-        lambda_function = _lambda.DockerImageFunction(
-            self,
-            f"llm_rag_{env_name}",
-            memory_size=1024,
-            timeout=_cdk.Duration.minutes(10),
-            role=custom_lambda_role,
-            function_name=env_params['lambda_function_name'],
-            code=_lambda.DockerImageCode.from_ecr(
-                repository=_ecr.Repository.from_repository_name(
-                    self,
-                    f"lambda_rag_{env_name}",
-                    env_params["ecr_repository_name"],
+        lambda_function = None
+        bedrock_query_lambda_integration = None
+        bedrock_index_lambda_integration = None
+        wss_url=''
+        if llm_model_id == 'Amazon Bedrock':
+            # These are created in buildspec-bedrock.yml file.
+            boto3_bedrock_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'boto3-bedrock-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["boto3_bedrock_layer"]}:1')
+            
+            
+            opensearchpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'opensearchpy-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["opensearchpy_layer"]}:1')
+            
+            aws4auth_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'aws4auth-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["aws4auth_layer"]}:1')
+            
+            print('--- Amazon Bedrock Deployment ---')
+            
+            bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
+                                  function_name=env_params['bedrock_indexing_function_name'],
+                                  code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/index_lambda/')),
+                                  runtime=_lambda.Runtime.PYTHON_3_10,
+                                  handler="index.handler",
+                                  role=custom_lambda_role,
+                                  timeout=_cdk.Duration.seconds(300),
+                                  description="Create embeddings in Amazon Bedrock",
+                                  environment={ 'INDEX_NAME': env_params['index_name'],
+                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                                'REGION': region
+                                  },
+                                  memory_size=2048,
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer])
+            
+            lambda_function = bedrock_indexing_lambda_function
+            bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
+                                  function_name=env_params['bedrock_querying_function_name'],
+                                  code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/query_lambda/')),
+                                  runtime=_lambda.Runtime.PYTHON_3_10,
+                                  handler="query_rag_bedrock.handler",
+                                  role=custom_lambda_role,
+                                  timeout=_cdk.Duration.seconds(300),
+                                  description="Query Models in Amazon Bedrock",
+                                  environment={ 'INDEX_NAME': env_params['index_name'],
+                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                                'REGION': region
+                                  },
+                                  memory_size=2048,
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
+                                )
+            
+            websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
+                                        protocol_type='WEBSOCKET',
+                                        name=f'Bedrock-streaming-{env_name}',
+                                        route_selection_expression='$request.body.action'
+                                        )
+            print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
+            wss_url = websocket_api.attr_api_endpoint
+            bedrock_oss_policy = _iam.PolicyStatement(
+                actions=[
+                    "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles", "execute-api:*" ],
+                resources=["*"],
+            )
+            bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
+            bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
+            bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
+
+            bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
+            bedrock_indexing_lambda_function, proxy=True, allow_test_invoke=True)
+
+            apigw_role = _iam.Role(self, f'bedrock-lambda-invoke-{env_name}', assumed_by=_iam.ServicePrincipal('apigateway.amazonaws.com'))
+
+            apigw_role.add_to_policy(_iam.PolicyStatement(effect=_iam.Effect.ALLOW,
+                                actions=["lambda:InvokeFunction"],
+                                resources=[bedrock_querying_lambda_function.function_arn], 
+                                ))
+            
+            websocket_integrations = _cdk.aws_apigatewayv2.CfnIntegration(self, f'bedrock-websocket-integration-{env_name}',
+                                                api_id=websocket_api.ref,
+                                                integration_type="AWS_PROXY",
+                                                integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_querying_lambda_function.function_arn + "/invocations",
+                                                credentials_arn=apigw_role.role_arn
+                                                )
+            
+            websocket_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-connect-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$connect",
+                                            authorization_type="NONE",
+                                            target="integrations/"+ _cdk.aws_apigatewayv2.CfnIntegration(self, f"bedrock-socket-conn-integration-{env_name}",
+                                                                                                         api_id= websocket_api.ref,
+                                                                                                         integration_type="AWS_PROXY",
+                                                                                                         integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_querying_lambda_function.function_arn + "/invocations",
+                                                                                                         credentials_arn= apigw_role.role_arn).ref
+            )
+            dependencygrp = DependencyGroup()
+            dependencygrp.add(websocket_connect_route)
+            
+            websocket_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-disconnect-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$disconnect",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            
+            websocket_default_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-default-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$default",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
+            
+            websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bedrock-streaming-stage-{env_name}', 
+                                           api_id=websocket_api.ref,
+                                           auto_deploy=True,
+                                           deployment_id= deployment.ref,
+                                           stage_name= env_name) 
+            
+            
+
+        else:
+            print('-- Deployment for Llama2/Falcon GPU hosted models ---')
+            lambda_function = _lambda.DockerImageFunction(
+                self,
+                f"llm_rag_{env_name}",
+                memory_size=1024,
+                timeout=_cdk.Duration.minutes(10),
+                role=custom_lambda_role,
+                function_name=env_params['lambda_function_name'],
+                code=_lambda.DockerImageCode.from_ecr(
+                    repository=_ecr.Repository.from_repository_name(
+                        self,
+                        f"lambda_rag_{env_name}",
+                        env_params["ecr_repository_name"],
+                    ),
+                    tag_or_digest=str(current_timestamp)
                 ),
-                tag_or_digest=str(current_timestamp)
-            ),
-            environment={ 'INDEX_NAME': env_params['index_name'],
-                          'OPENSEARCH_ENDPOINT': collection_endpoint,
-                          'MODEL_PATH': env_params['model_path'],
-                          'REGION': region,
-                          'MAX_TOKENS': "2000",
-                          'TEMPERATURE': "0.9",
-                          'TOP_P': "0.6",
-                          'SAGEMAKER_ENDPOINT': sagemaker_endpoint_name,
-                          'LLM_MODEL_ID': llm_model_id
+                environment={   'INDEX_NAME': env_params['index_name'],
+                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                'MODEL_PATH': env_params['model_path'],
+                                'REGION': region,
+                                'MAX_TOKENS': "2000",
+                                'TEMPERATURE': "0.9",
+                                'TOP_P': "0.6",
+                                'SAGEMAKER_ENDPOINT': sagemaker_endpoint_name,
+                                'LLM_MODEL_ID': llm_model_id
                         }
-        )
+            )
 
 
         html_generation_function = _cdk.aws_lambda.Function(self, f'llm_html_function_{env_name}',
@@ -129,7 +250,10 @@ class ApiGw_Stack(Stack):
                                             handler='llm_html_generator.handler',
                                             timeout=_cdk.Duration.minutes(1),
                                             code=_cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/html_lambda/')),
-                                            environment={ 'ENVIRONMENT': env_name, 'LLM_MODEL_NAME': html_header_name})        
+                                            environment={ 'ENVIRONMENT': env_name,
+                                                          'LLM_MODEL_NAME': html_header_name,
+                                                          'WSS_URL': wss_url + '/' + env_name
+                                                        })        
     
         oss_policy = _iam.PolicyStatement(
             actions=[
@@ -137,10 +261,13 @@ class ApiGw_Stack(Stack):
                 "sagemaker:*",
                 "iam:ListUsers",
                 "iam:ListRoles",
+                "apigateway:*"
             ],
             resources=["*"],
         )
+
         lambda_function.add_to_role_policy(oss_policy)
+        
 
         lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             lambda_function, proxy=True, allow_test_invoke=True
@@ -155,33 +282,58 @@ class ApiGw_Stack(Stack):
                                 method_responses=method_responses)
 
         query_api = rag_llm_api.add_resource("query")
-        query_api.add_method(
-            "GET",
-            lambda_integration,
-            operation_name="Query LLM with enhanced Prompt",
-            method_responses=method_responses,
-        )
         index_docs_api = rag_llm_api.add_resource("index-documents")
-        index_docs_api.add_method(
-            "POST",
-            lambda_integration,
-            operation_name="index document",
-            method_responses=method_responses,
-        )
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
-        index_sample_data_api.add_method(
-            "POST",
-            lambda_integration,
-            operation_name="index sample document",
-            method_responses=method_responses,
-        )
+        
+        if llm_model_id == 'Amazon Bedrock':
+            index_docs_api.add_method(
+                "POST",
+                bedrock_index_lambda_integration,
+                operation_name="index document",
+                method_responses=method_responses,
+            )
+            index_docs_api.add_method(
+                "DELETE",
+                bedrock_index_lambda_integration,
+                operation_name="delete document index",
+                method_responses=method_responses,
+            )
+        
+            index_sample_data_api.add_method(
+                "POST",
+                bedrock_index_lambda_integration,
+                operation_name="index sample document",
+                method_responses=method_responses,
+            )
+        else:
+            query_api.add_method(
+                "GET",
+                lambda_integration,
+                operation_name="Query LLM with Augmented Enriched Prompt",
+                method_responses=method_responses,
+            )
 
-        index_docs_api.add_method(
-            "DELETE",
-            lambda_integration,
-            operation_name="delete document index",
-            method_responses=method_responses,
-        )
+            index_docs_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="index document",
+                method_responses=method_responses,
+            )
+
+            index_docs_api.add_method(
+                "DELETE",
+                lambda_integration,
+                operation_name="delete document index",
+                method_responses=method_responses,
+            )
+        
+            index_sample_data_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="index sample document",
+                method_responses=method_responses,
+            )
+        
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)
