@@ -208,6 +208,7 @@
       });
 
       var model_id = null;
+      var ws = null;
       var awsData = {
           apiGatewayUrl: '<apiGatewayUrl>',
           staticPageUrl: '<apiGatewayUrl>',
@@ -332,28 +333,35 @@
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
-        $.ajax({
-          url: awsData.apiGatewayUrl + '/query?query=' + $('#query').val() + '&behaviour=' + assistant_type + '&model_id=' + model_id,
-          contentType: "text/json",
-          dataType: 'json',
-          success: function (result) {
-            $('#custom-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
-            $('#query-response').val(result['result'])
-          },
-          error: function (err) {
-            $('#custom-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
-            console.log('Error on making API gateway call to retrieve Dashboard list..');
-            console.log(err.responseText);
-            err_msg = err.responseText + " . Have you indexed documents ?"
-            $('#query-response').html(err_msg.replaceAll('"', ''));
+
+        if ("WebSocket" in window) {
+          console.log("WebSocket is supported by your Browser!");
+          if (ws == null) {
+            ws = new WebSocket(awsData.websocketUrl);
           }
-        });
+          query_str = $('#query').val()
+          ws.onopen = function() {
+
+            data = `{
+              "query": {{query_str}},
+              "behaviour": {{assistant_type}},
+              "model_id": {{model_id}},
+              "action": "bedrock"
+            }`
+            ws.send(data);
+          }
+        }
+        
+        ws.onmessage = function (evt) { 
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            var received_msg = evt.data;
+            console.log("streaming message is received.. " + received_msg);
+            document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + `&#13;&#10;` + received_msg 
+            
+           }
 
       }
 

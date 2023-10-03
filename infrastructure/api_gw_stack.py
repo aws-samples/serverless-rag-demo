@@ -238,7 +238,7 @@ class ApiGw_Stack(Stack):
                                             code=_cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/html_lambda/')),
                                             environment={ 'ENVIRONMENT': env_name,
                                                           'LLM_MODEL_NAME': html_header_name,
-                                                          'WSS_URL': wss_url
+                                                          'WSS_URL': wss_url + '/' + env_name
                                                         })        
     
         oss_policy = _iam.PolicyStatement(
