@@ -75,7 +75,8 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 
 
 ### Architecture
-![architecture](https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9d0503eb-661f-4cb5-85e3-92a9a6458161)
+![architecture](https://github.com/aws-samples/serverless-rag-demo/assets/25897220/e2b9e3ac-b7b9-479d-b642-e2e1d5ce3837)
+
 
 ### Deploying the Solution to your account with AWS Cloudshell
 
