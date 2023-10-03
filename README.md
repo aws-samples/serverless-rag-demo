@@ -17,6 +17,12 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
  * New Functionality (PII/Sentiment/Translations) added on the UI
  <img width="1437" alt="Screenshot 2023-10-03 at 1 37 53 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d90c0624-7a4b-4091-9ece-25a29f7f869f">
 
+#### Bedrock Video
+
+  https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d2ed2066-60dd-40d1-8d9d-abd010d0729d
+
+
+
 
 #### (14-Sept-2023): Support for new LLM's
  * Llama2-7B (Existing G5.2xlarge)
