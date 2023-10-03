@@ -140,9 +140,9 @@
           <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
           <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li>
           <!-- Amazon -->
-          <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li>
+          <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li> -->
           <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li>
+          <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
           <!-- Anthropic -->
           <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v1')">Anthropic	Claude V1</a></li>
           <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic	Claude V2</a></li>
@@ -152,6 +152,11 @@
         </ul>
 
         <span id="set_model"></span>
+        <div class="d-flex justify-content-center" id="custom-spinner">
+          <div class="spinner-border" role="status">
+            <span class="sr-only">Loading...</span>
+          </div>
+        </div>
 
       </div>
 
@@ -186,13 +191,6 @@
 
 
   <div id="err"></div>
-
-
-  <div class="d-flex justify-content-center" id="custom-spinner">
-    <div class="spinner-border" role="status">
-      <span class="sr-only">Loading...</span>
-    </div>
-  </div>
 
   <div id="sse"></div>
   </div>
@@ -338,11 +336,11 @@
           contentType: "text/json",
           dataType: 'json',
           success: function (result) {
-            $('#query-response').val(result['result'][0]['Assistant'])
             $('#custom-spinner').css('visibility','hidden');
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
+            $('#query-response').val(result['result'])
           },
           error: function (err) {
             $('#custom-spinner').css('visibility','hidden');

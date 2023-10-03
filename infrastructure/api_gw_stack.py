@@ -4,6 +4,8 @@ from aws_cdk import (
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_ecr as _ecr,
+    aws_apigatewayv2
+    
 )
 
 import aws_cdk as _cdk
@@ -99,6 +101,7 @@ class ApiGw_Stack(Stack):
         lambda_function = None
         bedrock_query_lambda_integration = None
         bedrock_index_lambda_integration = None
+        wss_url=''
         if llm_model_id == 'Amazon Bedrock':
             # These are created in buildspec-bedrock.yml file.
             boto3_bedrock_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'boto3-bedrock-layer-{env_name}',
@@ -125,6 +128,7 @@ class ApiGw_Stack(Stack):
                                                 'OPENSEARCH_ENDPOINT': collection_endpoint,
                                                 'REGION': region
                                   },
+                                  memory_size=2048,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer])
             
             lambda_function = bedrock_indexing_lambda_function
@@ -140,8 +144,33 @@ class ApiGw_Stack(Stack):
                                                 'OPENSEARCH_ENDPOINT': collection_endpoint,
                                                 'REGION': region
                                   },
+                                  memory_size=2048,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
                                 )
+            
+            websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
+                                        protocol_type='WEBSOCKET',
+                                        name=f'Bedrock-streaming-{env_name}',
+                                        route_selection_expression='$request.body.action'
+                                        )
+            websocket_integrations = _cdk.aws_apigatewayv2.CfnIntegration(self, f'bedrock-websocket-integration-{env_name}',
+                                                api_id=websocket_api.ref,
+                                                integration_type="AWS_PROXY",
+                                                integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_querying_lambda_function.function_arn + "/invocations",
+                                                )
+            websocket_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-connect-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$connect",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
+            deployment.add_dependency(websocket_connect_route)
+            websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bedrock-streaming-stage-{env_name}', 
+                                           api_id=websocket_api.ref,
+                                           auto_deploy=True,
+                                           deployment_id= deployment.ref,
+                                           stage_name= env_name) 
+            print(f'bedrock streaming wss url {websocket_api.attr_api_endpoint}')
+            wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
                     "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles" ],
@@ -194,7 +223,10 @@ class ApiGw_Stack(Stack):
                                             handler='llm_html_generator.handler',
                                             timeout=_cdk.Duration.minutes(1),
                                             code=_cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/html_lambda/')),
-                                            environment={ 'ENVIRONMENT': env_name, 'LLM_MODEL_NAME': html_header_name})        
+                                            environment={ 'ENVIRONMENT': env_name,
+                                                          'LLM_MODEL_NAME': html_header_name,
+                                                          'WSS_URL': wss_url
+                                                        })        
     
         oss_policy = _iam.PolicyStatement(
             actions=[

@@ -67,48 +67,55 @@ def query_data(event):
             prompt = DEFAULT_PROMPT + '. You will identify PII data from the below given context'
         else:
             prompt = DEFAULT_PROMPT
-    try:
-        # Get the query embedding from amazon-titan-embed model
-        response = bedrock_client.invoke_model(
-            body=json.dumps({"inputText": query}),
-            modelId=embed_model_id,
-            accept='application/json',
-            contentType='application/json'
-        )
-        result = json.loads(response['body'].read())
-        embedded_search = result.get('embedding')
-    except Exception as e:
-        return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
+    context = None
+    if query is not None and len(query.split()) > 0:
+        try:
+            # Get the query embedding from amazon-titan-embed model
+            response = bedrock_client.invoke_model(
+                body=json.dumps({"inputText": query}),
+                modelId=embed_model_id,
+                accept='application/json',
+                contentType='application/json'
+            )
+            result = json.loads(response['body'].read())
+            embedded_search = result.get('embedding')
 
-    vector_query = {
-        "size": 10,
-        "query": {"knn": {"embedding": {"vector": embedded_search, "k": 2}}},
-        "_source": False,
-        "fields": ["text", "doc_type"]
-    }
-    content = None
-    print('Search for context from Opensearch serverless vector collections')
-    try:
-        response = ops_client.search(body=vector_query, index=INDEX_NAME)
-        print(response["hits"]["hits"])
-        for data in response["hits"]["hits"]:
-            if content is None:
-                content = data['fields']['text'][0]
-            else:
-                content = content + ' ' + data['fields']['text'][0]
-        print(f'content -> {content}')
-    except Exception as e:
-        print('Vector Index does not exist. Please index some documents')
+            vector_query = {
+                "size": 10,
+                "query": {"knn": {"embedding": {"vector": embedded_search, "k": 2}}},
+                "_source": False,
+                "fields": ["text", "doc_type"]
+            }
+            
+            print('Search for context from Opensearch serverless vector collections')
+            try:
+                response = ops_client.search(body=vector_query, index=INDEX_NAME)
+                #print(response["hits"]["hits"])
+                for data in response["hits"]["hits"]:
+                    if context is None:
+                        context = data['fields']['text'][0]
+                    else:
+                        context = context + ' ' + data['fields']['text'][0]
+                query = query + '. Answer based on the above context only'
+                #print(f'context -> {context}')
+            except Exception as e:
+                print('Vector Index does not exist. Please index some documents')
 
-    if content is None:
+        except Exception as e:
+            return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
+
+    else:
+        query = ''
+    
+    if context is None:
         print('Set a default context')
-        content = " "
+        context = " "
 
     try:
         response = None
-        if event['queryStringParameters'] and 'model' in event['queryStringParameters']:
+        if event['queryStringParameters'] and 'model_id' in event['queryStringParameters']:
             model_id = event['queryStringParameters']['model_id']
-
+            print(f'LLM Model ID -> {model_id}')
             if model_id in ['amazon.titan-text-lite-v1',
                             'amazon.titan-text-express-v1',
                             'amazon.titan-text-agile-v1',
@@ -119,15 +126,16 @@ def query_data(event):
                             'amazon.titan-text-express-v1',
                             'ai21.j2-ultra-v1',
                             'ai21.j2-mid-v1']:
-                prompt_template = prepare_prompt_template(model_id, prompt, query)
+                context = f'\n\ncontext: {context} \n\n query: {query}'
+                prompt_template = prepare_prompt_template(model_id, prompt, context)
                 print(prompt_template)
-                response = query_bedrock_models(model_id, prompt_template)
+                response = parse_response(model_id, query_bedrock_models(model_id, prompt_template))
             else:
                 print('Defaulting to Amazon Titan(titan-text-lite-v1) model, Model_id not passed.')
                 prompt_template = prepare_prompt_template('amazon.titan-text-lite-v1', prompt, query)
                 print(prompt_template)
-                response = query_bedrock_models('amazon.titan-text-lite-v1', prompt_template)
-
+                response = parse_response(model_id, query_bedrock_models('amazon.titan-text-lite-v1', prompt_template))
+                
         return success_response(response)
 
     except Exception as e:
@@ -137,31 +145,45 @@ def query_data(event):
 
 def query_bedrock_models(model, prompt):
     response = bedrock_client.invoke_model(
-        body=json.dumps({"inputText": prompt}),
+        body=json.dumps(prompt),
         modelId=model,
         accept='application/json',
         contentType='application/json'
     )
     return json.loads(response['body'].read())
 
-
-def prepare_prompt_template(model, prompt, query):
-    prompt_template = {"inputText": f"""{prompt}
-                            {query}
-                            """}
+def parse_response(model_id, response): 
+    print(f'parse_response {response}')
+    result = ''
     if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
-        prompt_template = {"prompt": f"""Human:{prompt}
-                      Assistant:"""}
+        result = response['completion']
     elif model_id == 'cohere.command-text-v14':
-        prompt_template = {"prompt": f"""{prompt}
+        text = ''
+        for token in response['generations']:
+            text = text + token['text']
+        result = text
+    elif model_id == 'amazon.titan-text-express-v1':
+        #TODO set the response for this model
+        result = response
+    elif model_id in ['ai21.j2-ultra-v1', 'ai21.j2-mid-v1']:
+        result = response
+    print('parse_response_final_result' + result)
+    return result
+
+def prepare_prompt_template(model_id, prompt, query):
+    prompt_template = {"inputText": f"""{prompt}\n{query}"""}
+    if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
+        prompt_template = {"prompt":f"Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900}
+    elif model_id == 'cohere.command-text-v14':
+        prompt_template = {"prompt": f"""{prompt}\n
                               {query}"""}
     elif model_id == 'amazon.titan-text-express-v1':
-        prompt_template = {"inputText": f"""{prompt}
+        prompt_template = {"inputText": f"""{prompt}\n
                             {query}
                             """}
     elif model_id in ['ai21.j2-ultra-v1', 'ai21.j2-mid-v1']:
         prompt_template = {
-            "prompt": f"""{prompt}
+            "prompt": f"""{prompt}\n
                             {query}
                             """
         }
@@ -196,8 +218,6 @@ def failure_response(error_message):
 
 def success_response(result):
     return {"success": True, "result": result, "statusCode": "200"}
-
-# Hack
 
 
 class CustomJsonEncoder(json.JSONEncoder):
