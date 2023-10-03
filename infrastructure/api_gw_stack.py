@@ -106,14 +106,14 @@ class ApiGw_Stack(Stack):
         if llm_model_id == 'Amazon Bedrock':
             # These are created in buildspec-bedrock.yml file.
             boto3_bedrock_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'boto3-bedrock-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["boto3_bedrock_layer"]}:1')
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["boto3_bedrock_layer"]}')
             
             
             opensearchpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'opensearchpy-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["opensearchpy_layer"]}:1')
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["opensearchpy_layer"]}')
             
             aws4auth_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'aws4auth-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["aws4auth_layer"]}:1')
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["aws4auth_layer"]}')
             
             print('--- Amazon Bedrock Deployment ---')
             
