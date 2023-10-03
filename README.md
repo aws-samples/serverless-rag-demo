@@ -19,7 +19,9 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 #### Bedrock Video
 
-  https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d2ed2066-60dd-40d1-8d9d-abd010d0729d
+ https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0127f2eb-2375-4433-85e3-2bb4ad7729c6
+
+
 
 
 
