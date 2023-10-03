@@ -158,7 +158,7 @@ class ApiGw_Stack(Stack):
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
-                    "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles" ],
+                    "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles", "execute-api:*" ],
                 resources=["*"],
             )
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
@@ -261,6 +261,7 @@ class ApiGw_Stack(Stack):
                 "sagemaker:*",
                 "iam:ListUsers",
                 "iam:ListRoles",
+                "apigateway:*"
             ],
             resources=["*"],
         )

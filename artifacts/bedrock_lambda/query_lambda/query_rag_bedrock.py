@@ -49,10 +49,10 @@ def query_data(query, behaviour, model_id, connect_id):
     global embed_model_id
     global bedrock_client
     prompt = DEFAULT_PROMPT
-    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'bengali']:
+    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'bengali', 'portuguese', 'mandarin', 'tamil']:
         prompt = f'{DEFAULT_PROMPT}. You will always reply in {behaviour} language only.'
     elif behaviour == 'sentiment':
-        prompt = DEFAULT_PROMPT + '. You will identify the sentiment of the below context.'
+        prompt =  '. You will identify the sentiment of the below context.'
     elif behaviour == 'legal':
         prompt = ''' You are an Advocate, you shall refuse to represent any client who insists on using unfair or improper means. An advocate shall excise his own judgment in such matters. You shall not blindly follow the instructions of the client. He shall be dignified in use of his language in correspondence and during arguments in court. He shall not scandalously damage the reputation of the parties on false grounds during pleadings. You shall not use unparliamentary language during arguments in the court.
             You should appear in court at all times only in the dress prescribed under the Bar Council of India Rules and his appearance should always be presentable.
@@ -60,12 +60,12 @@ def query_data(query, behaviour, model_id, connect_id):
             During the presentation of your case and also while acting before a court, you should act in a dignified manner. You should at all times conduct himself with self-respect. However, whenever there is proper ground for serious complaint against a judicial officer, You have a right and duty to submit your grievance to proper authorities.
             '''
     elif behaviour == 'pii':
-        prompt = DEFAULT_PROMPT + '. You will identify PII data from the below given context'
+        prompt = 'You will identify PII data from the below given context'
     else:
         prompt = DEFAULT_PROMPT
     
     context = None
-    if query is not None and len(query.split()) > 0:
+    if query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'legal']:
         try:
             # Get the query embedding from amazon-titan-embed model
             response = bedrock_client.invoke_model(
@@ -101,12 +101,9 @@ def query_data(query, behaviour, model_id, connect_id):
         except Exception as e:
             return failure_response(connect_id, f'{e.info["error"]["reason"]}')
 
-    else:
+    elif query is None:
         query = ''
     
-    if context is None:
-        print('Set a default context')
-        context = " "
 
     try:
         response = None
@@ -121,7 +118,10 @@ def query_data(query, behaviour, model_id, connect_id):
                             'amazon.titan-text-express-v1',
                             'ai21.j2-ultra-v1',
                             'ai21.j2-mid-v1']:
-            context = f'\n\ncontext: {context} \n\n query: {query}'
+            if context is not None:
+                context = f'\n\ncontext: {context} \n\n query: {query}'
+            else:
+                context = f'\n\ncontext: {query}'
             prompt_template = prepare_prompt_template(model_id, prompt, context)
             print(prompt_template)
             query_bedrock_models(model_id, prompt_template, connect_id)
@@ -133,7 +133,7 @@ def query_data(query, behaviour, model_id, connect_id):
                 
     except Exception as e:
         print(f'Exception {e}')
-        return failure_response(f'Exception occured when querying LLM: {e}')
+        return failure_response(connect_id, f'Exception occured when querying LLM: {e}')
 
 
 
@@ -153,9 +153,8 @@ def query_bedrock_models(model, prompt, connect_id):
         if 'chunk' in evt:
             chunk = evt['chunk']['bytes']
             print(f'Chunk JSON {json.loads(str(chunk, "UTF-8"))}' )
-            chunk_str = json.loads(str(chunk, 'UTF-8'))['completion']
+            chunk_str = json.loads(chunk.decode())['completion']
             print(f'chunk string {chunk_str}')
-            #result = parse_response(model, chunk_str)
             websocket_send(connect_id, { "text": chunk_str } )
             #websocket_send(connect_id, { "text": result } )
         elif 'internalServerException' in evt:
@@ -216,9 +215,17 @@ def prepare_prompt_template(model_id, prompt, query):
 
 
 def handler(event, context):
+    global region
+    global websocket_client
     LOG.info(
         "---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
     print(f'event - {event}')
+    
+    stage = event['requestContext']['stage']
+    api_id = event['requestContext']['apiId']
+    domain = f'{api_id}.execute-api.{region}.amazonaws.com'
+    websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=f'https://{domain}/{stage}')
+
     connect_id = event['requestContext']['connectionId']
     routeKey = event['requestContext']['routeKey']
     

@@ -166,9 +166,11 @@
         <button type="button" id="thai" class="btn btn-info assistant" onclick="javascript:query('thai')">Thai</button>
         <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('spanish')">Spanish</button>
         <button type="button" id="bengali" class="btn btn-info assistant" onclick="javascript:query('bengali')">Bengali</button>
+        <button type="button" id="tamil" class="btn btn-info assistant" onclick="javascript:query('tamil')">Tamil</button>
+        
         <button type="button" id="sentiment" class="btn btn-info assistant" onclick="javascript:query('sentiment')">Sentiment Analysis</button>
-        <button type="button" id="behaviour" class="btn btn-info assistant" onclick="javascript:query('legal')">Legal Assistant</button>
         <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">PII Data</button>
+        <button type="button" id="clear" class="btn btn-info" onclick="clear_response()">Clear Data</button>
       </div>
       
       <div style="padding-bottom: 30px;"></div>
@@ -249,6 +251,10 @@
         });
       }
 
+      function clear_response() {
+        // document.getElementById('query-response').innerHTML = '';
+        $('#query-response').html('');
+      }
 
       function reset() {
         $('#custom-spinner').css('visibility','visible');
@@ -333,6 +339,9 @@
         $('#index-button').css('visibility','hidden');
         $('#query-button').css('visibility','hidden');
         $('#delete-button').css('visibility','hidden');
+        
+        document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + '\n' + assistant_type.toUpperCase() + ': \n'
+        
         query_str = " " + $('#query').val()
         data = '{"query": "'+query_str + '",  "behaviour": "'+ assistant_type + '", "model_id": "'+ model_id + '" ,"action": "bedrock"}'
         if ("WebSocket" in window) {
@@ -353,9 +362,15 @@
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
-            var received_msg = evt.data;
+            var received_msg = '' ;
+            response_json = JSON.parse(evt.data)
+            if (response_json['text']) {
+              received_msg = response_json['text']
+            } else {
+              received_msg = str(response_json)
+            }
             console.log("streaming message is received.. " + received_msg);
-            document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + `&#13;&#10;` + received_msg 
+            document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg 
             
            }
 
