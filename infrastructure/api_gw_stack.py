@@ -4,7 +4,8 @@ from aws_cdk import (
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_ecr as _ecr,
-    aws_apigatewayv2
+    aws_apigatewayv2,
+    
     
 )
 
@@ -153,34 +154,13 @@ class ApiGw_Stack(Stack):
                                         name=f'Bedrock-streaming-{env_name}',
                                         route_selection_expression='$request.body.action'
                                         )
+            
             websocket_integrations = _cdk.aws_apigatewayv2.CfnIntegration(self, f'bedrock-websocket-integration-{env_name}',
                                                 api_id=websocket_api.ref,
                                                 integration_type="AWS_PROXY",
                                                 integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_querying_lambda_function.function_arn + "/invocations",
                                                 )
-            websocket_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-connect-route-{env_name}',
-                                            api_id=websocket_api.ref, route_key="$connect",
-                                            authorization_type="NONE",
-                                            target="integrations/" + websocket_integrations.ref)
             
-            
-            websocket_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-disconnect-route-{env_name}',
-                                            api_id=websocket_api.ref, route_key="$disconnect",
-                                            authorization_type="NONE",
-                                            target="integrations/" + websocket_integrations.ref)
-            websocket_default_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-default-route-{env_name}',
-                                            api_id=websocket_api.ref, route_key="$default",
-                                            authorization_type="NONE",
-                                            target="integrations/" + websocket_integrations.ref)
-            
-            deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
-            
-            DependencyGroup(websocket_connect_route, websocket_disconnect_route, websocket_default_route, deployment)
-            websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bedrock-streaming-stage-{env_name}', 
-                                           api_id=websocket_api.ref,
-                                           auto_deploy=True,
-                                           deployment_id= deployment.ref,
-                                           stage_name= env_name) 
             print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
@@ -192,12 +172,38 @@ class ApiGw_Stack(Stack):
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url)
 
-            bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
-            bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
-
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             bedrock_indexing_lambda_function, proxy=True, allow_test_invoke=True)
 
+            bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
+            bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
+
+            websocket_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-connect-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$connect",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref
+                                            )
+            
+            
+            websocket_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-disconnect-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$disconnect",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            
+            websocket_default_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-default-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$default",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
+            
+            websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bedrock-streaming-stage-{env_name}', 
+                                           api_id=websocket_api.ref,
+                                           auto_deploy=True,
+                                           deployment_id= deployment.ref,
+                                           stage_name= env_name) 
+            _cdk.triggers.Trigger(self, f'bedrock-streaming-trigger-{env_name}',
+                                  handler= bedrock_querying_lambda_function, invocation_type=_cdk.triggers.InvocationType.EVENT)
+            
 
         else:
             print('-- Deployment for Llama2/Falcon GPU hosted models ---')
