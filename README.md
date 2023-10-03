@@ -1,5 +1,5 @@
 
-### Llama2/Falcon with Serverless RAG on Amazon Opensearch Serverless vector db
+### Amazon Bedrock/ Llama2/ Falcon with Serverless RAG on Amazon Opensearch Serverless vector db
 
 
 # Overview
@@ -9,6 +9,13 @@ A new wave of widespread AI adoption is on the way with generative AI,having the
 Text generation using RAG with LLMs enables you to generate domain-specific text outputs by supplying specific external data as part of the context fed to LLMs. With RAG, the external data used to augment your prompts can come from multiple data sources, such as a document repositories, databases, or APIs. The first step is to convert your documents and any user queries into a compatible format to perform relevancy search. To make the formats compatible, a document collection, or knowledge library, and user-submitted queries are converted to numerical representations using embedding language models. Embedding is the process by which text is given numerical representation in a vector space. RAG model architectures compare the embeddings of user queries within the vector of the knowledge library. The original user prompt is then appended with relevant context from similar documents within the knowledge library. This augmented prompt is then sent to the foundation model. You can update knowledge libraries and their relevant embeddings asynchronously.
 
 [Amazon Opensearch Serverless offers vector engine to store embeddings for faster similarity searches](https://aws.amazon.com/blogs/big-data/introducing-the-vector-engine-for-amazon-opensearch-serverless-now-in-preview/). The vector engine provides a simple, scalable, and high-performing similarity search capability in Amazon OpenSearch Serverless that makes it easy for you to build generative artificial intelligence (AI) applications without having to manage the underlying vector database infrastructure. 
+
+#### (03-Oct-2023): Support for Amazon Bedrock
+ * Anthropic Claude V1/V2/Instant support over Amazon Bedrock
+ * Support for Streaming ingestion with Anthropic Claude Models
+ * Faster Stack Deployments
+ * New Functionality (PII/Sentiment/Translations) added on the UI
+
 
 #### (14-Sept-2023): Support for new LLM's
  * Llama2-7B (Existing G5.2xlarge)
