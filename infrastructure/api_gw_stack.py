@@ -185,9 +185,14 @@ class ApiGw_Stack(Stack):
             websocket_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-connect-route-{env_name}',
                                             api_id=websocket_api.ref, route_key="$connect",
                                             authorization_type="NONE",
-                                            target="integrations/" + websocket_integrations.ref,
-                                            )
-            
+                                            target="integrations/"+ _cdk.aws_apigatewayv2.CfnIntegration(self, f"bedrock-socket-conn-integration-{env_name}",
+                                                                                                         api_id= websocket_api.ref,
+                                                                                                         integration_type="AWS_PROXY",
+                                                                                                         integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_querying_lambda_function.function_arn + "/invocations",
+                                                                                                         credentials_arn= apigw_role.role_arn).ref
+            )
+            dependencygrp = DependencyGroup()
+            dependencygrp.add(websocket_connect_route)
             
             websocket_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-disconnect-route-{env_name}',
                                             api_id=websocket_api.ref, route_key="$disconnect",
