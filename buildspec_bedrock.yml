@@ -22,7 +22,7 @@ phases:
       - rm -rf python opensearch_layer.zip
       - echo Build latest Boto3 layer to get Bedrock access
       - mkdir python
-      - python3 -m pip install boto3==1.28.57 -t python/
+      - python3 -m pip install boto3 -t python/
       - zip -r boto3_bedrock.zip python
       - aws lambda publish-layer-version --layer-name $boto3_bedrock_layer_name --zip-file fileb://boto3_bedrock.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
       - rm -rf python boto3_bedrock.zip
