@@ -154,13 +154,6 @@ class ApiGw_Stack(Stack):
                                         name=f'Bedrock-streaming-{env_name}',
                                         route_selection_expression='$request.body.action'
                                         )
-            
-            websocket_integrations = _cdk.aws_apigatewayv2.CfnIntegration(self, f'bedrock-websocket-integration-{env_name}',
-                                                api_id=websocket_api.ref,
-                                                integration_type="AWS_PROXY",
-                                                integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_querying_lambda_function.function_arn + "/invocations",
-                                                )
-            
             print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
@@ -175,13 +168,24 @@ class ApiGw_Stack(Stack):
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             bedrock_indexing_lambda_function, proxy=True, allow_test_invoke=True)
 
-            bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
-            bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
+            apigw_role = _iam.Role(self, f'bedrock-lambda-invoke-{env_name}', assumed_by=_iam.ServicePrincipal('apigateway.amazonaws.com'))
 
+            apigw_role.add_to_policy(_iam.PolicyStatement(effect=_iam.Effect.ALLOW,
+                                actions=["lambda:InvokeFunction"],
+                                resources=[bedrock_querying_lambda_function.function_arn], 
+                                ))
+            
+            websocket_integrations = _cdk.aws_apigatewayv2.CfnIntegration(self, f'bedrock-websocket-integration-{env_name}',
+                                                api_id=websocket_api.ref,
+                                                integration_type="AWS_PROXY",
+                                                integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_querying_lambda_function.function_arn + "/invocations",
+                                                credentials_arn=apigw_role.role_arn
+                                                )
+            
             websocket_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-connect-route-{env_name}',
                                             api_id=websocket_api.ref, route_key="$connect",
                                             authorization_type="NONE",
-                                            target="integrations/" + websocket_integrations.ref
+                                            target="integrations/" + websocket_integrations.ref,
                                             )
             
             
@@ -201,8 +205,7 @@ class ApiGw_Stack(Stack):
                                            auto_deploy=True,
                                            deployment_id= deployment.ref,
                                            stage_name= env_name) 
-            _cdk.triggers.Trigger(self, f'bedrock-streaming-trigger-{env_name}',
-                                  handler= bedrock_querying_lambda_function, invocation_type=_cdk.triggers.InvocationType.EVENT)
+            
             
 
         else:
