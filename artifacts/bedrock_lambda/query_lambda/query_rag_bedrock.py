@@ -45,7 +45,7 @@ bedrock_client = boto3.client('bedrock-runtime')
 
 
 def query_data(query, behaviour, model_id, connect_id):
-    global DEFAULT_SYSTEM_PROMPT
+    global DEFAULT_PROMPT
     global embed_model_id
     global bedrock_client
     prompt = DEFAULT_PROMPT
@@ -78,7 +78,7 @@ def query_data(query, behaviour, model_id, connect_id):
             embedded_search = result.get('embedding')
 
             vector_query = {
-                "size": 10,
+                "size": 5,
                 "query": {"knn": {"embedding": {"vector": embedded_search, "k": 2}}},
                 "_source": False,
                 "fields": ["text", "doc_type"]
@@ -197,7 +197,7 @@ def parse_response(model_id, response):
 def prepare_prompt_template(model_id, prompt, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
-        prompt_template = {"prompt":f"Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900}
+        prompt_template = {"prompt":f"Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}
     elif model_id == 'cohere.command-text-v14':
         prompt_template = {"prompt": f"""{prompt}\n
                               {query}"""}
@@ -231,7 +231,7 @@ def handler(event, context):
     
     if routeKey != '$connect': 
         if 'body' in event:
-            input_to_llm = json.loads(event['body'])
+            input_to_llm = json.loads(event['body'], strict=False)
             query = input_to_llm['query']
             behaviour = input_to_llm['behaviour']
             model_id = input_to_llm['model_id']

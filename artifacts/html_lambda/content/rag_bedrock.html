@@ -136,19 +136,19 @@
           Select Model on Amazon Bedrock
         </button>
         <ul class="dropdown-menu">
-          <!-- AI21 -->
-          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li>
-          <!-- Amazon -->
+          <!-- AI21 not supported for Streaming ingestion-->
+          <!-- <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li> -->
+          <!-- Amazon express is not yet available-->
           <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li> -->
-          <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li>
+          <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li> -->
           <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
           <!-- Anthropic -->
           <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v1')">Anthropic	Claude V1</a></li>
           <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic	Claude V2</a></li>
           <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic	Claude Instant</a></li>
-          <!-- Cohere -->
-          <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li>
+          <!-- Cohere not supported for Streaming ingestion -->
+          <!-- <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li> -->
         </ul>
 
         <span id="set_model"></span>
