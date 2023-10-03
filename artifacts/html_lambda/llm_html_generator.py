@@ -5,6 +5,8 @@ from os import getenv
 
 env = getenv('ENVIRONMENT', 'dev')
 html_header = getenv('LLM_MODEL_NAME', 'Llama2-7B')
+bedrock_streaming_socket =  getenv('WSS_URL', 'Not Set')
+
 def handler(event, context):
     # TODO implement
     print(event)
@@ -20,6 +22,7 @@ def handler(event, context):
     htmlContent = htmlFile.read()
     htmlContent = re.sub('<apiGatewayUrl>', apiGatewayUrl, htmlContent)
     htmlContent = re.sub('<htmlheader>', html_header, htmlContent)
+    htmlContent = re.sub('<websocketUrl>', bedrock_streaming_socket, htmlContent)
     return {
         'statusCode': 200,
         'headers': {"Content-Type":"text/html"},

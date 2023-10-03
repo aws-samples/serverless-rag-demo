@@ -162,14 +162,26 @@ class ApiGw_Stack(Stack):
                                             api_id=websocket_api.ref, route_key="$connect",
                                             authorization_type="NONE",
                                             target="integrations/" + websocket_integrations.ref)
+            
+            websocket_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-disconnect-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$disconnect",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            websocket_default_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-default-route-{env_name}',
+                                            api_id=websocket_api.ref, route_key="$default",
+                                            authorization_type="NONE",
+                                            target="integrations/" + websocket_integrations.ref)
+            
             deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
             deployment.add_dependency(websocket_connect_route)
+            deployment.add_dependency(websocket_disconnect_route)
+            deployment.add_dependency(websocket_default_route)
             websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bedrock-streaming-stage-{env_name}', 
                                            api_id=websocket_api.ref,
                                            auto_deploy=True,
                                            deployment_id= deployment.ref,
                                            stage_name= env_name) 
-            print(f'bedrock streaming wss url {websocket_api.attr_api_endpoint}')
+            print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
@@ -178,6 +190,7 @@ class ApiGw_Stack(Stack):
             )
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
+            bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url)
 
             bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
@@ -258,12 +271,6 @@ class ApiGw_Stack(Stack):
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
         
         if llm_model_id == 'Amazon Bedrock':
-            query_api.add_method(
-                "GET",
-                bedrock_query_lambda_integration,
-                operation_name="Query Amazon Bedrock Models with Augmented Enriched Prompt",
-                method_responses=method_responses,
-            )    
             index_docs_api.add_method(
                 "POST",
                 bedrock_index_lambda_integration,
