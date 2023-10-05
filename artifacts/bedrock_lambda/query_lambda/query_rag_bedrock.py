@@ -26,7 +26,7 @@ awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
 
 DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
                     Always answer as helpfully as possible, while being safe.
-                    Please ensure that your responses are socially unbiased and positive in nature.
+                    Please ensure that your responses arex socially unbiased and positive in nature.
                     If a question does not make any sense, or is not factually coherent,
                     explain why instead of answering something not correct.
                     If you don't know the answer to a question,
@@ -50,15 +50,11 @@ def query_data(query, behaviour, model_id, connect_id):
     global bedrock_client
     prompt = DEFAULT_PROMPT
     if behaviour in ['english', 'hindi', 'thai', 'spanish', 'bengali', 'portuguese', 'mandarin', 'tamil']:
-        prompt = f'{DEFAULT_PROMPT}. You will always reply in {behaviour} language only.'
+        prompt = f'''Output rules:
+                       * {DEFAULT_PROMPT}.
+                       * Only respond in {behaviour} language only.'''
     elif behaviour == 'sentiment':
         prompt =  '. You will identify the sentiment of the below context.'
-    elif behaviour == 'legal':
-        prompt = ''' You are an Advocate, you shall refuse to represent any client who insists on using unfair or improper means. An advocate shall excise his own judgment in such matters. You shall not blindly follow the instructions of the client. He shall be dignified in use of his language in correspondence and during arguments in court. He shall not scandalously damage the reputation of the parties on false grounds during pleadings. You shall not use unparliamentary language during arguments in the court.
-            You should appear in court at all times only in the dress prescribed under the Bar Council of India Rules and his appearance should always be presentable.
-            You should not enter appearance, act, plead or practice in any way before a judicial authority if the sole or any member of the bench is related to the advocate as father, grandfather, son, grandson, uncle, brother, nephew, first cousin, husband, wife, mother, daughter, sister, aunt, niece, father-in-law, mother-in-law, son-in-law, brother-in-law daughter-in-law or sister-in-law.
-            During the presentation of your case and also while acting before a court, you should act in a dignified manner. You should at all times conduct himself with self-respect. However, whenever there is proper ground for serious complaint against a judicial officer, You have a right and duty to submit your grievance to proper authorities.
-            '''
     elif behaviour == 'pii':
         prompt = 'Does the below text contain PII data. If so list the type of PII data'
     else:
@@ -119,7 +115,7 @@ def query_data(query, behaviour, model_id, connect_id):
                             'ai21.j2-ultra-v1',
                             'ai21.j2-mid-v1']:
             if context is not None:
-                context = f'\n\ncontext: {context} \n\n query: {query}'
+                context = f'\n\Data Points: {context} \n\n Query: {query}'
             else:
                 context = f'\n\ncontext: {query}'
             prompt_template = prepare_prompt_template(model_id, prompt, context)
