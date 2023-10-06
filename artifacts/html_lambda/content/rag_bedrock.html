@@ -353,8 +353,16 @@
         data = '{"query": "'+query_str + '",  "behaviour": "'+ assistant_type + '", "model_id": "'+ model_id + '" ,"action": "bedrock"}'
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
-          if (ws == null) {
+          if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
             ws = new WebSocket(awsData.websocketUrl);
+            ws.onerror=function(event){
+                  console.log(event);
+                  $('#custom-spinner').css('visibility','hidden');
+                  $('#index-button').css('visibility','visible');
+                  $('#query-button').css('visibility','visible');
+                  $('#delete-button').css('visibility','visible');
+                  alertbuilder('Could not establish connection. Check API-Key', false)
+                }
           } else {
             ws.send(data);
           }
@@ -374,7 +382,7 @@
             if (response_json['text']) {
               received_msg = response_json['text']
             } else {
-              received_msg = str(response_json)
+              received_msg = JSON.stringify(response_json)
             }
             console.log("streaming message is received.. " + received_msg);
             document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg 
