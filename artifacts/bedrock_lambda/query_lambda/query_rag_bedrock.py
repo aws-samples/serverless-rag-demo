@@ -89,7 +89,7 @@ def query_data(query, behaviour, model_id, connect_id):
                         context = data['fields']['text'][0]
                     else:
                         context = context + ' ' + data['fields']['text'][0]
-                query = query + '. Answer based on the above context only'
+                #query = query + '. Answer based on the above context only'
                 #print(f'context -> {context}')
             except Exception as e:
                 print('Vector Index does not exist. Please index some documents')
