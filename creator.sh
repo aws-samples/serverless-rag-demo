@@ -1,7 +1,7 @@
 #!/usr/bin/bash 
 if [ -z "$1" ]
 then
-    $1='dev'
+    1='dev'
     echo "Setting environment to $1. Will pick up $1 configurations from cdk.json file in classpath"
 fi
 if [ $1 != "dev" -a $1 != "qa" -a $1 != "sandbox" ]
