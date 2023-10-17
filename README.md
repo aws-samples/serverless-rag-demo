@@ -11,12 +11,12 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 [Amazon Opensearch Serverless offers vector engine to store embeddings for faster similarity searches](https://aws.amazon.com/blogs/big-data/introducing-the-vector-engine-for-amazon-opensearch-serverless-now-in-preview/). The vector engine provides a simple, scalable, and high-performing similarity search capability in Amazon OpenSearch Serverless that makes it easy for you to build generative artificial intelligence (AI) applications without having to manage the underlying vector database infrastructure. 
 
 <details>
-  <summary> Project Updates </summary>
+  <summary><b>Project Updates</b></summary>
 
  #### (18-Oct-2023):
   * Support French/German for Anthropic Claude with Amazon Bedrock
   * Support for Redaction feature
-  * Support text chunking to 1000 chars
+  * Inbuilt Text Chunking feature with RecursiveTextSplitter from Langchain
 
  #### (03-Oct-2023): Support for Amazon Bedrock
   * Anthropic Claude V1/V2/Instant support over Amazon Bedrock
@@ -40,9 +40,27 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 </details>
 
+<details>
+  <summary><b>Available Features</b></summary>
+
+  #### Multi-lingual Support
+  <img width="1154" alt="Screenshot 2023-10-18 at 1 23 37 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/ceafb1d6-ba1e-4102-924c-18755c11ee31">
+
+  #### Sentiment Analysis
+  <img width="1149" alt="Screenshot 2023-10-18 at 1 29 54 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/722e6e11-702f-4634-aafd-da5bdff25c61">
+
+  #### PII Data Detection
+  <img width="1154" alt="Screenshot 2023-10-18 at 1 30 48 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/78ec1c00-2238-4d0b-b035-30701a836940">
+
+  #### PII Data Redaction
+  <img width="1154" alt="Screenshot 2023-10-18 at 1 31 52 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/e1e838e0-2ced-4b08-980c-e4e976826f98">
+
+  
+</details>
+
 
 <details open>
- <summary> Bedrock RAG Demo </summary>
+ <summary><b>Bedrock RAG Demo</b></summary>
 
    #### Bedrock RAG Demo Video
    https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0831ba22-32bd-469a-870b-5ba2047346ff
@@ -52,7 +70,7 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 </details>
 
 <details>
-    <summary> Llama2 RAG Demo </summary>
+    <summary><b> Llama2 RAG Demo </b></summary>
 
    #### Llama2 RAG Demo
    https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d9162e43-59f5-400c-80d4-3f1545535b66
@@ -63,9 +81,8 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-customize-rag.html) with Amazon Opensearch Serverless Vector DB and [Amazon Bedrock](https://aws.amazon.com/bedrock/), [Llama2 LLM](https://ai.meta.com/llama/), [Falcon LLM](https://falconllm.tii.ae/)
 
 
-
 <details>
- <summary> Prerequisites </summary>
+ <summary><b> Prerequisites </b></summary>
    
  #### Prerequsites:
   * [An AWS account](https://aws.amazon.com/console/)
@@ -97,9 +114,9 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 ### Deploying the Solution to your AWS account with AWS Cloudshell
 
 <details>
- <summary> Create an Admin User to deploy this stack </summary>
+ <summary><b> Create an Admin User to deploy this stack </b></summary>
 
- #### Section1 - Create an IAM user with Administrator permissions. 
+ #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL If your already an Admin user/role) 
 
 1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Users“ tab under ”Access Management” and Click on “Create User”
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.40.44%20PM.png)
@@ -132,7 +149,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 
 <details>
- <summary> Deploy the RAG based Solution </summary>
+ <summary><b> Deploy the RAG based Solution </b></summary>
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
