@@ -13,6 +13,11 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary> Project Updates </summary>
 
+ #### (18-Oct-2023):
+  * Support French/German for Anthropic Claude with Amazon Bedrock
+  * Support for Redaction feature
+  * Support text chunking to 1000 chars
+
  #### (03-Oct-2023): Support for Amazon Bedrock
   * Anthropic Claude V1/V2/Instant support over Amazon Bedrock
   * Support for Streaming ingestion with Anthropic Claude Models
@@ -40,7 +45,9 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
  <summary> Bedrock RAG Demo </summary>
 
    #### Bedrock RAG Demo Video
-   https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0127f2eb-2375-4433-85e3-2bb4ad7729c6
+   https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0831ba22-32bd-469a-870b-5ba2047346ff
+
+
 
 </details>
 
