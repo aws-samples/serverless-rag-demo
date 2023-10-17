@@ -1,23 +1,25 @@
 #!/usr/bin/bash 
-echo "environment: $1"
 if [ -z "$1" ]
 then
-    echo "Pass the environment as dev, qa or sandbox"
-    exit 1
+    $1='dev'
+    echo "Setting environment to $1. Will pick up $1 configurations from cdk.json file in classpath"
 fi
 if [ $1 != "dev" -a $1 != "qa" -a $1 != "sandbox" ]
 then
     echo "Environment name can only be dev or qa or sandbox. example 'sh creator.sh dev' "
     exit 1
 fi
+echo "environment: $1"
 
-if [ -z "$2" ]
-then
-    echo "Region not passed. Defaulting to us-east-1"
-    deployment_region='us-east-1'
-else
-    deployment_region=$2
-fi
+deployment_region=$(curl -s http://169.254.169.254/task/AvailabilityZone | sed 's/\(.*\)[a-z]/\1/')
+echo "Deploying stack in region $deployment_region "
+# if [ -z "$2" ]
+# then
+#     echo "Region not passed. Defaulting to us-east-1"
+#     deployment_region='us-east-1'
+# else
+#     deployment_region=$2
+# fi
 PS3='Please enter your LLM choice (1/2/3/4/5/6/7): '
 options=("Amazon Bedrock" "Llama2-7B" "Llama2-13B" "Llama2-70B" "Falcon-7B" "Falcon-40B" "Falcon-180B" "Quit")
 model_id='meta-textgeneration-llama-2-7b-f'
