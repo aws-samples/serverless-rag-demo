@@ -17,6 +17,7 @@ class BedrockLayerStack(NestedStack):
         config_details = self.node.try_get_context(env_name)
         boto3_bedrock_layer_name = config_details['boto3_bedrock_layer']
         opensearchpy_layer_name = config_details['opensearchpy_layer']
+        langchainpy_layer_name = config_details['langchainpy_layer_name']
         aws4auth_layer_name = config_details['aws4auth_layer']
         
         llm_model_id = 'random'
@@ -50,6 +51,7 @@ class BedrockLayerStack(NestedStack):
                 "boto3_bedrock_layer_name": _codebuild.BuildEnvironmentVariable(value = boto3_bedrock_layer_name),
                 "opensearchpy_layer_name": _codebuild.BuildEnvironmentVariable(value = opensearchpy_layer_name),
                 "aws4auth_layer_name": _codebuild.BuildEnvironmentVariable(value = aws4auth_layer_name),
+                "langchainpy_layer_name":  _codebuild.BuildEnvironmentVariable(value = langchainpy_layer_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = account_id),
                 "region": _codebuild.BuildEnvironmentVariable(value = region)
             })

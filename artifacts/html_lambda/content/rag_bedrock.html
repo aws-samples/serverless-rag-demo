@@ -88,6 +88,11 @@
                       <button id="sample-health" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('health')">Index a brand new disease (FrostFlu)</button>
                     </td>
                   </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-finance" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('amazon10k')">Index Amazon Annual Report (Form-10K)</button>
+                    </td>
+                  </tr>
 
                  </table>
             
@@ -171,11 +176,14 @@
         <button type="button" id="hindi" class="btn btn-info assistant" onclick="javascript:query('hindi')">Hindi</button>
         <button type="button" id="thai" class="btn btn-info assistant" onclick="javascript:query('thai')">Thai</button>
         <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('spanish')">Spanish</button>
+        <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('french')">French</button>
+        <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('german')">German</button>
         <button type="button" id="bengali" class="btn btn-info assistant" onclick="javascript:query('bengali')">Bengali</button>
         <button type="button" id="tamil" class="btn btn-info assistant" onclick="javascript:query('tamil')">Tamil</button>
         
         <button type="button" id="sentiment" class="btn btn-info assistant" onclick="javascript:query('sentiment')">Sentiment Analysis</button>
-        <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">PII Data</button>
+        <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">Identify PII</button>
+        <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('redact')">Redact PII</button>
         <button type="button" id="clear" class="btn btn-info" onclick="clear_response()">Clear Data</button>
       </div>
       

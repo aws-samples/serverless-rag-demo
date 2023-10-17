@@ -49,19 +49,22 @@ def query_data(query, behaviour, model_id, connect_id):
     global embed_model_id
     global bedrock_client
     prompt = DEFAULT_PROMPT
-    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'bengali', 'portuguese', 'mandarin', 'tamil']:
-        prompt = f'''Output rules:
-                       * {DEFAULT_PROMPT}.
-                       * Only respond in {behaviour} language only.'''
+    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'french', 'german', 'bengali', 'tamil']:
+        prompt = f''' Output Rules :
+                       {DEFAULT_PROMPT}
+                       This rule is of highest priority. You will always reply in {behaviour.upper()} language only.
+                  '''
     elif behaviour == 'sentiment':
         prompt =  '. You will identify the sentiment of the below context.'
     elif behaviour == 'pii':
         prompt = 'Does the below text contain PII data. If so list the type of PII data'
+    elif behaviour == 'redact':
+        prompt = 'Please remove all personally identifiable information from the below text: '
     else:
         prompt = DEFAULT_PROMPT
     
     context = None
-    if query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'legal']:
+    if query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact']:
         try:
             # Get the query embedding from amazon-titan-embed model
             response = bedrock_client.invoke_model(
@@ -115,7 +118,7 @@ def query_data(query, behaviour, model_id, connect_id):
                             'ai21.j2-ultra-v1',
                             'ai21.j2-mid-v1']:
             if context is not None:
-                context = f'\n\Data Points: {context} \n\n Query: {query}'
+                context = f'\n\n context: {context} \n\n Query: {query}'
             else:
                 context = f'\n\ncontext: {query}'
             prompt_template = prepare_prompt_template(model_id, prompt, context)
@@ -193,7 +196,7 @@ def parse_response(model_id, response):
 def prepare_prompt_template(model_id, prompt, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
-        prompt_template = {"prompt":f"Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}
+        prompt_template = {"prompt":f"Human:{query}. \n{prompt}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}
     elif model_id == 'cohere.command-text-v14':
         prompt_template = {"prompt": f"""{prompt}\n
                               {query}"""}
