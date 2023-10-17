@@ -71,7 +71,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
     * [Amazon API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html)
     * [Amazon opensearch serverless](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-overview.html)
     
-#### For Llama2/Falcon models deployed on Amazon Sagemaker
+ #### For Llama2/Falcon models deployed on Amazon Sagemaker
     * [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/index.html)
     * GPU Instance of type ml.g5.2xlarge for endpoint usage
     * _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and ap-southeast-1)_
