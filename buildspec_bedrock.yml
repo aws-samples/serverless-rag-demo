@@ -7,7 +7,7 @@ phases:
     commands:
       - pwd
       - ls
-      - echo Printing variables  $boto3_bedrock_layer_name $opensearchpy_layer_name $aws4auth_layer_name $account_id $region 
+      - echo Printing variables  $langchainpy_layer_name $boto3_bedrock_layer_name $opensearchpy_layer_name $aws4auth_layer_name $account_id $region 
   build:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
@@ -30,6 +30,11 @@ phases:
       - python3 -m pip install requests-aws4auth -t python/
       - zip -r aws4auth.zip python
       - aws lambda publish-layer-version --layer-name $aws4auth_layer_name --zip-file fileb://aws4auth.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+      - rm -rf python aws4auth.zip
+      - mkdir python
+      - python3 -m pip install langchain -t python/
+      - zip -r langchainpy.zip python
+      - aws lambda publish-layer-version --layer-name $langchainpy_layer_name --zip-file fileb://langchainpy.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
   post_build:
     commands:
       - echo Build completed on `date`

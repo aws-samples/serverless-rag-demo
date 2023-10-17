@@ -115,6 +115,9 @@ class ApiGw_Stack(Stack):
             aws4auth_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'aws4auth-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["aws4auth_layer"]}:1')
             
+            langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
+            
             print('--- Amazon Bedrock Deployment ---')
             
             bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
@@ -129,8 +132,8 @@ class ApiGw_Stack(Stack):
                                                 'OPENSEARCH_ENDPOINT': collection_endpoint,
                                                 'REGION': region
                                   },
-                                  memory_size=2048,
-                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer])
+                                  memory_size=4096,
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
             
             lambda_function = bedrock_indexing_lambda_function
             bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',

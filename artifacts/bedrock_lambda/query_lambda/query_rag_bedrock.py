@@ -49,10 +49,10 @@ def query_data(query, behaviour, model_id, connect_id):
     global embed_model_id
     global bedrock_client
     prompt = DEFAULT_PROMPT
-    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'bengali', 'portuguese', 'mandarin', 'tamil']:
-        prompt = f'''Output rules:
+    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'french', 'german', 'bengali', 'tamil']:
+        prompt = f'''Instructions :
                        * {DEFAULT_PROMPT}.
-                       * Only respond in {behaviour} language only.'''
+                       * You will respond in {behaviour} language only.'''
     elif behaviour == 'sentiment':
         prompt =  '. You will identify the sentiment of the below context.'
     elif behaviour == 'pii':
