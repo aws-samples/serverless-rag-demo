@@ -11,7 +11,7 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 [Amazon Opensearch Serverless offers vector engine to store embeddings for faster similarity searches](https://aws.amazon.com/blogs/big-data/introducing-the-vector-engine-for-amazon-opensearch-serverless-now-in-preview/). The vector engine provides a simple, scalable, and high-performing similarity search capability in Amazon OpenSearch Serverless that makes it easy for you to build generative artificial intelligence (AI) applications without having to manage the underlying vector database infrastructure. 
 
 <details>
-  <summary> Updates </summary>
+  <summary> Project Updates </summary>
 
  #### (03-Oct-2023): Support for Amazon Bedrock
   * Anthropic Claude V1/V2/Instant support over Amazon Bedrock
@@ -60,25 +60,20 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 <details>
  <summary> Prerequisites </summary>
    
-    For this walkthrough, you should have the following prerequisites:
-
+  ### Prerequsites:
     * [An AWS account](https://aws.amazon.com/console/)
     * [For Amazon Bedrock, you should have access to Anthropic Claude models](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
 
-    **Familiarity with below Services.**
-
+  #### Familiarity with below Services
     * [AWS IAM](https://docs.aws.amazon.com/iam/index.html). 
-
     * [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
-
     * [Amazon API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html)
- 
     * [Amazon opensearch serverless](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-overview.html)
 
-    #### For Llama2/Falcon models deployed on Amazon Sagemaker
+  #### For Llama2/Falcon models deployed on Amazon Sagemaker
     * [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/index.html)
     * GPU Instance of type ml.g5.2xlarge for endpoint usage_
-    * Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and ap-southeast-1)_
+    * _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and ap-southeast-1)_
 
 </details>
 
@@ -89,7 +84,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 ![architecture](https://github.com/aws-samples/serverless-rag-demo/assets/25897220/e2b9e3ac-b7b9-479d-b642-e2e1d5ce3837)
 
 
-### Deploying the Solution to your account with AWS Cloudshell
+### Deploying the Solution to your AWS account with AWS Cloudshell
 
 <details>
  <summary> Create an Admin User to deploy this stack </summary>
@@ -114,7 +109,6 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 6. Go to Security Credentials Tab and under "Access Keys" click on "Create Access key"
 <img width="1377" alt="LLMAdminSecurityCredentials2" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/36bdf80f-8b0e-43a4-ad0f-a3233ce753cb">
 
-
 7. In the window that appears choose the first option "Command line Interface" and click the checkbox at the bottom and click Next
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.24%20PM.png)
 
@@ -128,9 +122,9 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 
 <details>
- <summary> Deploy a RAG based Solution </summary>
+ <summary> Deploy the RAG based Solution </summary>
 
-#### Section 2 - Deploy a RAG based Solution (The below commands should be executed in the region of deployment)
+#### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
 1. Search for AWS Cloudshell. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell
    ```
@@ -172,15 +166,3 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
    <img width="1238" alt="Screenshot 2023-09-14 at 8 52 09 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9e5c3e4d-e211-4727-ab57-ecd188565a64">
  
 </details>
-
-
-
-
- 
-
-
-
-
-
-
-
