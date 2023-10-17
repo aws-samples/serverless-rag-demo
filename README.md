@@ -63,6 +63,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
   ### Prerequsites:
     * [An AWS account](https://aws.amazon.com/console/)
     * [For Amazon Bedrock, you should have access to Anthropic Claude models](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
+    * Amazon Bedrock is available in 3 regions globally, US East (N. Virginia), US West (Oregon), and Asia Pacific (Tokyo).
 
   #### Familiarity with below Services
     * [AWS IAM](https://docs.aws.amazon.com/iam/index.html). 
