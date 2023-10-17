@@ -145,12 +145,13 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Region can be any of those supported by Amazon Opensearch Serverless [refer](https://aws.amazon.com/about-aws/whats-new/2023/01/amazon-opensearch-serverless-available)
    ```
-     sh creator.sh dev us-east-1
+     sh creator.sh
    ```
    
 5. Select the LLM you want to deploy (sh creator.sh dev us-east-1) . Select Option 1 for Amazon Bedrock.
 
-   <img width="1380" alt="Screenshot 2023-10-03 at 6 19 58 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/986d97ea-06fc-437b-8ae0-0bbd13e7d56b">
+   <img width="856" alt="creatorsh" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/124c015c-2349-461a-a467-82d23c90e512">
+
 
 6. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
 rag-llm-api-{env_name}. Get the invoke URL for the API
