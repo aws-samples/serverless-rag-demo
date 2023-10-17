@@ -53,7 +53,7 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 
 
-This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-customize-rag.html) with Amazon Opensearch Serverless Vector DB and [Llama2 LLM](https://ai.meta.com/llama/), [Falcon LLM](https://falconllm.tii.ae/)
+This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-customize-rag.html) with Amazon Opensearch Serverless Vector DB and [Amazon Bedrock](https://aws.amazon.com/bedrock/), [Llama2 LLM](https://ai.meta.com/llama/), [Falcon LLM](https://falconllm.tii.ae/)
 
 
 
