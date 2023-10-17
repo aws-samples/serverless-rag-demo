@@ -36,7 +36,7 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 </details>
 
 
-<details>
+<details open>
  <summary> Bedrock RAG Demo </summary>
 
    #### Bedrock RAG Demo Video
@@ -60,20 +60,20 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 <details>
  <summary> Prerequisites </summary>
    
-  **Prerequsites:**
-    * [An AWS account](https://aws.amazon.com/console/)
-    * [For Amazon Bedrock, you should have access to Anthropic Claude models](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
-    * Amazon Bedrock is available in 3 regions globally, US East (N. Virginia), US West (Oregon), and Asia Pacific (Tokyo).
+ #### Prerequsites:
+      * [An AWS account](https://aws.amazon.com/console/)
+      * [For Amazon Bedrock, you should have access to Anthropic Claude models](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
+      * Amazon Bedrock is available in 3 regions globally, US East (N. Virginia), US West (Oregon), and Asia Pacific (Tokyo).
   
-  **Familiarity with below Services**
+ #### Familiarity with below Services
     * [AWS IAM](https://docs.aws.amazon.com/iam/index.html). 
     * [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
     * [Amazon API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html)
     * [Amazon opensearch serverless](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-overview.html)
     
-  **For Llama2/Falcon models deployed on Amazon Sagemaker**
+#### For Llama2/Falcon models deployed on Amazon Sagemaker
     * [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/index.html)
-    * GPU Instance of type ml.g5.2xlarge for endpoint usage_
+    * GPU Instance of type ml.g5.2xlarge for endpoint usage
     * _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and ap-southeast-1)_
 
 </details>
