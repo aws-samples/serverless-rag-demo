@@ -10,67 +10,78 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 [Amazon Opensearch Serverless offers vector engine to store embeddings for faster similarity searches](https://aws.amazon.com/blogs/big-data/introducing-the-vector-engine-for-amazon-opensearch-serverless-now-in-preview/). The vector engine provides a simple, scalable, and high-performing similarity search capability in Amazon OpenSearch Serverless that makes it easy for you to build generative artificial intelligence (AI) applications without having to manage the underlying vector database infrastructure. 
 
-#### (03-Oct-2023): Support for Amazon Bedrock
- * Anthropic Claude V1/V2/Instant support over Amazon Bedrock
- * Support for Streaming ingestion with Anthropic Claude Models
- * Faster Stack Deployments
- * New Functionality (PII/Sentiment/Translations) added on the UI
- <img width="1437" alt="Screenshot 2023-10-03 at 1 37 53 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d90c0624-7a4b-4091-9ece-25a29f7f869f">
+<details>
+  <summary> Updates </summary>
 
-#### Bedrock Video
-
- https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0127f2eb-2375-4433-85e3-2bb4ad7729c6
-
+ #### (03-Oct-2023): Support for Amazon Bedrock
+  * Anthropic Claude V1/V2/Instant support over Amazon Bedrock
+  * Support for Streaming ingestion with Anthropic Claude Models
+  * Faster Stack Deployments
+  * New Functionality (PII/Sentiment/Translations) added on the UI
+  <img width="1437" alt="Screenshot 2023-10-03 at 1 37 53 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d90c0624-7a4b-4091-9ece-25a29f7f869f">
 
 
+ #### (14-Sept-2023): Support for new LLM's
+  * Llama2-7B (Existing G5.2xlarge)
+  * Llama2-13B (G5.12xlarge)
+  * Llama2-70B (G5.48xlarge)
+  * Falcon-7B (G5.2xlarge)
+  * Falcon-40B (G5.12xlarge)
+  * Falcon-180B (p4de.24xlarge)
+ 
+ #### New UX/UI (13-Sept-2023): Index Sample Data across different domains. Support multiple-assistant behaviours (Normal/Pirate/Jarvis Assistant modes)
+  * <img width="500" alt="Sample_Indexes" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/404ed22f-c61a-4c12-9b57-3a7eca871bee">
+  * <img width="500" alt="QueryBehaviour" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/647ea08c-0eca-472e-8457-3ef6c4d5d6e6">
+
+</details>
 
 
+<details>
+ <summary> Bedrock RAG Demo </summary>
 
-#### (14-Sept-2023): Support for new LLM's
- * Llama2-7B (Existing G5.2xlarge)
- * Llama2-13B (G5.12xlarge)
- * Llama2-70B (G5.48xlarge)
- * Falcon-7B (G5.2xlarge)
- * Falcon-40B (G5.12xlarge)
- * Falcon-180B (p4de.24xlarge)
+   #### Bedrock RAG Demo Video
+   https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0127f2eb-2375-4433-85e3-2bb4ad7729c6
 
-#### New UX/UI (13-Sept-2023): Index Sample Data across different domains. Support multiple-assistant behaviours (Normal/Pirate/Jarvis Assistant modes)
+</details>
 
-   <img width="500" alt="Sample_Indexes" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/404ed22f-c61a-4c12-9b57-3a7eca871bee">
-   <img width="500" alt="QueryBehaviour" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/647ea08c-0eca-472e-8457-3ef6c4d5d6e6">
+<details>
+    <summary> Llama2 RAG Demo </summary>
 
-
-#### Video Demo
-https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d9162e43-59f5-400c-80d4-3f1545535b66
-
-
-
+   #### Llama2 RAG Demo
+   https://github.com/aws-samples/serverless-rag-demo/assets/25897220/d9162e43-59f5-400c-80d4-3f1545535b66
+</details>
 
 
 
 This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https://docs.aws.amazon.com/sagemaker/latest/dg/jumpstart-foundation-models-customize-rag.html) with Amazon Opensearch Serverless Vector DB and [Llama2 LLM](https://ai.meta.com/llama/), [Falcon LLM](https://falconllm.tii.ae/)
 
-### Prerequisites
 
-For this walkthrough, you should have the following prerequisites:
 
-[An AWS account](https://aws.amazon.com/console/)
+<details>
+ <summary> Prerequisites </summary>
+   
+    For this walkthrough, you should have the following prerequisites:
 
-Familiarity with below Services.
+    * [An AWS account](https://aws.amazon.com/console/)
+    * [For Amazon Bedrock, you should have access to Anthropic Claude models](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
 
-[AWS IAM](https://docs.aws.amazon.com/iam/index.html). 
+    **Familiarity with below Services.**
 
-[AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+    * [AWS IAM](https://docs.aws.amazon.com/iam/index.html). 
 
-[Amazon API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html)
+    * [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+
+    * [Amazon API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html)
  
-[Amazon opensearch serverless](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-overview.html)
+    * [Amazon opensearch serverless](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-overview.html)
 
-[Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/index.html)
+    #### For Llama2/Falcon models deployed on Amazon Sagemaker
+    * [Amazon Sagemaker](https://docs.aws.amazon.com/sagemaker/index.html)
+    * GPU Instance of type ml.g5.2xlarge for endpoint usage_
+    * Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and ap-southeast-1)_
 
-_GPU Instance of type ml.g5.2xlarge for endpoint usage_
+</details>
 
-_Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and ap-southeast-1)_
 
 
 
@@ -80,45 +91,44 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 
 ### Deploying the Solution to your account with AWS Cloudshell
 
-#### Section1 - Create an IAM user with Administrator permissions. 
+<details>
+ <summary> Create an Admin User to deploy this stack </summary>
+
+ #### Section1 - Create an IAM user with Administrator permissions. 
 
 1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Users“ tab under ”Access Management” and Click on “Create User”
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.40.44%20PM.png)
 
 2. Give a name to the IAM user and click “Next“
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.41.48%20PM.png)
 
 3. Now Click on Attach Policies directly and Choose "AdminsitratorAccess" and click "Next" 
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.42.44%20PM.png)
 
 4. Now review the details and click on "Create User"
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.43.24%20PM.png)
 
 5. Now we need to create credentials for this IAM. Go to "Users" tab again and you will see your new user listed over there. Now click on the username.
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.44.14%20PM.png)
 
 6. Go to Security Credentials Tab and under "Access Keys" click on "Create Access key"
-
 <img width="1377" alt="LLMAdminSecurityCredentials2" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/36bdf80f-8b0e-43a4-ad0f-a3233ce753cb">
 
 
 7. In the window that appears choose the first option "Command line Interface" and click the checkbox at the bottom and click Next
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.24%20PM.png)
 
 8.Now the Tag is optional and you can leave this empty and click on Create Access Key
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.34%20PM.png)
 
 9. Now click on Download .csv file to download the credentials and click on "Done". Now lets proceed to section 2
-
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.49%20PM.png)
 
+</details>
+
+
+<details>
+ <summary> Deploy a RAG based Solution </summary>
 
 #### Section 2 - Deploy a RAG based Solution (The below commands should be executed in the region of deployment)
 
@@ -129,38 +139,39 @@ _Supported Llama2 regions (us-east-1 , us-east-2 , us-west 2 , eu-west-1 , and a
 
 <img width="1118" alt="LLMAdminConfigureCloudShell" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/58175b14-259d-4d7d-b3e4-bb75fb48e998">
 
-
-3. Git Clone the serverless-rag-demo repository from aws-samples
+2. Git Clone the serverless-rag-demo repository from aws-samples
    ```
     git clone https://github.com/aws-samples/serverless-rag-demo.git
    ```
 
-5. Go to the directory where we have the downloaded files.
+3. Go to the directory where we have the downloaded files.
    ```
      cd serverless-rag-demo
    ```
 
-6. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Region can be any of those supported by Amazon Opensearch Serverless [refer](https://aws.amazon.com/about-aws/whats-new/2023/01/amazon-opensearch-serverless-available)
+4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Region can be any of those supported by Amazon Opensearch Serverless [refer](https://aws.amazon.com/about-aws/whats-new/2023/01/amazon-opensearch-serverless-available)
    ```
      sh creator.sh dev us-east-1
    ```
    
-7. Select the LLM you want to deploy (sh creator.sh dev us-east-1)
+5. Select the LLM you want to deploy (sh creator.sh dev us-east-1) . Select Option 1 for Amazon Bedrock.
 
    <img width="1380" alt="Screenshot 2023-10-03 at 6 19 58 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/986d97ea-06fc-437b-8ae0-0bbd13e7d56b">
 
-8. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
+6. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
 rag-llm-api-{env_name}. Get the invoke URL for the API
 
   <img width="1407" alt="ApiGw1" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/623344df-adf0-41b0-a90f-16b8cec62f25">
 
 
-9. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
+7. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
    * _Do not forget to append_ **"rag"** _at the end of the API-GW url_
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
 
    <img width="1238" alt="Screenshot 2023-09-14 at 8 52 09 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9e5c3e4d-e211-4727-ab57-ecd188565a64">
+ 
+</details>
 
 
 
