@@ -479,48 +479,6 @@ December 31, 2020, 2021, and 2022. Additions to the allowance were $3.5 billion,
 from the allowance were $3.6 billion, $4.9 billion, and $5.2 billion in 2020, 2021, and 2022. Included in “Inventories” on our
 consolidated balance sheets are assets totaling $852 million, $882 million, and $948 million as of December 31, 2020, 2021,
 and 2022, for the rights to recover products from customers associated with our liabilities for return allowances.
-Cost of Sales
-Cost of sales primarily consists of the purchase price of consumer products, inbound and outbound shipping costs,
-including costs related to sortation and delivery centers and where we are the transportation service provider, and digital media
-content costs where we record revenue gross, including video and music. Shipping costs to receive products from our suppliers
-are included in our inventory, and recognized as cost of sales upon sale of products to our customers. Payment processing and
-related transaction costs, including those associated with seller transactions, are classified in “Fulfillment” on our consolidated
-statements of operations.
-Vendor Agreements
-We have agreements with our vendors to receive consideration primarily for cooperative marketing efforts, promotions,
-incentives, and volume rebates. We generally consider these amounts received from vendors to be a reduction of the prices we
-pay for their goods, including property and equipment, or services, and are recorded as a reduction of the cost of inventory, cost
-of services, or cost of property and equipment. Volume rebates typically depend on reaching minimum purchase thresholds. We
-evaluate the likelihood of reaching purchase thresholds using past experience and current year forecasts. When volume rebates
-can be reasonably estimated, we record a portion of the rebate as we make progress towards the purchase threshold.
-Fulfillment
-Fulfillment costs primarily consist of those costs incurred in operating and staffing our North America and International
-segments’ fulfillment centers, physical stores, and customer service centers, including facilities and equipment expenses, such
-as depreciation and amortization, and rent; costs attributable to buying, receiving, inspecting, and warehousing inventories;
-picking, packaging, and preparing customer orders for shipment; payment processing and related transaction costs, including
-costs associated with our guarantee for certain seller transactions; responding to inquiries from customers; and supply chain
-management for our manufactured electronic devices. Fulfillment costs also include amounts paid to third parties that assist us
-in fulfillment and customer service operations.
-43
-Technology and Content
-Technology and content costs include payroll and related expenses for employees involved in the research and
-development of new and existing products and services, development, design, and maintenance of our stores, curation and
-display of products and services made available in our online stores, and infrastructure costs. Infrastructure costs include
-servers, networking equipment, and data center related depreciation and amortization, rent, utilities, and other expenses
-necessary to support AWS and other Amazon businesses. Collectively, these costs reflect the investments we make in order to
-offer a wide variety of products and services to our customers, including expenditures related to initiatives to build and deploy
-innovative and efficient software and electronic devices and the development of a satellite network for global broadband service
-and autonomous vehicles for ride-hailing services. Technology and content costs are generally expensed as incurred.
-Sales and Marketing
-Sales and marketing costs include advertising and payroll and related expenses for personnel engaged in marketing and
-selling activities, including sales commissions related to AWS. We pay commissions to third parties when their customer
-referrals result in sales. We also participate in cooperative advertising arrangements with certain of our vendors, and other third
-parties.
-Advertising and other promotional costs to market our products and services are expensed as incurred and were $10.9
-billion, $16.9 billion, and $20.6 billion in 2020, 2021, and 2022.
-General and Administrative
-General and administrative expenses primarily consist of costs for corporate functions, including payroll and related
-expenses; facilities and equipment expenses, such as depreciation and amortization expense and rent; and professional fees.
 Stock-Based Compensation
 Compensation cost for all equity-classified stock awards expected to vest is measured at fair value on the date of grant
 and recognized over the service period. The fair value of restricted stock units is determined based on the number of shares
