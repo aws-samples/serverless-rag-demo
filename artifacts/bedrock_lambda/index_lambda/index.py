@@ -89,6 +89,7 @@ def index_documents(event):
     texts = text_splitter.create_documents([text_val])
 
     if texts is not None and len(texts) > 0:
+        create_index()
         for chunk_text in texts:
             body = json.dumps({"inputText": chunk_text.page_content})
             model_id = 'amazon.titan-embed-text-v1'
@@ -110,7 +111,6 @@ def index_documents(event):
                'text': chunk_text.page_content
             }
             try:
-                create_index()
                 # Index the document
                 ops_client.index(index=INDEX_NAME, body=doc)
             except Exception as e:
