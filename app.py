@@ -17,7 +17,8 @@ account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
 region = os.getenv('CDK_DEFAULT_REGION')
 env=cdk.Environment(account=account_id, region=region)
 
-LlmsWithServerlessRagStack(app, "LlmsWithServerlessRagStack", env=env
+env_name = app.node.try_get_context("environment_name")
+LlmsWithServerlessRagStack(app, f"LlmsWithServerlessRag{env_name}Stack", env=env
     # If you don't specify 'env', this stack will be environment-agnostic.
     # Account/Region-dependent features and context lookups will not work,
     # but a single synthesized template can be deployed anywhere.
@@ -35,7 +36,6 @@ LlmsWithServerlessRagStack(app, "LlmsWithServerlessRagStack", env=env
     # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
     )
 
-env_name = app.node.try_get_context("environment_name")
 api_gw_stack = ApiGw_Stack(app, f'ApiGwLlmsLambda{env_name}Stack')
 sagemaker_stack = SagemakerLLMStack(app, f'SagemakerLlm{env_name}Stack')
 tag_my_stack(api_gw_stack)
