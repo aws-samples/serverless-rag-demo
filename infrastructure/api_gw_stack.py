@@ -34,6 +34,7 @@ class ApiGw_Stack(Stack):
         env_params = self.node.try_get_context(env_name)
         print(f'Collection_endpoint={collection_endpoint}')
         print(f'LLM_Model_Id={llm_model_id}')
+        print(f'Secret Key={secret_api_key}')
         
         sagemaker_endpoint_name=env_params['sagemaker_endpoint']
         if 'llama-2-7b' in llm_model_id:
