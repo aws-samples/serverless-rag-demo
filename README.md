@@ -204,7 +204,9 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
    * _Do not forget to append_ **"rag"** _at the end of the API-GW url_
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
-   **Add in your API Key used during stack deployment to proceed with the demo**
+
+   **Add in your API Key used during stack Amazon Bedrock deployment to proceed with the demo**
+   
    <img width="1270" alt="Screenshot 2023-10-23 at 10 50 39 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9b1fefa0-d36b-4a4f-bd61-64f563db281e">
  
 </details>
