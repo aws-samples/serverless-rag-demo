@@ -15,9 +15,10 @@ class OpensearchVectorDbStack(NestedStack):
         env_name = self.node.try_get_context('environment_name')
         env_params = self.node.try_get_context(env_name)
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
+        region=os.getenv('CDK_DEFAULT_REGION')
         collection_name = env_params['collection_name']
         index_name = env_params['index_name']
-        lambda_role_arn = f"arn:aws:iam::{account_id}:role/{env_params['lambda_role_name']}"
+        lambda_role_arn = f"arn:aws:iam::{account_id}:role/{env_params['lambda_role_name']}_{region}"
         encryption_policy = _oss.CfnSecurityPolicy(self, f'sample-vectordb-encrypt-{env_name}',  name=f'sample-vectordb-encryption-{env_name}',
                                 type='encryption',
                                 policy="""{\"Rules\":[{\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ collection_name +"""\"]}],\"AWSOwnedKey\":true}""")
