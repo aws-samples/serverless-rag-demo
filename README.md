@@ -126,7 +126,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 <details>
  <summary><b> Create an Admin User to deploy this stack </b></summary>
 
- #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL If your already an Admin user/role) 
+ #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If your already an Admin user/role, you may skip this step) 
 
 1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Users“ tab under ”Access Management” and Click on “Create User”
 ![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.40.44%20PM.png)
@@ -163,7 +163,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
-1. Search for AWS Cloudshell. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell
+1. Search for **AWS Cloudshell**. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell
    ```
       aws configure
    ```
