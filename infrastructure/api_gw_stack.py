@@ -23,6 +23,7 @@ class ApiGw_Stack(Stack):
         account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
         collection_endpoint = 'random'
         llm_model_id = self.node.try_get_context("llm_model_id")
+        secret_api_key = self.node.try_get_context("secret_api_key")
         html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
@@ -63,6 +64,8 @@ class ApiGw_Stack(Stack):
         # Base URL
         api_description = "RAG with Opensearch Serverless"
 
+        secure_key = _cdk.aws_apigateway.ApiKey(self, f"rag-api-key-{env_name}", api_key_name=secret_api_key, enabled=True, description="Secure access to API's")
+
         rag_llm_root_api = _cdk.aws_apigateway.RestApi(
             self,
             f"rag-llm-api-{env_name}",
@@ -75,6 +78,16 @@ class ApiGw_Stack(Stack):
             },
             description=api_description,
         )
+
+        plan = _cdk.aws_apigateway.UsagePlan(self, f"rag-api-plan-{env_name}", 
+                                            throttle=_cdk.aws_apigateway.ThrottleSettings(burst_limit=50, rate_limit=200),
+                                            quota=_cdk.aws_apigateway.QuotaSettings(limit=500, period=_cdk.aws_apigateway.Period.MONTH),
+                                            api_stages= _cdk.aws_apigateway.UsagePlanPerApiStage(api=rag_llm_root_api,
+                                                                                                stage=rag_llm_root_api.deployment_stage))
+        
+        plan.add_api_key(secure_key)
+        rag_llm_root_api.add_api_key(secret_api_key)
+
         rag_llm_api = rag_llm_root_api.root.add_resource("rag")
 
         method_responses = [
@@ -146,7 +159,8 @@ class ApiGw_Stack(Stack):
                                   description="Query Models in Amazon Bedrock",
                                   environment={ 'INDEX_NAME': env_params['index_name'],
                                                 'OPENSEARCH_ENDPOINT': collection_endpoint,
-                                                'REGION': region
+                                                'REGION': region,
+                                                'SECRET_KEY': secret_api_key
                                   },
                                   memory_size=2048,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
@@ -263,7 +277,7 @@ class ApiGw_Stack(Stack):
                                             code=_cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/html_lambda/')),
                                             environment={ 'ENVIRONMENT': env_name,
                                                           'LLM_MODEL_NAME': html_header_name,
-                                                          'WSS_URL': wss_url + '/' + env_name
+                                                          'WSS_URL': wss_url + '/' + env_name,
                                                         })        
     
         oss_policy = _iam.PolicyStatement(
@@ -302,12 +316,14 @@ class ApiGw_Stack(Stack):
                 bedrock_index_lambda_integration,
                 operation_name="index document",
                 method_responses=method_responses,
+                api_key_required=True
             )
             index_docs_api.add_method(
                 "DELETE",
                 bedrock_index_lambda_integration,
                 operation_name="delete document index",
                 method_responses=method_responses,
+                api_key_required=True
             )
         
             index_sample_data_api.add_method(
@@ -315,6 +331,7 @@ class ApiGw_Stack(Stack):
                 bedrock_index_lambda_integration,
                 operation_name="index sample document",
                 method_responses=method_responses,
+                api_key_required=True
             )
         else:
             query_api.add_method(

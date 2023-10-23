@@ -235,6 +235,15 @@ def handler(event, context):
             behaviour = input_to_llm['behaviour']
             model_id = input_to_llm['model_id']
             query_data(query, behaviour, model_id, connect_id)
+    elif routeKey == '$connect':
+        if 'x-api-key' in event['queryStringParameters']:
+            if event['queryStringParameters']['x-api-key'] in ['bedrock-access-internal', 'bedrock-access-mumbai-pod']:
+                return {'statusCode': '200', 'body': 'Bedrock says hello' }
+            else:
+                return {'statusCode': '403', 'body': 'Forbidden' }
+        else:
+            return {'statusCode': '403', 'body': 'Forbidden' }
+            
     return {'statusCode': '200', 'body': 'Bedrock says hello' }
 
     

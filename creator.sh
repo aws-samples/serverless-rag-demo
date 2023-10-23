@@ -1,4 +1,7 @@
 #!/usr/bin/bash 
+Green='\033[0;32m'
+Red='\033[0;31m'
+NC='\033[0m'
 
 if [ -z "$1" ]
 then
@@ -16,6 +19,15 @@ echo "Environment: $infra_env"
 
 deployment_region=$(curl -s http://169.254.169.254/task/AvailabilityZone | sed 's/\(.*\)[a-z]/\1/')
 echo "Region: $deployment_region "
+echo '*************************************************************'
+echo ' '
+
+echo $Green Enter an secret API Key to secure access to Bedrock APIs $NC
+read secret_api_key
+
+echo '*************************************************************'
+echo ' '
+
 # if [ -z "$2" ]
 # then
 #     echo "Region not passed. Defaulting to us-east-1"
@@ -23,7 +35,8 @@ echo "Region: $deployment_region "
 # else
 #     deployment_region=$2
 # fi
-PS3='Please enter your LLM choice (1/2/3/4/5/6/7): '
+
+echo " $Green Please enter your LLM choice (1/2/3/4/5/6/7): $NC "
 options=("Amazon Bedrock" "Llama2-7B" "Llama2-13B" "Llama2-70B" "Falcon-7B" "Falcon-40B" "Falcon-180B" "Quit")
 model_id='meta-textgeneration-llama-2-7b-f'
 instance_type='ml.g5.2xlarge'
@@ -71,15 +84,15 @@ echo ' '
 
 if [ "$opt" != "Amazon Bedrock" ]
 then
-    echo  !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase
+    echo  $Red !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase $NC
 else
-    echo !!! Attention Provisioning $model_id infrastructure. Please ensure you have access to models in $opt
+    echo $Red !!! Attention Provisioning $model_id infrastructure. Please ensure you have access to models in $opt $NC
 fi
 echo ' '
 echo '*************************************************************'
 echo ' '
-echo ' '
-read -p "Press Enter to proceed with deployment else ctrl+c to cancel"
+echo "$Green Press Enter to proceed with deployment else ctrl+c to cancel $NC "
+read -p " "
 
 cd ..
 echo "--- Upgrading npm ---"
@@ -95,7 +108,7 @@ echo "--- pip install requirements ---"
 python3 -m pip install -r requirements.txt
 
 echo "--- CDK synthesize ---"
-cdk synth -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id"
+cdk synth -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key
 
 echo "--- CDK deploy ---"
 CURRENT_UTC_TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
@@ -137,7 +150,7 @@ if [ $build_status = "SUCCEEDED" ]
 then
     COLLECTION_NAME=$(jq '.context.'$infra_env'.collection_name' cdk.json -r)
     COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
-    cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" ApiGwLlmsLambda"$infra_env"Stack --require-approval never
+    cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key ApiGwLlmsLambda"$infra_env"Stack --require-approval never
     if [ "$opt" != "Amazon Bedrock" ]
     then
         cdk deploy -c environment_name=$infra_env -c llm_model_id="$model_id" SagemakerLlmdevStack --require-approval never
