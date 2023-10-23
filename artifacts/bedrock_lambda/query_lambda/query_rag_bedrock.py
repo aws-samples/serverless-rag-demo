@@ -60,7 +60,7 @@ def query_data(query, behaviour, model_id, connect_id):
     elif behaviour == 'pii':
         prompt = 'Does the below text contain PII data. If so list the type of PII data'
     elif behaviour == 'redact':
-        prompt = 'Please remove all personally identifiable information from the below text: '
+        prompt = 'Please redact all personally identifiable information from the below text '
     else:
         prompt = DEFAULT_PROMPT
     
