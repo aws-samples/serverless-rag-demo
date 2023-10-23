@@ -91,10 +91,10 @@ else
 
     if [ $secret_len -lt 20 ]
     then
-        printf "$Red Secret Cannot be less than 20 characters $NC. Exit"
+        printf "$Red Secret Cannot be less than 20 characters $NC. \n Exit \n"
         exit
     fi
-    
+
     echo ' '
     echo '*************************************************************'
     echo ' '
