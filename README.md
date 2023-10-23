@@ -163,7 +163,8 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
-1. Search for **AWS Cloudshell**. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell
+1. Search for **AWS Cloudshell**. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell.
+   **Optional if you have assumed an Administrator role.**__
    ```
       aws configure
    ```
