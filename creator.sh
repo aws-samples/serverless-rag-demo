@@ -36,7 +36,7 @@ echo ' '
 #     deployment_region=$2
 # fi
 
-echo "${Green} Please enter your LLM choice (1/2/3/4/5/6/7): ${NC}"
+printf "$Green Please enter your LLM choice (1/2/3/4/5/6/7): $NC"
 options=("Amazon Bedrock" "Llama2-7B" "Llama2-13B" "Llama2-70B" "Falcon-7B" "Falcon-40B" "Falcon-180B" "Quit")
 model_id='meta-textgeneration-llama-2-7b-f'
 instance_type='ml.g5.2xlarge'
@@ -84,14 +84,14 @@ echo ' '
 
 if [ "$opt" != "Amazon Bedrock" ]
 then
-    echo  $Red !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase $NC
+    printf  "$Red !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase $NC"
 else
-    echo $Red !!! Attention Provisioning $model_id infrastructure. Please ensure you have access to models in $opt $NC
+    printf "$Red !!! Attention Provisioning $model_id infrastructure. Please ensure you have access to models in $opt $NC"
 fi
 echo ' '
 echo '*************************************************************'
 echo ' '
-echo "${Green} Press Enter to proceed with deployment else ctrl+c to cancel ${NC} "
+printf "$Green Press Enter to proceed with deployment else ctrl+c to cancel $NC "
 read -p " "
 
 cd ..
