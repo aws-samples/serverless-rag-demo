@@ -107,7 +107,7 @@ class ApiGw_Stack(Stack):
 
         
         custom_lambda_role = _iam.Role(self, f'llm_rag_role_{env_name}', 
-                    role_name= env_params['lambda_role_name'],
+                    role_name= env_params['lambda_role_name'] + '_' + region,
                     assumed_by= _iam.ServicePrincipal('lambda.amazonaws.com'),
                     managed_policies= [
                         _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
