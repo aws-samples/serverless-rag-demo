@@ -197,7 +197,7 @@ def parse_response(model_id, response):
 def prepare_prompt_template(model_id, prompt, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
-        prompt_template = {"prompt":f"Human:{query}. \n{prompt}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}
+        prompt_template = {"prompt":f"Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}
     elif model_id == 'cohere.command-text-v14':
         prompt_template = {"prompt": f"""{prompt}\n
                               {query}"""}
