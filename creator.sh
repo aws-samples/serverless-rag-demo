@@ -116,7 +116,7 @@ cdk synth -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMES
 echo "--- CDK deploy ---"
 CURRENT_UTC_TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
 echo Setting Tagging Lambda Image with timestamp $CURRENT_UTC_TIMESTAMP
-cdk deploy -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" LlmsWithServerlessRag"$infra_env"Stack --require-approval never
+cdk deploy -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key="$secret_api_key" LlmsWithServerlessRag"$infra_env"Stack --require-approval never
 echo "--- Get Build Container ---"
 project=lambdaragllmcontainer"$infra_env"
 echo project: $project
