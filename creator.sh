@@ -34,6 +34,7 @@ echo ' '
 # fi
 
 printf "$Green Please enter your LLM choice (1/2/3/4/5/6/7): $NC"
+printf "\n"
 options=("Amazon Bedrock" "Llama2-7B" "Llama2-13B" "Llama2-70B" "Falcon-7B" "Falcon-40B" "Falcon-180B" "Quit")
 model_id='meta-textgeneration-llama-2-7b-f'
 instance_type='ml.g5.2xlarge'
