@@ -187,20 +187,24 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
    
 5. Select the LLM you want to deploy (sh creator.sh dev us-east-1) . Select Option 1 for Amazon Bedrock.
 
-   <img width="856" alt="creatorsh" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/124c015c-2349-461a-a467-82d23c90e512">
+6. When selecting Amazon Bedrock (Option 1), you should specify an API Key. The key should be atleast 20 characters long.
 
+   <img width="1088" alt="Screenshot 2023-10-23 at 10 48 01 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/dfc7ba5c-48df-4ea6-83ed-31c35e4a1098">
 
-6. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
+7. Press **Enter** to proceed with deployment of the stack or **ctrl+c** to exit
+
+   <img width="1086" alt="Screenshot 2023-10-23 at 10 49 04 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/b74105bb-b817-4c47-8c41-1b72f7fa27b3">
+
+8. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
 rag-llm-api-{env_name}. Get the invoke URL for the API
 
-  <img width="1407" alt="ApiGw1" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/623344df-adf0-41b0-a90f-16b8cec62f25">
-
+   <img width="1407" alt="ApiGw1" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/623344df-adf0-41b0-a90f-16b8cec62f25">
 
 7. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
    * _Do not forget to append_ **"rag"** _at the end of the API-GW url_
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
-
-   <img width="1262" alt="Screenshot 2023-10-18 at 1 00 59 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/6e3dddf6-d630-4cd3-bd98-f4917579baad">
+   **Add in your API Key used during stack deployment to proceed with the demo**
+   <img width="1270" alt="Screenshot 2023-10-23 at 10 50 39 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9b1fefa0-d36b-4a4f-bd61-64f563db281e">
  
 </details>
