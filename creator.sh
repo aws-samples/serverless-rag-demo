@@ -85,8 +85,16 @@ then
     printf  "$Red !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase $NC"
     
 else
-    printf "$Green Enter a custom secret API Key to secure access to Bedrock APIs $NC"
+    printf "$Green Enter a custom secret API Key(atleast 20 Characters long) to secure access to Bedrock APIs $NC"
     read secret_api_key
+    secret_len=${#secret_api_key}
+
+    if [ $secret_len -lt 20 ]
+    then
+        printf "$Red Secret Cannot be less than 20 characters $NC. Exit"
+        exit
+    fi
+    
     echo ' '
     echo '*************************************************************'
     echo ' '
