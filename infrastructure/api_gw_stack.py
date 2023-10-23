@@ -87,9 +87,7 @@ class ApiGw_Stack(Stack):
                                             api_stages= [_cdk.aws_apigateway.UsagePlanPerApiStage(api=rag_llm_root_api,
                                                                                                 stage=rag_llm_root_api.deployment_stage)] )
             plan.add_api_key(secure_key)
-            rag_llm_root_api.add_api_key(id=f"rag-api-add-key-{env_name}",
-                                    api_key_name=secret_api_key, description="Secure access to Bedrock APIs")
-
+            
         rag_llm_api = rag_llm_root_api.root.add_resource("rag")
 
         method_responses = [
