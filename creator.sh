@@ -81,14 +81,14 @@ echo ' '
 
 if [ "$opt" != "Amazon Bedrock" ]
 then
+    printf  "$Red !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase $NC"
+    
+else
     printf "$Green Enter a custom secret API Key to secure access to Bedrock APIs $NC"
     read secret_api_key
     echo ' '
     echo '*************************************************************'
     echo ' '
-    printf  "$Red !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase $NC"
-    
-else
     printf "$Red !!! Attention Provisioning $model_id infrastructure. Please ensure you have access to models in $opt $NC"
 fi
 echo ' '
