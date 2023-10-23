@@ -37,8 +37,6 @@ class BedrockLayerStack(NestedStack):
             except yaml.YAMLError as exc:
                 print(exc)
         
-        print(build_spec_yml)
-
         # Trigger CodeBuild job
         containerize_build_job =_codebuild.Project(
             self,
