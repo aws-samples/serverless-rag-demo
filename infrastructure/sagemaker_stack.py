@@ -47,7 +47,6 @@ class SagemakerLLMStack(Stack):
                 build_spec_yml = yaml.safe_load(stream)
             except yaml.YAMLError as exc:
                 print(exc)
-        print(build_spec_yml)
         custom_sm_role = _iam.Role(self, f'llm_rag_role_{env_name}', 
                     role_name= config_details['sagemaker_role_name'],
                     assumed_by= _iam.CompositePrincipal(

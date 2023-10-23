@@ -23,6 +23,7 @@ service = 'aoss'
 region = getenv("REGION", "us-east-1")
 awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
                    region, service, session_token=credentials.token)
+SECRET_API_KEY = getenv("SECRET_KEY", "random_key")
 
 DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
                     Always answer as helpfully as possible, while being safe.
@@ -59,7 +60,7 @@ def query_data(query, behaviour, model_id, connect_id):
     elif behaviour == 'pii':
         prompt = 'Does the below text contain PII data. If so list the type of PII data'
     elif behaviour == 'redact':
-        prompt = 'Please remove all personally identifiable information from the below text: '
+        prompt = 'Please redact all personally identifiable information from the below text '
     else:
         prompt = DEFAULT_PROMPT
     
@@ -235,6 +236,15 @@ def handler(event, context):
             behaviour = input_to_llm['behaviour']
             model_id = input_to_llm['model_id']
             query_data(query, behaviour, model_id, connect_id)
+    elif routeKey == '$connect':
+        if 'x-api-key' in event['queryStringParameters']:
+            if event['queryStringParameters']['x-api-key'] == SECRET_API_KEY:
+                return {'statusCode': '200', 'body': 'Bedrock says hello' }
+            else:
+                return {'statusCode': '403', 'body': 'Forbidden' }
+        else:
+            return {'statusCode': '403', 'body': 'Forbidden' }
+            
     return {'statusCode': '200', 'body': 'Bedrock says hello' }
 
     

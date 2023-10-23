@@ -37,10 +37,29 @@
     <h1><span id="model-name">Llama2-7b<span></h1>
     </center>
 
+  
   <div style="padding-bottom: 10px;"></div>
   <div style="padding-bottom: 10px;"></div>
   
+  <div class="modal" tabindex="-1" id="apikey_modal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Set API Key</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="password" id="api_key"/>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="setApiKey()">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
   
+  <div id="main-bedrock-content">
   <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button" role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
@@ -210,6 +229,7 @@
 
   <div id="sse"></div>
   </div>
+  </div>
 
   <footer>
     <script type="text/javascript">
@@ -217,6 +237,9 @@
       var vector_text = ' with Opensearch Serverless vector db demo'
       // do stuff
       $(document).ready(function () {
+        $('#main-bedrock-content').hide();
+        $('#apikey_modal').css('top', '12vh')
+        $('#apikey_modal').show()
         $('#custom-spinner').css('visibility','hidden');
         $('#index-spinner').css('visibility','hidden');
         document.getElementById("model-name").innerHTML=awsData.htmlheader + vector_text
@@ -233,6 +256,18 @@
           websocketUrl: '<websocketUrl>'
           
       };
+
+      function setApiKey() {
+        api_key = $('#api_key').val()
+        if (api_key) {
+          awsData['apiKey'] = api_key
+          $('#apikey_modal').hide()
+          $.ajaxSetup({
+            headers: { 'x-api-key':  api_key}
+          });
+          $('#main-bedrock-content').show();
+        }
+      }
 
       function indexDocuments() {
         
@@ -252,7 +287,7 @@
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
-            alertbuilder(result['result'])
+            alertbuilder(result['result'], true)
           },
           error: function (err) {
             $('#index-spinner').css('visibility','hidden');
@@ -261,7 +296,8 @@
             $('#delete-button').css('visibility','visible');
             console.log('Error on making API gateway call to index documents ..');
             console.log(err.responseText);
-            alertbuilder(err.responseText.replaceAll('"', ''))
+            console.log(err)
+            alertbuilder(err.responseText.replaceAll('"', ''), false)
           }
         });
       }
@@ -288,7 +324,7 @@
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
-            alertbuilder(result['result'])
+            alertbuilder(result['result'], true)
             
           },
           error: function (err) {
@@ -298,14 +334,18 @@
             $('#delete-button').css('visibility','visible');
             console.log('Error on making API gateway call to delete index..');
             console.log(err.responseText);
-            alertbuilder(err.responseText.replaceAll('"', ''))
+            alertbuilder(err.responseText.replaceAll('"', ''), false)
           }
         });
 
       }
 
-      function alertbuilder(message) {
-        $('#alert-placeholder').append('<div id="alertdiv" class="alert alert-success toast-config"><a class="close" data-dismiss="alert"></a><span>'+message+'</span></div>')
+      function alertbuilder(message, success) {
+        var alert_css = 'alert-danger'
+        if (success) {
+          alert_css = 'alert-success'
+        }
+        $('#alert-placeholder').append('<div id="alertdiv" class="alert '+ alert_css + ' toast-config"><a class="close" data-dismiss="alert"></a><span>'+message+'</span></div>')
         setTimeout(() => {
               $('#alertdiv').remove();
             }, 5000)
@@ -314,7 +354,7 @@
       function model_selected(val) {
         $('#set_model').text('Model selected : ' + val)
         model_id = val
-        alertbuilder('Model Selected: ' + val)
+        alertbuilder('Model Selected: ' + val, true)
         $("button.assistant").prop('disabled', false)
       }
       
@@ -334,7 +374,7 @@
             $('#index-button').css('visibility','visible');
             $('#query-button').css('visibility','visible');
             $('#delete-button').css('visibility','visible');
-            alertbuilder('Indexed Successfully')
+            alertbuilder('Indexed Successfully', true)
           },
           error: function (err) {
             $('#index-spinner').css('visibility','hidden');
@@ -343,10 +383,18 @@
             $('#delete-button').css('visibility','visible');
             console.log('Error on making API gateway call to index documents ..');
             console.log(err.responseText);
-            alertbuilder(err.responseText.replaceAll('"', ''))
+            var err_message = err.responseText
+            if (err.status == 403) {
+              err_message = 'Incorrect API Key ' + err_message
+            }
+            alertbuilder(err_message.replaceAll('"', ''), false)
           }
         });
         
+      }
+
+      function hasWhiteSpace(s) {
+          return /\s/g.test(s);
       }
 
       function query(assistant_type) {
@@ -362,7 +410,8 @@
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
           if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-            ws = new WebSocket(awsData.websocketUrl);
+           
+              ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
             ws.onerror=function(event){
                   console.log(event);
                   $('#custom-spinner').css('visibility','hidden');
@@ -371,6 +420,7 @@
                   $('#delete-button').css('visibility','visible');
                   alertbuilder('Could not establish connection. Check API-Key', false)
                 }
+            
           } else {
             ws.send(data);
           }
@@ -387,7 +437,7 @@
             $('#delete-button').css('visibility','visible');
             var received_msg = '' ;
             response_json = JSON.parse(evt.data)
-            if (response_json['text']) {
+            if (response_json['text'] || hasWhiteSpace(response_json['text'])) {
               received_msg = response_json['text']
             } else {
               received_msg = JSON.stringify(response_json)
