@@ -164,7 +164,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
 1. Search for **AWS Cloudshell**. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell.
-   **Optional if you have assumed an Administrator role.**__
+   **Optional if you have assumed an Administrator role.**
    ```
       aws configure
    ```
@@ -181,14 +181,14 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
      cd serverless-rag-demo
    ```
 
-4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Region can be any of those supported by Amazon Opensearch Serverless [refer](https://aws.amazon.com/about-aws/whats-new/2023/01/amazon-opensearch-serverless-available)
+4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Look at Prerequisites to deploy to the correct reqion.
    ```
      sh creator.sh
    ```
    
-5. Select the LLM you want to deploy (sh creator.sh dev us-east-1) . Select Option 1 for Amazon Bedrock.
+5. Select the LLM you want to deploy (sh creator.sh) . Select **Option 1** for Amazon Bedrock service.
 
-6. When selecting Amazon Bedrock (Option 1), you should specify an API Key. The key should be atleast 20 characters long.
+6. When selecting **Amazon Bedrock** (Option 1), you should specify an API Key. The key should be atleast 20 characters long.
 
    <img width="1088" alt="Screenshot 2023-10-23 at 10 48 01 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/dfc7ba5c-48df-4ea6-83ed-31c35e4a1098">
 
