@@ -12,6 +12,11 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 <details>
   <summary><b>Project Updates</b></summary>
+ 
+  #### (27-Oct-2023):
+  * Improve UI
+  <img width="1424" alt="Screenshot 2023-10-27 at 1 51 17 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/7568e38e-ffdf-4ad1-8a2e-9e79cf11d91e">
+
 
  #### (18-Oct-2023):
   * Support French/German for Anthropic Claude with Amazon Bedrock
@@ -70,7 +75,7 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details open>
  <summary><b>Bedrock RAG Demo</b></summary>
 
-   #### Bedrock RAG Demo Video
+   #### Bedrock RAG Demo Video (UI modified, Check Project Updates)
    
    https://github.com/aws-samples/serverless-rag-demo/assets/25897220/3549ab88-3957-4b35-b04b-5ba21c41c89b
 
@@ -208,6 +213,6 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
 
    **Add in your API Key used during stack Amazon Bedrock deployment to proceed with the demo**
    
-   <img width="1270" alt="Screenshot 2023-10-23 at 10 50 39 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9b1fefa0-d36b-4a4f-bd61-64f563db281e">
- 
+   <img width="1397" alt="Screenshot 2023-10-27 at 1 52 06 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/8105893c-4b8f-4eb8-959f-6199bbaf5441">
+
 </details>
