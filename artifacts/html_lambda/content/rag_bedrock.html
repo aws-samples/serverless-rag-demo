@@ -25,23 +25,161 @@
         z-index: 1000;
         position: absolute;
       }
+
+      .header{
+        background-color: #001529;
+        color: white;
+        font-size: 20px;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+      }
+
+      body,html{
+  width:100%;
+  height: 100%;
+}
+body{
+  margin:0;
+  padding:0;
+  /* background:#29b6f6; */
+  /* #c8cbcf */
+  background: #dee6ef;
+}
+.bubbles{
+  position:absolute;
+  width:100%;
+  height: 100%;
+  z-index:-100;
+  overflow:hidden;
+  top:0;
+  left:0;
+}
+.bubble{
+  position: absolute;
+  bottom:-100px;
+  width:40px;
+  height: 40px;
+  background:#5b6471b5;
+  border-radius:50%;
+  opacity:0.1;
+  animation: rise 10s infinite ease-in;
+}
+.bubble:nth-child(1){
+  width:40px;
+  height:40px;
+  left:10%;
+  animation-duration:8s;
+}
+.bubble:nth-child(2){
+  width:20px;
+  height:20px;
+  left:20%;
+  animation-duration:5s;
+  animation-delay:1s;
+}
+.bubble:nth-child(3){
+  width:50px;
+  height:50px;
+  left:35%;
+  animation-duration:7s;
+  animation-delay:2s;
+}
+.bubble:nth-child(4){
+  width:80px;
+  height:80px;
+  left:50%;
+  animation-duration:11s;
+  animation-delay:0s;
+}
+.bubble:nth-child(5){
+  width:35px;
+  height:35px;
+  left:55%;
+  animation-duration:6s;
+  animation-delay:1s;
+}
+.bubble:nth-child(6){
+  width:45px;
+  height:45px;
+  left:65%;
+  animation-duration:8s;
+  animation-delay:3s;
+}
+.bubble:nth-child(7){
+  width:90px;
+  height:90px;
+  left:70%;
+  animation-duration:12s;
+  animation-delay:2s;
+}
+.bubble:nth-child(8){
+  width:25px;
+  height:25px;
+  left:80%;
+  animation-duration:6s;
+  animation-delay:2s;
+}
+.bubble:nth-child(9){
+  width:15px;
+  height:15px;
+  left:70%;
+  animation-duration:5s;
+  animation-delay:1s;
+}
+.bubble:nth-child(10){
+  width:90px;
+  height:90px;
+  left:25%;
+  animation-duration:10s;
+  animation-delay:4s;
+}
+@keyframes rise{
+  0%{
+    bottom:-100px;
+    transform:translateX(00);
+  }
+  50%{
+    transform:translate(100px);
+  }
+  100%{
+    bottom:1080px;
+    transform:translateX(-200px);
+  }
+}
     </style>
 
 
 </head>
 
 <body>
-  <div class="p-3 mb-2 bg-light text-dark">
+  <!-- <div class="p-3 mb-2 bg-light text-dark"> -->
   <div id="alert-placeholder"></div>
-  <center>
+  <div class="header">
     <h1><span id="model-name">Llama2-7b<span></h1>
-    </center>
-
+    
+  </div>
+  
+  <section class="sticky">
+    <div class="bubbles">
+        <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      
+    </div>
+  </section>
   
   <div style="padding-bottom: 10px;"></div>
   <div style="padding-bottom: 10px;"></div>
   
-  <div class="modal" tabindex="-1" id="apikey_modal">
+  <div class="modal-sm text-muted" style="margin-left: 40vw;" tabindex="-1" id="apikey_modal">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -60,15 +198,15 @@
   </div>
   
   <div id="main-bedrock-content">
-  <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item" role="presentation">
       <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button" role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-div" type="button" role="tab" aria-controls="Query" aria-selected="false">Query Data</button>
     </li>
-  </ul>
-  <div class="tab-content" id="myTabContent">
+      </ul>
+      <div class="tab-content" id="myTabContent">
     <div class="tab-pane fade show active" id="index-div" role="tabpanel" aria-labelledby="index-tab">
       <div style="padding-bottom: 10px;"></div>
       <div class="alert alert-primary" role="alert">
@@ -78,13 +216,13 @@
       <table>
         <tbody>
           <tr>
-            <th>Index Documents</th>
+            <th class="text-dark p-2"><h4>Index Documents</h4></th>
             <th style="padding-left: 100px;"></th>
-            <th>Create Sample Indexes</th>
+            <th class="text-dark p-2"><h4>Try sample data</h4></th>
           </tr>
           <tr>
             <td>
-              <div>
+              <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
                 <textarea placeholder="Add text here for indexing. Limit to 5000 characters" id="index_txt" name="request"
                   rows="10" cols="60"></textarea>
               </div>
@@ -156,8 +294,18 @@
       </div>
       <div style="padding-bottom: 10px;"></div>
       <div style="padding-left: 10px;">
-        <textarea id="query" style="width: 34vw;" name="response" rows="5" cols="20"
-        placeholder="Query your data here"></textarea>  
+        <!-- <textarea id="query" style="width: 34vw;" name="response" rows="5" cols="20"
+        placeholder="Query your data here"></textarea>   -->
+
+        <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+          <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
+            alt="avatar 3" style="width: 40px; height: 100%;">
+          <textarea  id="query" type="text" class="form-control form-control-lg" 
+            placeholder="Query your data here"></textarea>
+        </div>
+      
+
+
       </div>
       <div style="padding-bottom: 10px;"></div>
       
@@ -214,7 +362,13 @@
         <tr>
           <td>
           <div>
-            <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea>
+            <!-- <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea> -->
+            <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+              <textarea  id="query-response" type="text" cols="500" rows="5"  class="form-control form-control-lg" 
+                placeholder="Query response here"></textarea>
+            </div>
+
+
           </div>
           </td>
         </tr>
@@ -228,8 +382,10 @@
   <div id="err"></div>
 
   <div id="sse"></div>
+      </div>
   </div>
-  </div>
+  <!-- </div> -->
+  
 
   <footer>
     <script type="text/javascript">
@@ -437,8 +593,16 @@
             $('#delete-button').css('visibility','visible');
             var received_msg = '' ;
             response_json = JSON.parse(evt.data)
-            if (response_json['text'] || hasWhiteSpace(response_json['text'])) {
-              received_msg = response_json['text']
+            if (response_json['text']) {
+              str_len = -1
+              try {
+                str_len = response_json['text'].trim().length
+              } catch (error) {
+                console.log('str_len error')
+              }
+              if(str_len != 0) {
+                received_msg = response_json['text']
+              }
             } else {
               received_msg = JSON.stringify(response_json)
             }
