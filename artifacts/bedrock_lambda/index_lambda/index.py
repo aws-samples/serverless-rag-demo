@@ -7,6 +7,7 @@ from decimal import Decimal
 import logging
 import boto3
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -90,33 +91,44 @@ def index_documents(event):
 
     if texts is not None and len(texts) > 0:
         create_index()
-        for chunk_text in texts:
-            body = json.dumps({"inputText": chunk_text.page_content})
-            model_id = 'amazon.titan-embed-text-v1'
-            try:
-                response = bedrock_client.invoke_model(
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(_generate_embeddings_and_index,chunk_text) for chunk_text in texts]
+            for future in as_completed(futures):
+                result = future.result()
+                if result['statusCode'] != "200":
+                    return failure_response(result['errorMessage'])
+                else:
+                    print(result)
+                    
+    return success_response('Documents indexed successfully')
+
+
+def _generate_embeddings_and_index(chunk_text):
+        body = json.dumps({"inputText": chunk_text.page_content})
+        model_id = 'amazon.titan-embed-text-v1'
+        try:
+            response = bedrock_client.invoke_model(
                     body = body,
                     modelId = model_id,
                     accept = 'application/json',
                     contentType = 'application/json'
-                )
-                result = json.loads(response['body'].read())
-                embeddings = result.get('embedding')
-                print(f'Embeddings -> {embeddings}')
-            except Exception as e:
-                return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
-            
-            doc = {
-               'embedding' : embeddings,
-               'text': chunk_text.page_content
-            }
-            try:
-                # Index the document
-                ops_client.index(index=INDEX_NAME, body=doc)
-            except Exception as e:
-                print(e.info["error"]["reason"])
-                return failure_response(f'error indexing documents {e.info["error"]["reason"]}')
-        return success_response('Documents indexed successfully')
+            )
+            result = json.loads(response['body'].read())
+            embeddings = result.get('embedding')
+        except Exception as e:
+            return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
+        doc = {
+            'embedding' : embeddings,
+            'text': chunk_text.page_content
+        }
+        try:
+            # Index the document
+            ops_client.index(index=INDEX_NAME, body=doc)
+            return success_response('Documents Indexed Successfully')
+        except Exception as e:
+            print(e.info["error"]["reason"])
+            return failure_response(f'error indexing documents {e.info["error"]["reason"]}')
+        
 
 
 def delete_index(event):

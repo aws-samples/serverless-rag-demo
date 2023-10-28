@@ -1,0 +1,159 @@
+Financial Guidance
+The following forward-looking statements reflect Amazon.com’s expectations as of October 26, 2023, and are subject to
+substantial uncertainty. Our results are inherently unpredictable and may be materially affected by many factors, such as
+fluctuations in foreign exchange rates, changes in global economic and geopolitical conditions and customer demand and
+spending (including the impact of recessionary fears), inflation, interest rates, regional labor market constraints, world events,
+the rate of growth of the Internet, online commerce, cloud services, and new and emerging technologies, and the various factors
+detailed below.
+Fourth Quarter 2023 Guidance
+• Net sales are expected to be between $160.0 billion and $167.0 billion, or to grow between 7% and 12% compared
+with fourth quarter 2022. This guidance anticipates a favorable impact of approximately 40 basis points from foreign
+exchange rates.
+• Operating income is expected to be between $7.0 billion and $11.0 billion, compared with $2.7 billion in fourth
+quarter 2022.
+• This guidance assumes, among other things, that no additional business acquisitions, restructurings, or legal
+settlements are concluded.
+A conference call will be webcast live today at 2:30 p.m. PT/5:30 p.m. ET, and will be available for at least three months at
+amazon.com/ir. This call will contain forward-looking statements and other material information regarding the Company’s
+financial and operating results.
+These forward-looking statements are inherently difficult to predict. Actual results and outcomes could differ materially for a
+variety of reasons, including, in addition to the factors discussed above, the amount that Amazon.com invests in new business
+opportunities and the timing of those investments, the mix of products and services sold to customers, the mix of net sales
+derived from products as compared with services, the extent to which we owe income or other taxes, competition, management
+of growth, potential fluctuations in operating results, international growth and expansion, the outcomes of claims, litigation,
+government investigations, and other proceedings, fulfillment, sortation, delivery, and data center optimization, risks of
+inventory management, variability in demand, the degree to which the Company enters into, maintains, and develops
+commercial agreements, proposed and completed acquisitions and strategic transactions, payments risks, and risks of
+fulfillment throughput and productivity. Other risks and uncertainties include, among others, risks related to new products,
+services, and technologies, system interruptions, government regulation and taxation, and fraud. In addition, global economic
+and geopolitical conditions and additional or unforeseen circumstances, developments, or events may give rise to or amplify
+many of these risks. More information about factors that potentially could affect Amazon.com’s financial results is included in 
+Amazon.com’s filings with the Securities and Exchange Commission (“SEC”), including its most recent Annual Report on
+Form 10-K and subsequent filings.
+Our investor relations website is amazon.com/ir and we encourage investors to use it as a way of easily finding information
+about us. We promptly make available on this website, free of charge, the reports that we file or furnish with the SEC, corporate
+governance information (including our Code of Business Conduct and Ethics), and select press releases, which may contain
+material information about us, and you may subscribe to be notified of new information posted to this site.
+About Amazon
+Amazon is guided by four principles: customer obsession rather than competitor focus, passion for invention, commitment to
+operational excellence, and long-term thinking. Amazon strives to be Earth’s Most Customer-Centric Company, Earth’s Best
+Employer, and Earth’s Safest Place to Work. Customer reviews, 1-Click shopping, personalized recommendations, Prime,
+Fulfillment by Amazon, AWS, Kindle Direct Publishing, Kindle, Career Choice, Fire tablets, Fire TV, Amazon Echo, Alexa,
+Just Walk Out technology, Amazon Studios, and The Climate Pledge are some of the things pioneered by Amazon. For more
+information, visit amazon.com/about and follow @AmazonNews.
+AMAZON.COM, INC.
+Consolidated Statements of Cash Flows
+(in millions)
+(unaudited)
+Three Months Ended
+September 30,
+Nine Months Ended
+September 30,
+Twelve Months Ended
+September 30,
+2022 2023 2022 2023 2022 2023
+CASH, CASH EQUIVALENTS, AND RESTRICTED CASH, BEGINNING OF
+PERIOD $ 37,700 $ 50,067 $ 36,477 $ 54,253 $ 30,177 $ 35,178
+OPERATING ACTIVITIES:
+Net income (loss) 2,872 9,879 (3,000) 19,801 11,323 20,079
+Adjustments to reconcile net income (loss) to net cash from operating activities:
+Depreciation and amortization of property and equipment and capitalized
+content costs, operating lease assets, and other 10,327 12,131 29,236 34,843 39,103 47,528
+Stock-based compensation 5,556 5,829 14,015 17,704 17,695 23,310
+Non-operating expense (income), net (1,272) (990) 13,521 (409) 1,589 3,036
+Deferred income taxes (825) (1,196) (4,781) (4,412) (8,404) (7,779)
+Changes in operating assets and liabilities:
+Inventories 732 808 (5,772) (1,194) (7,687) 1,986
+Accounts receivable, net and other (4,794) (6,718) (13,109) (10,364) (19,665) (19,152)
+Accounts payable (1,226) 2,820 (6,907) (5,415) 1,082 4,437
+Accrued expenses and other (20) (1,321) (7,335) (9,022) 1,998 (3,245)
+Unearned revenue 54 (25) 1,711 949 2,631 1,454
+Net cash provided by (used in) operating activities 11,404 21,217 17,579 42,481 39,665 71,654
+INVESTING ACTIVITIES:
+Purchases of property and equipment (16,378) (12,479) (47,053) (38,141) (65,988) (54,733)
+Proceeds from property and equipment sales and incentives 1,337 1,181 4,172 3,361 6,637 4,513
+Acquisitions, net of cash acquired, non-marketable investments, and other (885) (1,629) (7,485) (5,458) (7,866) (6,289)
+Sales and maturities of marketable securities 557 1,393 25,918 4,059 38,455 9,742
+Purchases of marketable securities (239) (219) (2,332) (1,053) (10,598) (1,286)
+Net cash provided by (used in) investing activities (15,608) (11,753) (26,780) (37,232) (39,360) (48,053)
+FINANCING ACTIVITIES:
+Common stock repurchased — — (6,000) — (6,000) —
+Proceeds from short-term debt, and other 12,338 216 30,946 17,395 33,613 28,002
+Repayments of short-term debt, and other (7,916) (8,095) (21,757) (19,339) (24,416) (35,136)
+Proceeds from long-term debt 107 — 12,931 — 13,131 8,235
+Repayments of long-term debt — — (1) (3,386) (1,002) (4,643)
+Principal repayments of finance leases (1,465) (1,005) (6,301) (3,605) (8,561) (5,245)
+Principal repayments of financing obligations (48) (64) (186) (198) (233) (260)
+Net cash provided by (used in) financing activities 3,016 (8,948) 9,632 (9,133) 6,532 (9,047)
+Foreign currency effect on cash, cash equivalents, and restricted cash (1,334) (502) (1,730) (288) (1,836) 349
+Net increase (decrease) in cash, cash equivalents, and restricted cash (2,522) 14 (1,299) (4,172) 5,001 14,903
+CASH, CASH EQUIVALENTS, AND RESTRICTED CASH, END OF PERIOD $ 35,178 $ 50,081 $ 35,178 $ 50,081 $ 35,178 $ 50,081
+SUPPLEMENTAL CASH FLOW INFORMATION:
+Cash paid for interest on debt, net of capitalized interest $ 304 $ 465 $ 932 $ 1,821 $ 1,299 $ 2,450
+Cash paid for operating leases 1,813 2,692 6,268 7,687 7,961 10,052
+Cash paid for interest on finance leases 88 76 290 234 404 318
+Cash paid for interest on financing obligations 39 50 152 150 189 205
+Cash paid for income taxes, net of refunds 742 2,628 4,340 6,982 4,674 8,677
+Assets acquired under operating leases 6,755 3,345 14,031 11,075 19,839 15,844
+Property and equipment acquired under finance leases, net of remeasurements and
+modifications 131 183 358 431 1,966 748
+Property and equipment recognized during the construction period of build-to-suit
+lease arrangements 526 93 2,877 308 4,847 618
+Property and equipment derecognized after the construction period of build-to-suit
+lease arrangements, with the associated leases recognized as operating 2,195 492 3,307 1,212 3,363 3,063 
+AMAZON.COM, INC.
+Consolidated Statements of Operations
+(in millions, except per share data)
+(unaudited)
+Three Months Ended
+September 30,
+Nine Months Ended
+September 30,
+2022 2023 2022 2023
+Net product sales $ 59,340 $ 63,171 $ 172,370 $ 179,184
+Net service sales 67,761 79,912 192,409 225,640
+Total net sales 127,101 143,083 364,779 404,824
+Operating expenses:
+Cost of sales 70,268 75,022 203,191 212,186
+Fulfillment 20,583 22,314 61,196 64,524
+Technology and infrastructure 19,485 21,203 52,399 63,584
+Sales and marketing 11,014 10,551 29,420 31,468
+General and administrative 3,061 2,561 8,558 8,806
+Other operating expense (income), net 165 244 504 613
+Total operating expenses 124,576 131,895 355,268 381,181
+Operating income 2,525 11,188 9,511 23,643
+Interest income 277 776 544 2,048
+Interest expense (617) (806) (1,673) (2,469)
+Other income (expense), net 759 1,031 (13,356) 649
+Total non-operating income (expense) 419 1,001 (14,485) 228
+Income (loss) before income taxes 2,944 12,189 (4,974) 23,871
+Benefit (provision) for income taxes (69) (2,306) 1,990 (4,058)
+Equity-method investment activity, net of tax (3) (4) (16) (12)
+Net income (loss) $ 2,872 $ 9,879 $ (3,000) $ 19,801
+Basic earnings per share $ 0.28 $ 0.96 $ (0.29) $ 1.93
+Diluted earnings per share $ 0.28 $ 0.94 $ (0.29) $ 1.89
+Weighted-average shares used in computation of earnings per
+Basic 10,191 10,322 10,178 10,286
+Diluted 10,331 10,558 10,178 10,452 
+AMAZON.COM, INC.
+Consolidated Statements of Comprehensive Income (Loss)
+(in millions)
+(unaudited)
+Three Months Ended
+September 30,
+Nine Months Ended
+September 30,
+2022 2023 2022 2023
+Net income (loss) $ 2,872 $ 9,879 $ (3,000) $ 19,801
+Other comprehensive income (loss):
+Foreign currency translation adjustments, net of tax of $76,
+$36, $136, and $4 (2,142) (1,388) (4,661) (738)
+Net change in unrealized gains (losses) on available-forsale debt securities:
+Unrealized gains (losses), net of tax of $(4), $(18),
+$(3), and $(52) (195) 62 (1,095) 174
+Reclassification adjustment for losses (gains) included
+in “Other income (expense), net,” net of tax of $0, $0,
+$0, and $(15) 4 3 17 48
+Net unrealized gains (losses) on available-forsale debt securities (191) 65 (1,078) 222
+Total other comprehensive income (loss) (2,333) (1,323) (5,739) (516)
+Comprehensive income (loss) $ 539 $ 8,556 $ (8,739) $ 19,285 

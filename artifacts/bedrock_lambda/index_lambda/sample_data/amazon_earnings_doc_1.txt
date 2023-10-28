@@ -1,0 +1,250 @@
+AMAZON.COM ANNOUNCES THIRD QUARTER RESULTS
+SEATTLE—(BUSINESS WIRE) October 26, 2023—Amazon.com, Inc. (NASDAQ: AMZN) today announced financial
+results for its third quarter ended September 30, 2023.
+• Net sales increased 13% to $143.1 billion in the third quarter, compared with $127.1 billion in third quarter 2022.
+Excluding the $1.4 billion favorable impact from year-over-year changes in foreign exchange rates throughout the
+quarter, net sales increased 11% compared with third quarter 2022.
+• North America segment sales increased 11% year-over-year to $87.9 billion.
+• International segment sales increased 16% year-over-year to $32.1 billion, or increased 11% excluding
+changes in foreign exchange rates.
+• AWS segment sales increased 12% year-over-year to $23.1 billion.
+• Operating income increased to $11.2 billion in the third quarter, compared with $2.5 billion in third quarter 2022.
+• North America segment operating income was $4.3 billion, compared with an operating loss of $0.4 billion in
+third quarter 2022.
+• International segment operating loss was $0.1 billion, compared with an operating loss of $2.5 billion in third
+quarter 2022.
+• AWS segment operating income was $7.0 billion, compared with operating income of $5.4 billion in third
+quarter 2022.
+• Net income increased to $9.9 billion in the third quarter, or $0.94 per diluted share, compared with $2.9 billion, or
+$0.28 per diluted share, in third quarter 2022.
+• Third quarter 2023 net income includes a pre-tax valuation gain of $1.2 billion included in non-operating
+income (expense) from the common stock investment in Rivian Automotive, Inc., compared to a pre-tax
+valuation gain of $1.1 billion from the investment in third quarter 2022.
+• Operating cash flow increased 81% to $71.7 billion for the trailing twelve months, compared with $39.7 billion for
+the trailing twelve months ended September 30, 2022.
+• Free cash flow improved to an inflow of $21.4 billion for the trailing twelve months, compared with an outflow of
+$19.7 billion for the trailing twelve months ended September 30, 2022.
+• Free cash flow less principal repayments of finance leases and financing obligations improved to an inflow of
+$15.9 billion for the trailing twelve months, compared with an outflow of $28.5 billion for the trailing twelve months
+ended September 30, 2022.
+• Free cash flow less equipment finance leases and principal repayments of all other finance leases and financing
+obligations improved to an inflow of $20.2 billion for the trailing twelve months, compared with an outflow of $21.5
+billion for the trailing twelve months ended September 30, 2022.
+“We had a strong third quarter as our cost to serve and speed of delivery in our Stores business took another step forward, our
+AWS growth continued to stabilize, our Advertising revenue grew robustly, and overall operating income and free cash flow
+rose significantly,” said Andy Jassy, Amazon CEO. “The benefits of moving from a single national fulfillment network in the
+U.S. to eight distinct regions are exceeding our optimistic expectations, and perhaps most importantly, putting us on pace to
+deliver the fastest delivery speeds for Prime customers in our 29-year history. The AWS team continues to innovate and deliver
+at a rapid clip, particularly in generative AI, where the combination of our custom AI chips, Amazon Bedrock being the easiest
+and most flexible way to build and deploy generative AI applications, and our coding companion (CodeWhisperer) allowing
+enterprises to have the equivalent of an experienced engineer who understands all of their proprietary code is driving
+momentum with customers, including adidas, Booking.com, GoDaddy, LexisNexis, Merck, Royal Philips, and United Airlines,
+all of whom are starting to run generative AI workloads on AWS. Between AWS re:Invent and our 29th holiday shopping
+season, this is a particularly action-packed time of year at Amazon and we’re excited for what’s to come.”
+Highlights
+Obsessing over the customer experience
+Amazon obsesses over how to make customers’ lives better and easier every day with new and improved products and services.
+This is true for consumers, sellers, brands, developers, enterprises, and creators. For example, Amazon:
+• Sold hundreds of millions of items worldwide during Prime Big Deal Days, Amazon’s largest two-day October
+holiday kick-off event ever. Prime members across 19 countries saved more than $1 billion on millions of deals. On
+the first day of the event, U.S. Prime members purchased more than 25 million items with Same-Day or Next-Day
+Delivery, with hundreds of thousands of items delivered within four hours of purchase.
+• Announced new Buy with Prime features to help merchants grow their businesses on their own websites, such as the
+ability to integrate Buy with Prime with Shopify. The Buy with Prime app for Shopify will make it easier for Shopify
+merchants to manage their businesses, with inventory, pricing, and promotions automatically synced in one place. In
+addition, Buy with Prime Assist enables merchants to offer 24/7 post-order customer service support at no additional
+cost, and the Buy with Prime cart feature allows customers to purchase multiple Buy with Prime products in one
+transaction from a single merchant.
+• Announced new offerings to help customers get and stay healthy, including an expanded Amazon Clinic virtual health
+care marketplace now available across the U.S. to provide care for more than 35 conditions, and 60-minute delivery of
+medications through Amazon Pharmacy using Prime Air drones in College Station, Texas. Additionally, Amazon
+Pharmacy partnered with Blue Shield of California on a first-of-its-kind model to provide more affordable pharmacy
+care to its members, where Amazon Pharmacy will offer fast, free home delivery of prescription medications to more
+than 4.8 million Blue Shield of California members, starting in 2025.
+• Partnered with BuzzFeed, Hearst Newspapers, Pinterest, Raptive, and Ziff Davis brands like Lifehacker and Mashable,
+among others, to display sponsored product ads on their apps and websites for products sold in Amazon’s U.S. store.
+These third-party ad partnerships will make it easier for customers to move from inspiration to buying in one or two
+clicks.
+• Attracted 15.1 million viewers for the Thursday Night Football (TNF) season opener, Prime Video’s most watched
+TNF game ever, according to Nielsen. Through the first six games, TNF averaged 12.9 million viewers, an increase of
+25% from last season’s six-game average, according to Nielsen. Season to date, the median age for TNF viewers is 47,
+which is seven years younger than the median age watching the NFL on linear networks.
+• Debuted the second season of Amazon Original series The Summer I Turned Pretty, which had double the global
+audience in the first three days compared to Season One. In addition, for the first seven weeks after its debut, it was the
+most viewed series on Prime Video in over 100 countries.
+• Released Amazon Original films and series A Million Miles Away, the real-life story of NASA flight engineer José
+Hernández; Red, White & Royal Blue, the romantic comedy based on Casey McQuiston’s New York Times best-selling
+novel; The Burial, a true story exposing corporate corruption and racial injustice, starring Jamie Foxx and Tommy Lee
+Jones; Sitting in Bars with Cake, the story of baking and best friends; and Gen V, an expansion of The Boys Universe.
+Amazon also premiered the second seasons of the hit young-adult drama The Summer I Turned Pretty and the fantasy
+series The Wheel of Time, and rebooted the globally beloved soap opera Neighbours.
+• Premiered new films from Amazon MGM Studios, including American Fiction, which won the People’s Choice
+Award at the Toronto International Film Festival. The film will begin its theatrical release in December. Amazon
+MGM Studios also released the indie film Bottoms, which opened in select U.S. markets on August 25.
+• Launched Prime Video Channels and the Prime Video Store in Chile and Colombia, and grew Prime Video’s
+international slate of content with more than 40 local Amazon Originals and live sporting events. This includes: The
+Lost Flowers of Alice Hart (Australia), Cangaço Novo (Brazil), Los Iniciados (Colombia), All or Nothing: The
+German National Team in Qatar (Germany), Made in Heaven (India), The Ferragnez - The Series (Italy), Sanremo
+Special (Italy), and Wilderness (UK).
+• Entered a strategic collaboration to advance generative AI with Anthropic. As part of the expanded collaboration,
+Anthropic selected AWS as its primary cloud provider and will build and deploy future generations of its foundation
+models on AWS Trainium and AWS Inferentia chips. Anthropic plans to run the majority of its workloads on AWS
+and will also provide AWS customers with access to future generations of its foundation models via Amazon Bedrock.
+Amazon developers and engineers will have the opportunity to build with Anthropic models to enhance existing
+applications and create new customer experiences.
+• Announced new AI-driven commitments and expansions from AWS customers.
+• BMW Group selected AWS to power its next-generation of automated driving platform, which will use
+BMW's preexisting Cloud Data Hub on AWS, and will use AWS compute, generative AI, Internet of Things
+(IoT), machine learning (ML), and storage capabilities to help accelerate the delivery of highly automated
+BMW vehicles.
+• UK-based bank NatWest expanded its partnership with AWS to accelerate the responsible use of AI and cocreate AI products on foundation models available through Amazon Bedrock to enhance the financial wellbeing of its 10 million customers.
+• Occidental, an international energy company and carbon management leader, selected AWS as its preferred
+cloud provider to improve operational efficiencies, reduce IT infrastructure costs, and develop systems for
+carbon removal plants, which are expected to capture 1 million metric tons per year. Occidental is leveraging
+AWS analytics and ML services like Amazon Elastic Compute Cloud (Amazon EC2), Amazon Elastic Block
+Store (Amazon EBS) to scale IT resources, and AWS Lake Formation to increase efficiencies and extract
+greater value from operational data.
+• PwC announced a collaboration with AWS to deliver a goal of $800 million in business value to clients and
+strengthen PwC’s offerings, including cloud migration and modernization, data and analytics, cybersecurity
+and risk, customer experience, managed services, generative AI, and climate reporting and transition to netzero carbon emissions.
+• EVERSANA, provider of commercial services to the global life sciences industry, teamed up with AWS to
+use Amazon Bedrock to accelerate generative AI use cases to help pharmaceutical and life science
+manufacturers drive efficiencies and business value while improving patient outcomes.
+• DS Smith, a sustainable packaging provider, will leverage AWS’s global infrastructure, advanced analytics,
+IoT, AI, and ML to derive deeper business intelligence, deliver new digital customer experiences, and drive
+automation at scale across its supply chain, including real-time monitoring of manufacturing capacity and
+supply chain management to support sustainability targets.
+• Abdul Latif Jameel, an internationally diversified business, selected AWS as its preferred cloud provider to
+use AWS analytics, ML, and Amazon Bedrock to develop generative AI applications that will help car
+manufacturers offer digital showroom experiences for customers and enhance in-car experiences, while
+reducing development costs.
+• South Korean game developer NCSOFT launched seven large language models (LLMs) on Amazon
+SageMaker JumpStart to democratize generative AI in Korea and accelerate development of new gaming and
+creative applications.
+• Genpact, a global professional services firm, expanded its relationship with AWS to transform its financial
+crime risk operations by leveraging generative AI and LLMs. Genpact is accelerating efficiencies and impact
+for their clients by integrating their proprietary cloud-based financial crime suite with Amazon Bedrock.
+• Continued to expand AWS’s infrastructure footprint to support customers by launching the AWS Israel (Tel Aviv)
+Region and a new AWS Local Zone in Phoenix, Arizona. The AWS Israel (Tel Aviv) Region is estimated to support
+an average of 7,700 full-time equivalent jobs annually through a planned investment of $7.2 billion through 2037. 
+Inventing on behalf of customers
+Amazon is driven by a passion for invention across all of its business areas. The company builds new products and services that
+customers ask for, and also invents new ones that customers didn’t know they wanted but make their lives or businesses better
+in some meaningful way. For example, Amazon:
+• Launched product review highlights, a new generative AI–powered feature that lets shoppers in Amazon’s U.S. store
+quickly determine what other customers are saying about a product before reading through reviews. Review highlights
+provide a short paragraph on the product detail page with features and customer sentiment frequently mentioned across
+reviews.
+• Introduced generative AI capabilities to help sellers create product listings as part of numerous innovations at
+Accelerate 2023, Amazon’s annual seller conference. Other announcements included an end-to-end, fully automated
+set of supply chain services called Supply Chain by Amazon that allows sellers to quickly and reliably move products
+directly from their manufacturers to customers. In India, Amazon also announced a generative AI–based digital
+assistant to help small businesses establish an ecommerce presence. The tool will help sellers with registration, listing,
+and advertising.
+• Previewed a smarter and more conversational Alexa, powered by generative AI and an LLM custom-built for voice
+interactions. New conversational AI capabilities include the ability to make multiple requests at once, make more
+ambiguous smart home requests, set up an Alexa Routine entirely by voice instead of the app, and make more natural
+and conversational requests without having to use specific phrases or device names.
+• Announced new LLM tools that will make it easier for developers to create more conversational and intuitive Alexa
+experiences for their customers. Brands using these new tools include BMW, Character.AI, iRobot, Philips Hue,
+Splash, and Volley.
+• Introduced the next-generation Echo Show 8 built-in smart home hub that can process common smart home requests
+40% faster than previous generations, Echo Hub smart home control panel to manage smart home devices, and nextgeneration Echo Frames smart audio glasses with hands-free access to Alexa, extended battery life, and improved
+audio.
+• Announced updates to the Fire TV experience, including an enhanced AI-powered Fire TV voice search, so customers
+can ask Alexa open-ended questions about TV shows and movies using conversational language; a “Continue
+Watching” row that aggregates content from streaming entertainment providers, including Amazon Freevee, Disney+,
+Hulu, MGM+, Peacock, and STARZ; and an AI Art feature, so customers can create artwork on their Fire TV devices
+using their voice.
+• Unveiled the Fire TV Stick 4K Max, which comes with the Fire TV Ambient Experience that turns the TV into an
+always-smart display so customers can see Calendars and Reminders, control smart devices, or play audio. Amazon
+also introduced the Fire TV Stick 4K with support for Wi-Fi 6, and the Fire TV Soundbar that provides room-filling
+sound with support for DTS Virtual:X and Dolby Audio.
+• Expanded home security offerings with the Ring Stick Up Cam Pro, giving customers an aerial perspective to pinpoint
+and send more accurate alerts; Blink Outdoor 4, with improved image quality for person detection; and Blink Sync
+Module Pro with extended range, giving customers options in where they install their cameras.
+• Introduced eero Max 7, which combines patented TrueMesh networking technology with the latest Wi-Fi 7 standard to
+dramatically increase speeds, avoid interference, and improve latency.
+• Kicked off Project Kuiper’s Protoflight mission with the launch of two prototype satellites aboard an Atlas V rocket
+from United Launch Alliance. Project Kuiper, Amazon’s low Earth orbit satellite broadband initiative, will use this
+multimonth mission to test its satellites and network from space, and collect data ahead of the planned start of satellite
+production later this year. Project Kuiper also announced a partnership with Vodafone and Vodacom to extend the
+reach of their 4G/5G networks in Africa and Europe, provide backup to businesses, scale for major events, and quickly
+recover after disasters.
+• Enhanced the viewing experience for Thursday Night Football with AI-driven features powered by AWS, such as
+Prime Targets and Defensive Alerts. Prime Targets uses ML to highlight which receivers are in position to convert a
+first down. Defensive Alerts uses a generative AI model that grows more accurate over time to identify players that are
+likely to rush the quarterback.
+• Announced new AWS technologies and capabilities that help customers of all sizes take advantage of generative AI,
+improve productivity, and enhance their security posture. Customers are using Amazon Bedrock to bring generative AI
+to their businesses, including adidas, Booking.com, Bridgewater Associates, Clariant, Coda, GoDaddy, LexisNexis 
+Legal & Professional, Lonely Planet, Merck, Royal Philips, Showpad, Travelers, and United Airlines. New offerings
+include:
+• General availability of Amazon Bedrock, a fully managed service that offers leading foundation models as a
+single application programming interface (API), along with capabilities that help customers build generative
+AI applications, simplifying development while maintaining privacy and security.
+• More choice for Amazon Bedrock customers with the addition of Meta as a model provider. Amazon Bedrock
+is the first service to offer Meta’s Llama 2 model as a fully managed service available through a single API.
+• New model customization capability for Amazon CodeWhisperer, an AI-powered coding companion,
+allowing organizations to securely customize CodeWhisperer suggestions to include their internal code base.
+• AWS Entity Resolution, an ML-powered analytics service that helps organizations improve the quality of
+their data by analyzing, matching, and linking related consumer, business, and product records stored across
+multiple applications, channels, and data stores.
+• New business intelligence authoring capabilities for Amazon QuickSight, so data analysts can use natural
+language queries to ask forecast and “why” questions, receive accurate answers, and create compelling
+visualizations in seconds.
+Empowering employees and delivery service partners
+In addition to its focus on customers, Amazon strives to make every day better for its employees and delivery service partners.
+For example, the company:
+• Announced that Amazon will hire 250,000 full-time, part-time, and seasonal employees in the U.S. this holiday
+season. Amazon also announced its largest-ever annual investment in U.S. hourly employee pay—$1.3 billion—
+bringing the new average hourly wage for customer fulfillment and delivery roles to more than $20.50 per hour. Over
+the last five years, Amazon has invested $10 billion in hourly employee wages.
+• Added 14 benefits to Amazon’s FamilyFlex program, which provides operations employees and their family members
+with tools to help them achieve personal and professional growth. New benefits include financial wellness resources,
+mental health offerings, and temporary schedule adjustment policies for flexibility. Amazon also extended its familybuilding and fertility benefits to support more than 1 million employees and their partners across Africa, Asia-Pacific,
+Europe, Latin America, and the Middle East.
+• Announced an $840 million investment in the Delivery Service Partner (DSP) program in the U.S. to support DSPs in
+providing higher wages and more benefits to drivers, including childcare-support services and tuition reimbursement
+for coursework at accredited universities as part of the Next Mile education program, which already offers access to
+more than 2,000 academic programs and up to $5,250 in annual tuition coverage.
+Supporting communities and protecting the environment
+Amazon believes that success and scale bring broad responsibility to help the planet, future generations, and communities.
+Amazon employees have passion for investing in these areas, and a sampling of the efforts from this past quarter are that
+Amazon:
+• Supporting humanitarian aid efforts amid the Israel-Hamas war. Amazon is focused on ensuring that employees in the
+area are safe and have access to resources such as My HR Live Support, where employees can discuss their specific
+situations with advisers, and the Employee Assistance Program, which provides resources to support employees and
+their families. Amazon’s disaster relief team has been in close contact with international humanitarian relief partners
+and is making financial contributions to these organizations. Amazon is making it easy for employees to contribute to
+them through Amazon GIVEhub, an internal tool to support volunteerism, donations, and community engagement.
+• Activated Amazon’s disaster relief teams to provide support in response to the Maui wildfires, Hurricane Idalia in
+Florida, and the earthquake in Morocco. Amazon mobilized its global logistics infrastructure and inventory, and
+quickly donated more than 300,000 relief items. Additionally, AWS helped set up temporary communications
+infrastructure to provide internet and phone connectivity in Maui in collaboration with the Information Technology
+Disaster Resource Center, and funded mappers to assess the earthquake-affected areas in Morocco.
+• Committed to promoting the safe, secure, and transparent development of AI technology in collaboration with the
+White House, policymakers, technology organizations, and the AI community. The commitment builds on Amazon’s
+approach to responsible AI development and lays the groundwork for enhancing the benefits of AI and minimizing its
+risks.
+• Published the company’s latest Economic Impact Study, which estimates that Amazon generated more than $240
+billion in investment in the U.S. in 2022 and supported more than 2 million indirect jobs across industries such as
+logistics, construction, hospitality, and professional services, among others.
+• Announced a $40 million program to help moderate-income residents in Amazon’s hometown communities become
+homeowners. As part of the Amazon Housing Equity Fund, this is the first program aimed at homeownership—helping
+members in these communities purchase homes and build generational wealth.
+• Celebrated its annual Global Month of Volunteering in September, when tens of thousands of Amazon employees in
+more than 50 countries volunteered with over 400 community organizations around the world.
+• Announced that 90% of electricity consumed by Amazon in 2022 was powered by renewable energy sources—up
+from 85% in 2021. From 2014 through 2022, Amazon’s wind and solar farms helped generate $12.6 billion in
+investments for communities around the world, and contributed more than $5.4 billion in global gross domestic
+product (GDP). Amazon now has more than 400 wind and solar projects globally.
+• Announced that the company will require suppliers to share their carbon emissions data with Amazon and set carbon
+goals beginning in 2024, and that Amazon will provide tools and resources to help suppliers reach their goals. Amazon
+also announced the Sustainability Solutions Hub, a new resource to help independent sellers in France, Germany, Italy,
+Spain, UK, and U.S. with product and packaging sustainability efforts.
+• Invested in direct air capture, a technology that chemically scrubs carbon dioxide from the air before storing it deep
+underground or in applications like building materials and low-carbon fuels, from 1PointFive and CarbonCapture Inc.
+• Announced that in 2022 Amazon decreased single-use plastic by 11.6% across its global operations by expanding
+paper-based packaging, continuing to use lighter and more flexible packaging, and eliminating packaging altogether
+where possible.
