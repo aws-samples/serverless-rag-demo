@@ -2,6 +2,7 @@ import boto3
 from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
+import requests
 import os
 import json
 from decimal import Decimal
@@ -16,6 +17,7 @@ endpoint = getenv("OPENSEARCH_ENDPOINT",
 SAMPLE_DATA_DIR = getenv("SAMPLE_DATA_DIR", "/var/task")
 INDEX_NAME = getenv("INDEX_NAME", "sample-embeddings-store-dev")
 wss_url = getenv("WSS_URL", "WEBSOCKET_URL_MISSING")
+rest_api_url = getenv("REST_ENDPOINT_URL", "REST_URL_MISSING")
 websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=wss_url)
 
 credentials = boto3.Session().get_credentials()
@@ -238,6 +240,8 @@ def handler(event, context):
             query_data(query, behaviour, model_id, connect_id)
     elif routeKey == '$connect':
         if 'x-api-key' in event['queryStringParameters']:
+            headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }
+            requests.get(f'{rest_api_url}connect-tracker', headers=headers)
             if event['queryStringParameters']['x-api-key'] == SECRET_API_KEY:
                 return {'statusCode': '200', 'body': 'Bedrock says hello' }
             else:

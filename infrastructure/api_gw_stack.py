@@ -91,9 +91,10 @@ class ApiGw_Stack(Stack):
                                                                                                 
                                             )
             plan.add_api_key(secure_key)
-            
-        rag_llm_api = rag_llm_root_api.root.add_resource("rag")
-
+        parent_path='rag'
+        rag_llm_api = rag_llm_root_api.root.add_resource(parent_path)
+        rest_endpoint_url = f'https://{rag_llm_root_api.rest_api_id}.execute-api.{region}.amazonaws.com/{parent_path}/'
+        print(rest_endpoint_url)
         method_responses = [
             # Successful response from the integration
             {
@@ -164,7 +165,8 @@ class ApiGw_Stack(Stack):
                                   environment={ 'INDEX_NAME': env_params['index_name'],
                                                 'OPENSEARCH_ENDPOINT': collection_endpoint,
                                                 'REGION': region,
-                                                'SECRET_KEY': secret_api_key
+                                                'SECRET_KEY': secret_api_key,
+                                                'REST_ENDPOINT_URL': rest_endpoint_url
                                   },
                                   memory_size=2048,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
@@ -337,6 +339,15 @@ class ApiGw_Stack(Stack):
                 method_responses=method_responses,
                 api_key_required=True
             )
+
+            index_sample_data_api.add_method(
+                "GET",
+                bedrock_index_lambda_integration,
+                operation_name="Websocket rate limiter",
+                method_responses=method_responses,
+                api_key_required=True
+            )
+
         else:
             query_api.add_method(
                 "GET",
