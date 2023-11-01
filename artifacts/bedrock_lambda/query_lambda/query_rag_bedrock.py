@@ -3,6 +3,7 @@ from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
 import requests
+from requests.auth import HTTPBasicAuth 
 import os
 import json
 from decimal import Decimal
@@ -241,7 +242,11 @@ def handler(event, context):
     elif routeKey == '$connect':
         if 'x-api-key' in event['queryStringParameters']:
             headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }
-            requests.get(f'{rest_api_url}connect-tracker', headers=headers)
+            auth = HTTPBasicAuth('x-api-key', event['queryStringParameters']['x-api-key']) 
+            response = requests.get(f'{rest_api_url}connect-tracker', headers=headers, auth=auth, verify=False)
+            if response.status_code != 200:
+                print(f'Response Error status_code: {response.status_code}, reason: {response.reason}')
+                return {'statusCode': f'{response.status_code}', 'body': f'Forbidden, {response.reason}' }
             if event['queryStringParameters']['x-api-key'] == SECRET_API_KEY:
                 return {'statusCode': '200', 'body': 'Bedrock says hello' }
             else:
