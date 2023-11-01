@@ -139,6 +139,9 @@ def delete_index(event):
         return failure_response(f'error deleting index. {e.info["error"]["reason"]}')
     return success_response('Index deleted successfully')
 
+def connect_tracker(event):
+    return success_response('Successfully connection')
+
 
 def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
@@ -146,7 +149,8 @@ def handler(event, context):
     api_map = {
         'POST/rag/index-sample-data': lambda x: index_sample_data(x),
         'POST/rag/index-documents': lambda x: index_documents(x),
-        'DELETE/rag/index-documents': lambda x: delete_index(x)
+        'DELETE/rag/index-documents': lambda x: delete_index(x),
+        'GET/rag/connect-tracker': lambda x: connect_tracker(x)
     }
     
     http_method = event['httpMethod'] if 'httpMethod' in event else ''
