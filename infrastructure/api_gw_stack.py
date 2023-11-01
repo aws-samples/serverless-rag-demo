@@ -315,6 +315,7 @@ class ApiGw_Stack(Stack):
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
+        connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
         
         if llm_model_id == 'Amazon Bedrock':
             index_docs_api.add_method(
@@ -340,13 +341,14 @@ class ApiGw_Stack(Stack):
                 api_key_required=True
             )
 
-            index_sample_data_api.add_method(
+            connect_tracker_api.add_method(
                 "GET",
                 bedrock_index_lambda_integration,
                 operation_name="Websocket rate limiter",
                 method_responses=method_responses,
                 api_key_required=True
             )
+            self.add_cors_options(connect_tracker_api)
 
         else:
             query_api.add_method(
