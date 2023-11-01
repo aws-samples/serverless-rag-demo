@@ -91,9 +91,10 @@ class ApiGw_Stack(Stack):
                                                                                                 
                                             )
             plan.add_api_key(secure_key)
+            
         parent_path='rag'
         rag_llm_api = rag_llm_root_api.root.add_resource(parent_path)
-        rest_endpoint_url = f'https://{rag_llm_root_api.rest_api_id}.execute-api.{region}.amazonaws.com/{parent_path}/'
+        rest_endpoint_url = f'https://{rag_llm_root_api.rest_api_id}.execute-api.{region}.amazonaws.com/{env_name}/{parent_path}/'
         print(rest_endpoint_url)
         method_responses = [
             # Successful response from the integration
