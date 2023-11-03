@@ -247,10 +247,8 @@ def handler(event, context):
             if response.status_code != 200:
                 print(f'Response Error status_code: {response.status_code}, reason: {response.reason}')
                 return {'statusCode': f'{response.status_code}', 'body': f'Forbidden, {response.reason}' }
-            if event['queryStringParameters']['x-api-key'] == SECRET_API_KEY:
-                return {'statusCode': '200', 'body': 'Bedrock says hello' }
             else:
-                return {'statusCode': '403', 'body': 'Forbidden' }
+                return {'statusCode': '200', 'body': 'Bedrock says hello' }
         else:
             return {'statusCode': '403', 'body': 'Forbidden' }
             
