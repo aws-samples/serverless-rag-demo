@@ -243,11 +243,12 @@ def handler(event, context):
         if 'x-api-key' in event['queryStringParameters']:
             headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }
             auth = HTTPBasicAuth('x-api-key', event['queryStringParameters']['x-api-key']) 
-            response = requests.get(f'{rest_api_url}connect-tracker', headers=headers, auth=auth, verify=False)
+            response = requests.get(f'{rest_api_url}connect-tracker', headers=headers, auth=auth, verify=True)
             if response.status_code != 200:
                 print(f'Response Error status_code: {response.status_code}, reason: {response.reason}')
                 return {'statusCode': f'{response.status_code}', 'body': f'Forbidden, {response.reason}' }
             if event['queryStringParameters']['x-api-key'] == SECRET_API_KEY:
+                print(f'Response status code: {response.status_code}, reason: {response.reason}')
                 return {'statusCode': '200', 'body': 'Bedrock says hello' }
             else:
                 return {'statusCode': '403', 'body': 'Forbidden' }

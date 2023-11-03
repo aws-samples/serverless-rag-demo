@@ -2,10 +2,14 @@
 import os
 
 import aws_cdk as cdk
+from aws_cdk import (
+    Aspects
+)
 from aws_cdk import Stack, Tags
 from llms_with_serverless_rag.llms_with_serverless_rag_stack import LlmsWithServerlessRagStack
 from infrastructure.api_gw_stack import ApiGw_Stack
 from infrastructure.sagemaker_stack import SagemakerLLMStack
+import cdk_nag
 
 app = cdk.App()
 
@@ -41,4 +45,3 @@ sagemaker_stack = SagemakerLLMStack(app, f'SagemakerLlm{env_name}Stack')
 tag_my_stack(api_gw_stack)
 tag_my_stack(sagemaker_stack)
 app.synth()
-

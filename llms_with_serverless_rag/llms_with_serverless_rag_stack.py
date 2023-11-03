@@ -1,11 +1,12 @@
-from aws_cdk import Stack, Tags, Environment, aws_codebuild as _codebuild, aws_ecr as _ecr
+from aws_cdk import Stack, Tags, Environment, aws_codebuild as _codebuild, aws_ecr as _ecr, Aspects
 from constructs import Construct
 from infrastructure.opensearch_vectordb_stack import OpensearchVectorDbStack
 from infrastructure.ecr_stack import Ecr_stack
 from infrastructure.api_gw_stack import ApiGw_Stack
 from infrastructure.bedrock_layer_stack import BedrockLayerStack
 import os
-
+import cdk_nag
+from cdk_nag import NagSuppressions, NagPackSuppression
 
 
 class LlmsWithServerlessRagStack(Stack):
@@ -15,6 +16,7 @@ class LlmsWithServerlessRagStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        Aspects.of(self).add(cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context("environment_name")
         llm_model_id = self.node.try_get_context("llm_model_id")
         # Opensearch Serverless config
@@ -29,8 +31,9 @@ class LlmsWithServerlessRagStack(Stack):
         # Lambda / Api Gateway text/html
         #api_gw_stack = ApiGw_Stack(self, f'api_gw_lambda_{env_name}')
         # Sagemaker
-
         self.tag_my_stack(oss_stack)
         self.tag_my_stack(stack_deployed)
         
         stack_deployed.add_dependency(oss_stack)
+
+        

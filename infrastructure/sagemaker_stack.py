@@ -3,18 +3,23 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_iam as _iam,
     aws_ecr as _ecr,
-    aws_codebuild as _codebuild
+    aws_codebuild as _codebuild,
+    aws_kms as _kms,
+    Aspects
 )
 from constructs import Construct
 import os
 import yaml
-
+import cdk_nag as _cdk_nag
+import aws_cdk as _cdk
+from cdk_nag import NagSuppressions, NagPackSuppression
 
 class SagemakerLLMStack(Stack):
 
      def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         env_name = self.node.try_get_context('environment_name')
+        
         config_details = self.node.try_get_context(env_name)
         llm_model_id = 'random'
         try:
@@ -56,6 +61,15 @@ class SagemakerLLMStack(Stack):
         )
         sagemaker_policy = _iam.PolicyStatement(actions=["sagemaker:*", "s3:*", "iam:*", "ecr:*"], resources=["*"])
         custom_sm_role.add_to_policy(sagemaker_policy)
+        NagSuppressions.add_resource_suppressions(custom_sm_role, [
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM5', reason='exclude iam')
+        ], apply_to_children=True)
+
+        encrypt_key = _kms.Key(self, f'kms-{env_name}-rag-sm-key'
+                , alias=f'alias/kms-{env_name}-rag-sm-key'
+                , enabled=True, enable_key_rotation=True
+                , removal_policy=_cdk.RemovalPolicy.DESTROY
+                , pending_window=_cdk.Duration.days(7))
         # Trigger CodeBuild job
         sagemaker_deploy_job =_codebuild.Project(
             self,
@@ -70,7 +84,8 @@ class SagemakerLLMStack(Stack):
                 "region": _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_REGION")),
                 "sagemaker_endpoint": _codebuild.BuildEnvironmentVariable(value = sagemaker_endpoint_name),
                 "llm_model_id": _codebuild.BuildEnvironmentVariable(value = llm_model_id)
-            })
+            }),
+            encryption_key = encrypt_key
         )
 
         

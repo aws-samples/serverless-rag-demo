@@ -5,18 +5,20 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_ecr as _ecr,
     aws_apigatewayv2,
-    
-    
+    Aspects
 )
-
+import cdk_nag as _cdk_nag
 import aws_cdk as _cdk
 import os
 from constructs import Construct, DependencyGroup
-
+from cdk_nag import NagSuppressions, NagPackSuppression
+import json 
 
 class ApiGw_Stack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
+        self.stack_level_suppressions()
         env_name = self.node.try_get_context("environment_name")
         current_timestamp = self.node.try_get_context('current_timestamp')
         region=os.getenv('CDK_DEFAULT_REGION')
@@ -65,7 +67,9 @@ class ApiGw_Stack(Stack):
         # Base URL
         api_description = "RAG with Opensearch Serverless"
 
-        
+        logrp = _cdk.aws_logs.LogGroup(self, f'llm-rag-log-group', retention= _cdk.aws_logs.RetentionDays.ONE_WEEK)
+        logrp.grant_write(_iam.ServicePrincipal('apigateway.amazonaws.com'))
+
         rag_llm_root_api = _cdk.aws_apigateway.RestApi(
             self,
             f"rag-llm-api-{env_name}",
@@ -75,9 +79,17 @@ class ApiGw_Stack(Stack):
                 "stage_name": env_name,
                 "throttling_rate_limit": 100,
                 "description": env_name + " stage deployment",
+                "access_log_destination": _cdk.aws_apigateway.LogGroupLogDestination(logrp),
+                "access_log_format": _cdk.aws_apigateway.AccessLogFormat.json_with_standard_fields( caller=False, 
+                                        http_method=True, ip=True, protocol=True, request_time=True, resource_path=True,
+                                        response_length=True, status=True, user=True
+                )
             },
-            description=api_description,
+            description=api_description
         )
+
+        self.suppressor([rag_llm_root_api], 'AwsSolutions-APIG2', 'Validations are handled by the Underlying function')
+        self.suppressor([rag_llm_root_api], 'AwsSolutions-APIG6', 'Access logs are enabled. Basic CW montioring is sufficient')
 
         if 'Amazon Bedrock' in llm_model_id:
             secure_key = _cdk.aws_apigateway.ApiKey(self, f"rag-api-key-{env_name}", api_key_name=secret_api_key, enabled=True,
@@ -117,7 +129,8 @@ class ApiGw_Stack(Stack):
                         _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
                     ]
                 )
-
+        
+        self.suppressor([custom_lambda_role], 'AwsSolutions-IAM4', 'Its a basic execution role, only has access to create a cloudwatch stream to push lambda logs')
         lambda_function = None
         bedrock_query_lambda_integration = None
         bedrock_index_lambda_integration = None
@@ -173,20 +186,34 @@ class ApiGw_Stack(Stack):
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
                                 )
             
+            self.suppressor([bedrock_indexing_lambda_function, bedrock_querying_lambda_function], 'AwsSolutions-L1', 'Some Lambda Layers do not support 3.11, hence our lambdas run on 3.10 and not the latest')
+            self.suppressor([bedrock_indexing_lambda_function, bedrock_querying_lambda_function], 'AwsSolutions-IAM5', 'Some Lambda Layers do not support 3.11, hence our lambdas run on 3.10 and not the latest')
+            
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
                                         protocol_type='WEBSOCKET',
                                         name=f'Bedrock-streaming-{env_name}',
                                         route_selection_expression='$request.body.action'
-                                        )
+                                        )    
             print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
             wss_url = websocket_api.attr_api_endpoint
+            
+            
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
-                    "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles", "execute-api:*" ],
+                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll",
+                    "apigateway:GET", "apigateway:DELETE", "apigateway:PATCH", "apigateway:POST", "apigateway:PUT",
+                    "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
+                    "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
+                    "bedrock:GetFoundationModelAvailability", "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
+                    "iam:ListUsers", "iam:ListRoles"],
                 resources=["*"],
             )
+            
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
+            
+            self.suppressor([bedrock_querying_lambda_function, bedrock_indexing_lambda_function], 'AwsSolutions-IAM5', 'Given really specific permissions required for this lambda to execute')
+            
             bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
 
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
@@ -232,8 +259,11 @@ class ApiGw_Stack(Stack):
                                             authorization_type="NONE",
                                             target="integrations/" + websocket_integrations.ref)
             
+            self.suppressor([websocket_api, websocket_connect_route,websocket_disconnect_route, websocket_default_route,  websocket_bedrock_route],
+                            'AwsSolutions-APIG4', 'Remediated, internally this Websocket API(For every Connect request) invokes the RestAPI for rate limiting and authorization')
             
             deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
+            
             deployment.add_dependency(websocket_connect_route)
             deployment.add_dependency(websocket_disconnect_route)
             deployment.add_dependency(websocket_bedrock_route)
@@ -243,7 +273,9 @@ class ApiGw_Stack(Stack):
                                            api_id=websocket_api.ref,
                                            auto_deploy=True,
                                            deployment_id= deployment.ref,
-                                           stage_name= env_name) 
+                                           stage_name= env_name)
+            self.suppressor([websocket_stage], 'AwsSolutions-APIG1', 'This low level construct doesnt support access logging for websocket APIs ')
+            
             
         else:
             print('-- Deployment for Llama2/Falcon GPU hosted models ---')
@@ -274,10 +306,9 @@ class ApiGw_Stack(Stack):
                         }
             )
 
-
         html_generation_function = _cdk.aws_lambda.Function(self, f'llm_html_function_{env_name}',
                                             function_name=f'llm-html-generator-{env_name}',
-                                            runtime=_cdk.aws_lambda.Runtime.PYTHON_3_9,
+                                            runtime=_cdk.aws_lambda.Runtime.PYTHON_3_11,
                                             memory_size=128,
                                             handler='llm_html_generator.handler',
                                             timeout=_cdk.Duration.minutes(1),
@@ -285,21 +316,25 @@ class ApiGw_Stack(Stack):
                                             environment={ 'ENVIRONMENT': env_name,
                                                           'LLM_MODEL_NAME': html_header_name,
                                                           'WSS_URL': wss_url + '/' + env_name,
-                                                        })        
-    
+                                                        })
+        
+        self.suppressor([html_generation_function], 'AwsSolutions-IAM4', 'This function only needs BasicExecution role hence managed policy is fine')
+        self.suppressor([html_generation_function, lambda_function], 'AwsSolutions-IAM5', 'This function only needs BasicExecution role hence managed policy is fine')
+             
         oss_policy = _iam.PolicyStatement(
             actions=[
-                "aoss:*",
-                "sagemaker:*",
-                "iam:ListUsers",
-                "iam:ListRoles",
-                "apigateway:*"
+                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll",
+                    "apigateway:GET", "apigateway:DELETE", "apigateway:PATCH", "apigateway:POST", "apigateway:PUT",
+                    "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
+                    "iam:ListUsers", "iam:ListRoles", "sagemaker:ListDomains", "sagemaker:DescribeDomain", 
+                    "sagemaker:DescribeEndpoint","sagemaker:DescribeEndpointConfig","sagemaker:DescribeModel",
+                    "sagemaker:DescribeModelCard","sagemaker:InvokeEndpoint","sagemaker:InvokeEndpointAsync"
             ],
             resources=["*"],
         )
 
         lambda_function.add_to_role_policy(oss_policy)
-        
+
 
         lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             lambda_function, proxy=True, allow_test_invoke=True
@@ -309,7 +344,7 @@ class ApiGw_Stack(Stack):
             html_generation_function, proxy=True, allow_test_invoke=True
         )
 
-        rag_llm_api.add_method("GET",
+        html_file_loader = rag_llm_api.add_method("GET",
                                 html_generation_lambda_integration, operation_name="HTML file",
                                 method_responses=method_responses)
 
@@ -350,7 +385,6 @@ class ApiGw_Stack(Stack):
                 api_key_required=True
             )
             self.add_cors_options(connect_tracker_api)
-
         else:
             query_api.add_method(
                 "GET",
@@ -379,13 +413,12 @@ class ApiGw_Stack(Stack):
                 operation_name="index sample document",
                 method_responses=method_responses,
             )
-        
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)
 
     def add_cors_options(self, apiResource: _cdk.aws_apigateway.IResource):
-        apiResource.add_method(
+        options_method = apiResource.add_method(
             "OPTIONS",
             _cdk.aws_apigateway.MockIntegration(
                 integration_responses=[
@@ -414,3 +447,17 @@ class ApiGw_Stack(Stack):
                 }
             ],
         )
+
+    def suppressor(self, constructs, id, reason):
+        if len(reason) < 10:
+            reason = reason + ' Will work on this at a later date.'
+        NagSuppressions.add_resource_suppressions(constructs, [
+            _cdk_nag.NagPackSuppression(id=id, reason=reason)
+        ], apply_to_children=True)
+    
+    def stack_level_suppressions(self):
+        NagSuppressions.add_stack_suppressions(self, [
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM5', reason='Managed Policy is a basic lambda execution role to access to push logs to CW'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-APIG4', reason='Remediated, we are using API keys for access control'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-COG4', reason='Remediated, we are using API keys for access control')
+        ])

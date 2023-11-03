@@ -211,3 +211,8 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
    <img width="1270" alt="Screenshot 2023-10-23 at 10 50 39 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9b1fefa0-d36b-4a4f-bd61-64f563db281e">
  
 </details>
+
+
+
+ash
+/Users/fraseque/Documents/repos/reference/automated-security-helper/ash --source-dir /Users/fraseque/Fraser/Playground/serverless-rag-demo/

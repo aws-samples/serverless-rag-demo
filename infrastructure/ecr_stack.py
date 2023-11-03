@@ -5,11 +5,16 @@ from aws_cdk import (
     aws_ecr as _ecr,
     aws_codebuild as _codebuild,
     aws_stepfunctions_tasks as _tasks,
-    aws_stepfunctions as _sfn
+    aws_stepfunctions as _sfn,
+    aws_kms as _kms,
+    Aspects
 )
 from constructs import Construct
 import os
 import yaml
+import cdk_nag
+import aws_cdk as _cdk
+from cdk_nag import NagSuppressions
 
 
 class Ecr_stack(NestedStack):
@@ -17,6 +22,7 @@ class Ecr_stack(NestedStack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         env_name = self.node.try_get_context('environment_name')
+        
         config_details = self.node.try_get_context(env_name)
         ecr_repo_name = config_details['ecr_repository_name']
         llm_model_id = 'random'
@@ -47,7 +53,12 @@ class Ecr_stack(NestedStack):
                 except yaml.YAMLError as exc:
                     print(exc)
 
-
+        encrypt_key = _kms.Key(self, f'kms-{env_name}-rag-docker-key'
+                , alias=f'alias/kms-{env_name}-rag-docker-key'
+                , enabled=True, enable_key_rotation=True
+                , removal_policy=_cdk.RemovalPolicy.DESTROY
+                , pending_window=_cdk.Duration.days(7))
+        
         # Trigger CodeBuild job
         containerize_build_job =_codebuild.Project(
             self,
@@ -60,7 +71,8 @@ class Ecr_stack(NestedStack):
                 "ecr_repo": _codebuild.BuildEnvironmentVariable(value = full_ecr_repo_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_ACCOUNT")),
                 "region": _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_REGION"))
-            })
+            }),
+            encryption_key = encrypt_key
         )
 
         ecr_policy = _iam.PolicyStatement(actions=[
