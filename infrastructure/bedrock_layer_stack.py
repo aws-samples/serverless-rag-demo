@@ -46,8 +46,7 @@ class BedrockLayerStack(NestedStack):
         
         encrypt_key = _kms.Key(self, f'kms-{env_name}-rag-layer-key'
                 , alias=f'alias/kms-{env_name}-rag-layer-key'
-                , enabled=True, enable_key_rotation=True
-                , removal_policy=_cdk.RemovalPolicy.DESTROY
+                , enabled=True, enable_key_rotation=True, removal_policy=_cdk.RemovalPolicy.DESTROY
                 , pending_window=_cdk.Duration.days(7))
         
 
@@ -59,7 +58,7 @@ class BedrockLayerStack(NestedStack):
             build_spec=_codebuild.BuildSpec.from_object_to_yaml(build_spec_yml),
             environment = _codebuild.BuildEnvironment(
             build_image=_codebuild.LinuxBuildImage.STANDARD_6_0,
-            privileged=True,
+            privileged=False,
             environment_variables={
                 "boto3_bedrock_layer_name": _codebuild.BuildEnvironmentVariable(value = boto3_bedrock_layer_name),
                 "opensearchpy_layer_name": _codebuild.BuildEnvironmentVariable(value = opensearchpy_layer_name),

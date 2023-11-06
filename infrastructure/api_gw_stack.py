@@ -14,6 +14,7 @@ from constructs import Construct, DependencyGroup
 from cdk_nag import NagSuppressions, NagPackSuppression
 import json 
 
+
 class ApiGw_Stack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -82,13 +83,22 @@ class ApiGw_Stack(Stack):
                 "access_log_destination": _cdk.aws_apigateway.LogGroupLogDestination(logrp),
                 "access_log_format": _cdk.aws_apigateway.AccessLogFormat.json_with_standard_fields( caller=False, 
                                         http_method=True, ip=True, protocol=True, request_time=True, resource_path=True,
-                                        response_length=True, status=True, user=True
-                )
+                                        response_length=True, status=True, user=True),
+                "tracing_enabled": True,
+                "data_trace_enabled": True,
+                "logging_level": _cdk.aws_apigateway.MethodLoggingLevel.INFO
             },
             description=api_description
         )
 
-        self.suppressor([rag_llm_root_api], 'AwsSolutions-APIG2', 'Validations are handled by the Underlying function')
+                # Create a validator
+        rest_llm_request_validator = _cdk.aws_apigateway.RequestValidator(self, f"llm-request-validator-{env_name}",
+                                                        rest_api=rag_llm_root_api,
+                                                        request_validator_name=f"llm-request-validator-{env_name}",
+                                                        validate_request_body=True,
+                                                        validate_request_parameters=True)
+
+        self.suppressor([rag_llm_root_api], 'AwsSolutions-APIG2', 'Validations are handled by the underlying function')
         self.suppressor([rag_llm_root_api], 'AwsSolutions-APIG6', 'Access logs are enabled. Basic CW montioring is sufficient')
 
         if 'Amazon Bedrock' in llm_model_id:
@@ -128,9 +138,10 @@ class ApiGw_Stack(Stack):
                     managed_policies= [
                         _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
                     ]
-                )
+        )
+        self.suppressor([custom_lambda_role], 'AwsSolutions-IAM4', 'Its a basic  lambda execution role, only has access to create/write to a cloudwatch stream')
         
-        self.suppressor([custom_lambda_role], 'AwsSolutions-IAM4', 'Its a basic execution role, only has access to create a cloudwatch stream to push lambda logs')
+
         lambda_function = None
         bedrock_query_lambda_integration = None
         bedrock_index_lambda_integration = None
@@ -185,7 +196,6 @@ class ApiGw_Stack(Stack):
                                   memory_size=2048,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
                                 )
-            
             self.suppressor([bedrock_indexing_lambda_function, bedrock_querying_lambda_function], 'AwsSolutions-L1', 'Some Lambda Layers do not support 3.11, hence our lambdas run on 3.10 and not the latest')
             self.suppressor([bedrock_indexing_lambda_function, bedrock_querying_lambda_function], 'AwsSolutions-IAM5', 'Some Lambda Layers do not support 3.11, hence our lambdas run on 3.10 and not the latest')
             
@@ -211,9 +221,8 @@ class ApiGw_Stack(Stack):
             
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
-            
-            self.suppressor([bedrock_querying_lambda_function, bedrock_indexing_lambda_function], 'AwsSolutions-IAM5', 'Given really specific permissions required for this lambda to execute')
-            
+            self.suppressor([bedrock_querying_lambda_function, bedrock_indexing_lambda_function], 'AwsSolutions-IAM5', 'Bedrock doesnt have a resource level ARN. We"ve limited actions on Bedrock (https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html)')
+                    
             bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
 
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
@@ -260,7 +269,7 @@ class ApiGw_Stack(Stack):
                                             target="integrations/" + websocket_integrations.ref)
             
             self.suppressor([websocket_api, websocket_connect_route,websocket_disconnect_route, websocket_default_route,  websocket_bedrock_route],
-                            'AwsSolutions-APIG4', 'Remediated, internally this Websocket API(For every Connect request) invokes the RestAPI for rate limiting and authorization')
+                            'AwsSolutions-APIG4', 'Remediated, internally this Websocket API invokes the RestAPI for rate limiting and authorization')
             
             deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
             
@@ -273,8 +282,21 @@ class ApiGw_Stack(Stack):
                                            api_id=websocket_api.ref,
                                            auto_deploy=True,
                                            deployment_id= deployment.ref,
-                                           stage_name= env_name)
-            self.suppressor([websocket_stage], 'AwsSolutions-APIG1', 'This low level construct doesnt support access logging for websocket APIs ')
+                                           stage_name= env_name,
+                                           access_log_settings=_cdk.aws_apigatewayv2.CfnStage.AccessLogSettingsProperty(
+                                                    destination_arn=logrp.log_group_arn,
+                                                    format=_cdk.aws_apigateway.AccessLogFormat.json_with_standard_fields( caller=False, 
+                                        http_method=True, ip=True, protocol=True, request_time=True, resource_path=True,
+                                        response_length=True, status=True, user=True).to_string(),
+                                           ),
+                                           default_route_settings=_cdk.aws_apigatewayv2.CfnStage.RouteSettingsProperty(
+                data_trace_enabled=True,
+                detailed_metrics_enabled=False,
+                logging_level="INFO",
+                throttling_burst_limit=123,
+                throttling_rate_limit=123
+            ))
+            self.suppressor([websocket_stage], 'AwsSolutions-APIG1', 'Logging is expensive for websocket streaming responses coming in from LLMs')
             
             
         else:
@@ -318,8 +340,8 @@ class ApiGw_Stack(Stack):
                                                           'WSS_URL': wss_url + '/' + env_name,
                                                         })
         
-        self.suppressor([html_generation_function], 'AwsSolutions-IAM4', 'This function only needs BasicExecution role hence managed policy is fine')
-        self.suppressor([html_generation_function, lambda_function], 'AwsSolutions-IAM5', 'This function only needs BasicExecution role hence managed policy is fine')
+        self.suppressor([html_generation_function], 'AwsSolutions-IAM4', 'Its a basic lambda execution role, only has access to create/write to a cloudwatch stream')
+        self.suppressor([html_generation_function, lambda_function], 'AwsSolutions-IAM5', 'Its a basic lambda execution role, only has access to create/write to a cloudwatch stream')
              
         oss_policy = _iam.PolicyStatement(
             actions=[
@@ -334,6 +356,7 @@ class ApiGw_Stack(Stack):
         )
 
         lambda_function.add_to_role_policy(oss_policy)
+        self.suppressor([lambda_function], 'AwsSolutions-IAM5', 'Bedrock doesnt have a resource level ARN. We"ve limited actions on Bedrock (https://docs.aws.amazon.com/bedrock/latest/userguide/security_iam_id-based-policy-examples.html)')
 
 
         lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
@@ -361,6 +384,7 @@ class ApiGw_Stack(Stack):
                 method_responses=method_responses,
                 api_key_required=True
             )
+            
             index_docs_api.add_method(
                 "DELETE",
                 bedrock_index_lambda_integration,
@@ -457,7 +481,7 @@ class ApiGw_Stack(Stack):
     
     def stack_level_suppressions(self):
         NagSuppressions.add_stack_suppressions(self, [
-            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM5', reason='Managed Policy is a basic lambda execution role to access to push logs to CW'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM5', reason='Its a basic lambda execution role, only has access to create/write to a cloudwatch stream'),
             _cdk_nag.NagPackSuppression(id='AwsSolutions-APIG4', reason='Remediated, we are using API keys for access control'),
             _cdk_nag.NagPackSuppression(id='AwsSolutions-COG4', reason='Remediated, we are using API keys for access control')
         ])
