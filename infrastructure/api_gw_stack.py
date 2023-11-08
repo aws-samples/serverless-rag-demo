@@ -5,18 +5,20 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_ecr as _ecr,
     aws_apigatewayv2,
-    
+    Aspects
     
 )
 
 import aws_cdk as _cdk
 import os
 from constructs import Construct, DependencyGroup
-
+import cdk_nag as _cdk_nag
+from cdk_nag import NagSuppressions, NagPackSuppression
 
 class ApiGw_Stack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        self.stack_level_suppressions()
         env_name = self.node.try_get_context("environment_name")
         current_timestamp = self.node.try_get_context('current_timestamp')
         region=os.getenv('CDK_DEFAULT_REGION')
@@ -182,7 +184,12 @@ class ApiGw_Stack(Stack):
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
-                    "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles", "execute-api:*" ],
+                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll",
+                    "apigateway:GET", "apigateway:DELETE", "apigateway:PATCH", "apigateway:POST", "apigateway:PUT",
+                    "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
+                    "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
+                    "bedrock:GetFoundationModelAvailability", "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
+                    "iam:ListUsers", "iam:ListRoles"],
                 resources=["*"],
             )
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
@@ -414,3 +421,12 @@ class ApiGw_Stack(Stack):
                 }
             ],
         )
+    
+    def stack_level_suppressions(self):
+        NagSuppressions.add_stack_suppressions(self, [
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM5', reason='Its a basic lambda execution role, only has access to create/write to a cloudwatch stream'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM4', reason='Its a basic lambda execution role, only has access to create/write to a cloudwatch stream'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-APIG4', reason='Remediated, we are using API keys for access control'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-APIG1', reason='Logging is expensive for websocket streaming responses coming in from LLMs'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-COG4', reason='Remediated, we are using API keys for access control')
+        ])

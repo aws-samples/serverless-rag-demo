@@ -3,15 +3,19 @@ from aws_cdk import (
     NestedStack,
     aws_opensearchserverless as _oss,
     Tag as _tags,
-    CfnOutput as _output
+    CfnOutput as _output,
+    Aspects
 )
 from constructs import Construct
 import os
+import cdk_nag as _cdk_nag
+from cdk_nag import NagSuppressions, NagPackSuppression
 
 class OpensearchVectorDbStack(NestedStack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context('environment_name')
         env_params = self.node.try_get_context(env_name)
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")

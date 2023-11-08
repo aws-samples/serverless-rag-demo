@@ -7,7 +7,6 @@ from infrastructure.bedrock_layer_stack import BedrockLayerStack
 import os
 
 
-
 class LlmsWithServerlessRagStack(Stack):
     def tag_my_stack(self, stack):
         tags = Tags.of(stack)
