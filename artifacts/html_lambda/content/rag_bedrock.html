@@ -18,162 +18,175 @@
     integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/"
     crossorigin="anonymous"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
-     integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
-      crossorigin="anonymous"></script>
-    <style>
-      .toast-config {
-        width: 25vw;
-        margin-left: 76vw;
-        z-index: 1000;
-        position: absolute;
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
+    crossorigin="anonymous"></script>
+  <style>
+    .toast-config {
+      width: 25vw;
+      margin-left: 76vw;
+      z-index: 1000;
+      position: absolute;
+    }
+
+    .header {
+      background-color: #001529;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+    }
+
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      /* background:#29b6f6; */
+      /* #c8cbcf */
+      background: #dee6ef;
+    }
+
+    .bubbles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: -100;
+      overflow: hidden;
+      top: 0;
+      left: 0;
+    }
+
+    .bubble {
+      position: absolute;
+      bottom: -100px;
+      width: 40px;
+      height: 40px;
+      background: #5b6471b5;
+      border-radius: 50%;
+      opacity: 0.1;
+      animation: rise 10s infinite ease-in;
+    }
+
+    .bubble:nth-child(1) {
+      width: 40px;
+      height: 40px;
+      left: 10%;
+      animation-duration: 8s;
+    }
+
+    .bubble:nth-child(2) {
+      width: 20px;
+      height: 20px;
+      left: 20%;
+      animation-duration: 5s;
+      animation-delay: 1s;
+    }
+
+    .bubble:nth-child(3) {
+      width: 50px;
+      height: 50px;
+      left: 35%;
+      animation-duration: 7s;
+      animation-delay: 2s;
+    }
+
+    .bubble:nth-child(4) {
+      width: 80px;
+      height: 80px;
+      left: 50%;
+      animation-duration: 11s;
+      animation-delay: 0s;
+    }
+
+    .bubble:nth-child(5) {
+      width: 35px;
+      height: 35px;
+      left: 55%;
+      animation-duration: 6s;
+      animation-delay: 1s;
+    }
+
+    .bubble:nth-child(6) {
+      width: 45px;
+      height: 45px;
+      left: 65%;
+      animation-duration: 8s;
+      animation-delay: 3s;
+    }
+
+    .bubble:nth-child(7) {
+      width: 90px;
+      height: 90px;
+      left: 70%;
+      animation-duration: 12s;
+      animation-delay: 2s;
+    }
+
+    .bubble:nth-child(8) {
+      width: 25px;
+      height: 25px;
+      left: 80%;
+      animation-duration: 6s;
+      animation-delay: 2s;
+    }
+
+    .bubble:nth-child(9) {
+      width: 15px;
+      height: 15px;
+      left: 70%;
+      animation-duration: 5s;
+      animation-delay: 1s;
+    }
+
+    .bubble:nth-child(10) {
+      width: 90px;
+      height: 90px;
+      left: 25%;
+      animation-duration: 10s;
+      animation-delay: 4s;
+    }
+
+    @keyframes rise {
+      0% {
+        bottom: -100px;
+        transform: translateX(00);
       }
 
-      .header{
-        background-color: #001529;
-        color: white;
-        font-size: 20px;
-        font-weight: bold;
-        display: flex;
-        justify-content: center;
+      50% {
+        transform: translate(100px);
       }
 
-      body,html{
-  width:100%;
-  height: 100%;
-}
-body{
-  margin:0;
-  padding:0;
-  /* background:#29b6f6; */
-  /* #c8cbcf */
-  background: #dee6ef;
-}
-.bubbles{
-  position:absolute;
-  width:100%;
-  height: 100%;
-  z-index:-100;
-  overflow:hidden;
-  top:0;
-  left:0;
-}
-.bubble{
-  position: absolute;
-  bottom:-100px;
-  width:40px;
-  height: 40px;
-  background:#5b6471b5;
-  border-radius:50%;
-  opacity:0.1;
-  animation: rise 10s infinite ease-in;
-}
-.bubble:nth-child(1){
-  width:40px;
-  height:40px;
-  left:10%;
-  animation-duration:8s;
-}
-.bubble:nth-child(2){
-  width:20px;
-  height:20px;
-  left:20%;
-  animation-duration:5s;
-  animation-delay:1s;
-}
-.bubble:nth-child(3){
-  width:50px;
-  height:50px;
-  left:35%;
-  animation-duration:7s;
-  animation-delay:2s;
-}
-.bubble:nth-child(4){
-  width:80px;
-  height:80px;
-  left:50%;
-  animation-duration:11s;
-  animation-delay:0s;
-}
-.bubble:nth-child(5){
-  width:35px;
-  height:35px;
-  left:55%;
-  animation-duration:6s;
-  animation-delay:1s;
-}
-.bubble:nth-child(6){
-  width:45px;
-  height:45px;
-  left:65%;
-  animation-duration:8s;
-  animation-delay:3s;
-}
-.bubble:nth-child(7){
-  width:90px;
-  height:90px;
-  left:70%;
-  animation-duration:12s;
-  animation-delay:2s;
-}
-.bubble:nth-child(8){
-  width:25px;
-  height:25px;
-  left:80%;
-  animation-duration:6s;
-  animation-delay:2s;
-}
-.bubble:nth-child(9){
-  width:15px;
-  height:15px;
-  left:70%;
-  animation-duration:5s;
-  animation-delay:1s;
-}
-.bubble:nth-child(10){
-  width:90px;
-  height:90px;
-  left:25%;
-  animation-duration:10s;
-  animation-delay:4s;
-}
-@keyframes rise{
-  0%{
-    bottom:-100px;
-    transform:translateX(00);
-  }
-  50%{
-    transform:translate(100px);
-  }
-  100%{
-    bottom:1080px;
-    transform:translateX(-200px);
-  }
-}
+      100% {
+        bottom: 1080px;
+        transform: translateX(-200px);
+      }
+    }
 
-.conversations .gradient-custom {
-/* fallback for old browsers */
-background: #fccb90 !important;
+    .conversations .gradient-custom {
+      /* fallback for old browsers */
+      background: #fccb90 !important;
 
-/* Chrome 10-25, Safari 5.1-6 */
-background: -webkit-linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important;
+      /* Chrome 10-25, Safari 5.1-6 */
+      background: -webkit-linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important;
 
-/* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-background: linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important
-}
+      /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+      background: linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important
+    }
 
-.conversations .mask-custom {
-background: rgba(24, 24, 16, .2) !important;
-border-radius: 2em; 
-backdrop-filter: blur(15px);
-border: 2px solid rgba(255, 255, 255, 0.05) !important;
-background-clip: padding-box !important;
-box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
-}
-
-
-
-
+    .conversations .mask-custom {
+      background: rgba(24, 24, 16, .2) !important;
+      border-radius: 2em;
+      backdrop-filter: blur(15px);
+      border: 2px solid rgba(255, 255, 255, 0.05) !important;
+      background-clip: padding-box !important;
+      box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
+    }
   </style>
 
 
@@ -184,12 +197,11 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
   <div id="alert-placeholder"></div>
   <div class="header">
     <h1><span id="model-name">Llama2-7b<span></h1>
-    
+
   </div>
-  
+
   <section class="sticky">
     <div class="bubbles">
-        <div class="bubble"></div>
       <div class="bubble"></div>
       <div class="bubble"></div>
       <div class="bubble"></div>
@@ -199,13 +211,14 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
       <div class="bubble"></div>
       <div class="bubble"></div>
       <div class="bubble"></div>
-      
+      <div class="bubble"></div>
+
     </div>
   </section>
-  
+
   <div style="padding-bottom: 10px;"></div>
   <div style="padding-bottom: 10px;"></div>
-  
+
   <div class="modal-sm text-muted" style="margin-left: 30vw;" tabindex="-1" id="apikey_modal">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -214,7 +227,7 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <input type="password" id="api_key"/>
+          <input type="password" id="api_key" />
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -223,222 +236,253 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
       </div>
     </div>
   </div>
-  
+
   <div id="main-bedrock-content">
-      <ul class="nav nav-tabs" id="myTab" role="tablist">
-    <li class="nav-item" role="presentation">
-      <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button" role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-div" type="button" role="tab" aria-controls="Query" aria-selected="false">Query Data</button>
-    </li>
-    <li class="nav-item" role="presentation">
-      <button class="nav-link" id="conversations-tab" data-bs-toggle="tab" data-bs-target="#conversations-div" type="button" role="tab" aria-controls="Conversations" aria-selected="false">Conversations</button>
-    </li>
-      </ul>
-      <div class="tab-content" id="myTabContent">
-    <div class="tab-pane fade show active" id="index-div" role="tabpanel" aria-labelledby="index-tab">
-      <div style="padding-bottom: 10px;"></div>
-      <div class="alert alert-primary" role="alert">
-        Index your documents here. Initial indexing requests could timeout due to time take by Amazon OSS to warm up.
-      </div>
-      <div style="padding-bottom: 10px;"></div>
-      <table>
-        <tbody>
-          <tr>
-            <th class="text-dark p-2"><h4>Index Documents</h4></th>
-            <th style="padding-left: 100px;"></th>
-            <th class="text-dark p-2"><h4>Try sample data</h4></th>
-          </tr>
-          <tr>
-            <td>
-              <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-                <textarea placeholder="Add text here for indexing. Limit to 5000 characters" id="index_txt" name="request"
-                  rows="10" cols="60"></textarea>
-              </div>
-            </td>
-            <td style="padding-left: 0px;"></td>
-            <td>
-                 <table style="margin-top:-5vh">
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-movie" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-isro" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1, Chandrayan-3)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-health" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('health')">Index a brand new disease (FrostFlu)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-finance" type="button" class="btn btn-warning" onclick="javascript:indexSampleDocument('amazon_earnings')">Index Amazon Earnings Report (Quarterly Results)</button>
-                    </td>
-                  </tr>
-
-                 </table>
-            
-            </td>
-          </tr>
-          <tr>
-    
-          </tr>
-    
-    
-        </tbody>
-      </table>
-      <table>
-        <tbody>
-          <tr>
-            <td style="padding-left: 20px;">
-              <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index Documents</button>
-            </td>
-            <td style="padding-left: 20px;">
-              <button id="delete-button" type="button" class="btn btn-danger" onclick="javascript:reset()">Reset</button>
-            </td>
-            <td style="padding-left: 20px;">
-  
-            </td>
-  
-          </tr>
-  
-        </tbody>
-      </table>
-
-      <div class="d-flex justify-content-center" id="index-spinner">
-        <div class="spinner-border" role="status">
-          <span class="sr-only">Loading...</span>
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button"
+          role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-div" type="button"
+          role="tab" aria-controls="Query" aria-selected="false">Query Data</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="conversations-tab" data-bs-toggle="tab" data-bs-target="#conversations-div"
+          type="button" role="tab" aria-controls="Conversations" aria-selected="false">Conversations</button>
+      </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade show active" id="index-div" role="tabpanel" aria-labelledby="index-tab">
+        <div style="padding-bottom: 10px;"></div>
+        <div class="alert alert-primary" role="alert">
+          Index your documents here. Initial indexing requests could timeout due to time take by Amazon OSS to warm up.
         </div>
-      </div>
-    </div>
-    
-    <div class="tab-pane fade" id="query-div" role="tabpanel" aria-labelledby="query-tab">
-      <div style="padding-bottom: 10px;"></div>
-      <div class="alert alert-primary" role="alert">
-        Once you've indexed documents, you can query your data here
-      </div>
-      <div style="padding-bottom: 10px;"></div>
-      <div style="padding-left: 10px;">
-        <!-- <textarea id="query" style="width: 34vw;" name="response" rows="5" cols="20"
-        placeholder="Query your data here"></textarea>   -->
+        <div style="padding-bottom: 10px;"></div>
+        <table>
+          <tbody>
+            <tr>
+              <th class="text-dark p-2">
+                <h4>Index Documents</h4>
+              </th>
+              <th style="padding-left: 100px;"></th>
+              <th class="text-dark p-2">
+                <h4>Try sample data</h4>
+              </th>
+            </tr>
+            <tr>
+              <td>
+                <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                  <textarea placeholder="Add text here for indexing. Limit to 5000 characters" id="index_txt"
+                    name="request" rows="10" cols="60"></textarea>
+                </div>
+              </td>
+              <td style="padding-left: 0px;"></td>
+              <td>
+                <table style="margin-top:-5vh">
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-movie" type="button" class="btn btn-warning"
+                        onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-isro" type="button" class="btn btn-warning"
+                        onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1,
+                        Chandrayan-3)</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-health" type="button" class="btn btn-warning"
+                        onclick="javascript:indexSampleDocument('health')">Index a brand new disease (FrostFlu)</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom: 10px;">
+                      <button id="sample-finance" type="button" class="btn btn-warning"
+                        onclick="javascript:indexSampleDocument('amazon_earnings')">Index Amazon Earnings Report
+                        (Quarterly Results)</button>
+                    </td>
+                  </tr>
 
-        <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-          <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
-            alt="avatar 3" style="width: 40px; height: 100%;">
-          <textarea  id="query" type="text" class="form-control form-control-lg" 
-            placeholder="Query your data here"></textarea>
-        </div>
-      
+                </table>
+
+              </td>
+            </tr>
+            <tr>
+
+            </tr>
 
 
-      </div>
-      <div style="padding-bottom: 10px;"></div>
-      
-      <div class="dropdown" style="padding-left: 10px; padding-bottom: 10px;">
-        <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          Select Model on Amazon Bedrock
-        </button>
-        <ul class="dropdown-menu">
-          <!-- AI21 not supported for Streaming ingestion-->
-          <!-- <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li> -->
-          <!-- Amazon express is not yet available-->
-          <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li> -->
-          <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li> -->
-          <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
-          <!-- Anthropic -->
-          <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v1')">Anthropic	Claude V1</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic	Claude V2</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic	Claude Instant</a></li>
-          <!-- Cohere not supported for Streaming ingestion -->
-          <!-- <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li> -->
-        </ul>
+          </tbody>
+        </table>
+        <table>
+          <tbody>
+            <tr>
+              <td style="padding-left: 20px;">
+                <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index
+                  Documents</button>
+              </td>
+              <td style="padding-left: 20px;">
+                <button id="delete-button" type="button" class="btn btn-danger"
+                  onclick="javascript:reset()">Reset</button>
+              </td>
+              <td style="padding-left: 20px;">
 
-        <span id="set_model"></span>
-        <div class="d-flex justify-content-center" id="custom-spinner">
+              </td>
+
+            </tr>
+
+          </tbody>
+        </table>
+
+        <div class="d-flex justify-content-center" id="index-spinner">
           <div class="spinner-border" role="status">
             <span class="sr-only">Loading...</span>
           </div>
         </div>
+      </div>
+
+      <div class="tab-pane fade" id="query-div" role="tabpanel" aria-labelledby="query-tab">
+        <div style="padding-bottom: 10px;"></div>
+        <div class="alert alert-primary" role="alert">
+          Once you've indexed documents, you can query your data here
+        </div>
+        <div style="padding-bottom: 10px;"></div>
+        <div style="padding-left: 10px;">
+          <!-- <textarea id="query" style="width: 34vw;" name="response" rows="5" cols="20"
+        placeholder="Query your data here"></textarea>   -->
+
+          <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+            <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 3"
+              style="width: 40px; height: 100%;">
+            <textarea id="query" type="text" class="form-control form-control-lg"
+              placeholder="Query your data here"></textarea>
+          </div>
+
+
+
+        </div>
+        <div style="padding-bottom: 10px;"></div>
+
+        <div class="dropdown" style="padding-left: 10px; padding-bottom: 10px;">
+          <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            aria-expanded="false">
+            Select Model on Amazon Bedrock
+          </button>
+          <ul class="dropdown-menu">
+            <!-- AI21 not supported for Streaming ingestion-->
+            <!-- <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
+          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li> -->
+            <!-- Amazon express is not yet available-->
+            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li> -->
+            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li> -->
+            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
+            <!-- Anthropic -->
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v1')">Anthropic Claude V1</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude
+                Instant</a></li>
+            <!-- Cohere not supported for Streaming ingestion -->
+            <!-- <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li> -->
+          </ul>
+
+          <span id="set_model"></span>
+          <div class="d-flex justify-content-center" id="custom-spinner">
+            <div class="spinner-border" role="status">
+              <span class="sr-only">Loading...</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="query-button" style="padding-left: 10px;" data-toggle="tooltip"
+          title="Select an Amazon Bedrock Model to continue" data-placement="left">
+          <button type="button" id="english" class="btn btn-info assistant"
+            onclick="javascript:query('english')">English</button>
+          <button type="button" id="hindi" class="btn btn-info assistant"
+            onclick="javascript:query('hindi')">Hindi</button>
+          <button type="button" id="thai" class="btn btn-info assistant"
+            onclick="javascript:query('thai')">Thai</button>
+          <button type="button" id="spanish" class="btn btn-info assistant"
+            onclick="javascript:query('spanish')">Spanish</button>
+          <button type="button" id="spanish" class="btn btn-info assistant"
+            onclick="javascript:query('french')">French</button>
+          <button type="button" id="spanish" class="btn btn-info assistant"
+            onclick="javascript:query('german')">German</button>
+          <button type="button" id="bengali" class="btn btn-info assistant"
+            onclick="javascript:query('bengali')">Bengali</button>
+          <button type="button" id="tamil" class="btn btn-info assistant"
+            onclick="javascript:query('tamil')">Tamil</button>
+
+          <button type="button" id="sentiment" class="btn btn-info assistant"
+            onclick="javascript:query('sentiment')">Sentiment Analysis</button>
+          <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">Identify
+            PII</button>
+          <button type="button" id="redact" class="btn btn-info assistant" onclick="javascript:query('redact')">Redact
+            PII</button>
+          <button type="button" id="clear" class="btn btn-info" onclick="clear_response()">Clear Data</button>
+        </div>
+        <div style="padding-bottom: 30px;"></div>
+
+        <div style="padding-left: 10px;">
+
+          <table>
+            <tr>
+              <td>
+                <div>
+                  <!-- <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea> -->
+                  <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                    <textarea id="query-response" type="text" cols="500" rows="9" class="form-control form-control-lg"
+                      placeholder="Query response here"></textarea>
+                  </div>
+
+
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+
+
 
       </div>
 
-      <div id="query-button" style="padding-left: 10px;" data-toggle="tooltip" title="Select an Amazon Bedrock Model to continue" data-placement="left">
-        <button type="button" id="english" class="btn btn-info assistant" onclick="javascript:query('english')">English</button>
-        <button type="button" id="hindi" class="btn btn-info assistant" onclick="javascript:query('hindi')">Hindi</button>
-        <button type="button" id="thai" class="btn btn-info assistant" onclick="javascript:query('thai')">Thai</button>
-        <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('spanish')">Spanish</button>
-        <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('french')">French</button>
-        <button type="button" id="spanish" class="btn btn-info assistant" onclick="javascript:query('german')">German</button>
-        <button type="button" id="bengali" class="btn btn-info assistant" onclick="javascript:query('bengali')">Bengali</button>
-        <button type="button" id="tamil" class="btn btn-info assistant" onclick="javascript:query('tamil')">Tamil</button>
-        
-        <button type="button" id="sentiment" class="btn btn-info assistant" onclick="javascript:query('sentiment')">Sentiment Analysis</button>
-        <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">Identify PII</button>
-        <button type="button" id="redact" class="btn btn-info assistant" onclick="javascript:query('redact')">Redact PII</button>
-        <button type="button" id="clear" class="btn btn-info" onclick="clear_response()">Clear Data</button>
-      </div>      
-      <div style="padding-bottom: 30px;"></div>
-      
-      <div style="padding-left: 10px;">
-        
-      <table>
-        <tr>
-          <td>
-          <div>
-            <!-- <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea> -->
-            <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-              <textarea  id="query-response" type="text" cols="500" rows="9"  class="form-control form-control-lg" 
-                placeholder="Query response here"></textarea>
-            </div>
+      <div class="tab-pane fade" id="conversations-div" role="tabpanel" aria-labelledby="conversations-tab">
+        <!-- style="background-color: #eee;" -->
+        <section class="gradient-custom">
+          <div class="container py-5">
 
+            <div class="row d-flex justify-content-center">
+              <div class="col-md-12 col-lg-12 col-xl-12">
 
-          </div>
-          </td>
-        </tr>
-      </table>
-    </div>
-    
-    
-  
-  
-  </div>
-
-  <div class="tab-pane fade" id="conversations-div" role="tabpanel" aria-labelledby="conversations-tab">
-    <!-- style="background-color: #eee;" -->
-    <section  class="gradient-custom">
-      <div class="container py-5">
-    
-        <div class="row d-flex justify-content-center">
-          <div class="col-md-10 col-lg-8 col-xl-6">
-    
-            <div class="card" id="chat2">
-              <div class="card-header d-flex justify-content-between align-items-center p-3">
-                <h5 class="mb-0">Chat</h5>
-                <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark" onclick="showChatBox()">Start a new chat session</button>
-              </div>
-              <div id="conversations-box" class="card-body" data-mdb-perfect-scrollbar="true" style="position: relative;">
-                <!-- Assistant -->
-                <div class="d-flex flex-row justify-content-start">
-                  <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
-                    alt="avatar 1" style="width: 45px; height: 100%;">
-                  <div>
-                    <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">Hello how are you doing</p>
-                    <!-- <p class="small ms-3 mb-3 rounded-3 text-muted">23:58</p> -->
+                <div class="card" id="chat2">
+                  <div class="card-header d-flex justify-content-between align-items-center p-3">
+                    <h5 class="mb-0">Chat</h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark"
+                      onclick="showChatBox()">Start a new chat session</button>
                   </div>
-                </div>
-    
-                <div class="divider d-flex align-items-center mb-4">
-                  <p class="text-center mx-3 mb-0" style="color: #a2aab7;">Today</p>
-                </div>
+                  <div id="conversations-box" class="card-body" data-mdb-perfect-scrollbar="true"
+                    style="position: relative; height: 40vh; overflow-x: hidden; overflow-y: auto;">
+                    <!-- Assistant -->
+                    <div class="d-flex flex-row justify-content-start">
+                        <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
+                          alt="avatar 1" style="width: 45px; height: 100%;">
+                        <div>
+                            <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">
+                                Hello I am Claude</p>
+                        </div>
+                    </div>
+                    
+                    <!-- <div class="divider d-flex align-items-center mb-4">
+                      <p class="text-center mx-3 mb-0" style="color: #a2aab7;">Today</p>
+                    </div> -->
 
-                <!-- Human -->
-                <!-- <div class="d-flex flex-row justify-content-end mb-4 pt-1">
+                    <!-- Human -->
+                    <!-- <div class="d-flex flex-row justify-content-end mb-4 pt-1">
                   <div>
                     <p class="small p-2 me-3 mb-1 text-white rounded-3 bg-primary">Hello, how are you doing</p>
                     <p class="small me-3 mb-3 rounded-3 text-muted d-flex justify-content-end">00:06</p>
@@ -446,36 +490,34 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
                   <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava4-bg.webp"
                     alt="avatar 1" style="width: 45px; height: 100%;">
                 </div> -->
-    
-              </div>
-              <div id="conversations-footer" class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
-                  alt="avatar 3" style="width: 40px; height: 100%;">
-                <input type="text" class="form-control form-control-lg" id="chat-text"
-                  placeholder="Type message">
-                <a class="ms-1 text-muted" href="#!"><i class="fas fa-paperclip"></i></a>
-                <a class="ms-3 text-muted" href="#!"><i class="fas fa-smile"></i></a>
-                <a class="ms-3" href="#!" onclick="sendChat('chat')"><i class="bi bi-send">Send</i></a>
+
+                  </div>
+                  <div id="conversations-footer"
+                    class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                    <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp"
+                      alt="avatar 3" style="width: 40px; height: 100%;">
+                    <input type="text" class="form-control form-control-lg" id="chat-text" placeholder="Type message">
+                    <a id="send-chat-button" class="ms-3" href="#!" onclick="sendChat('chat')"><i class="bi bi-send">Send</i></a>
+                  </div>
+                </div>
+
               </div>
             </div>
-    
+
           </div>
-        </div>
-    
+        </section>
+
       </div>
-    </section>
-
-  </div>
 
 
 
-  <div id="err"></div>
+      <div id="err"></div>
 
-  <div id="sse"></div>
-      </div>
+      <div id="sse"></div>
+    </div>
   </div>
   <!-- </div> -->
-  
+
 
   <footer>
     <script type="text/javascript">
@@ -485,13 +527,11 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
       // do stuff
       $(document).ready(function () {
         $('#main-bedrock-content').hide();
-        $('#conversations-box').hide();
-        $("#conversations-footer").hide();
         $('#apikey_modal').css('top', '12vh')
         $('#apikey_modal').show()
-        $('#custom-spinner').css('visibility','hidden');
-        $('#index-spinner').css('visibility','hidden');
-        document.getElementById("model-name").innerHTML=awsData.htmlheader + vector_text
+        $('#custom-spinner').css('visibility', 'hidden');
+        $('#index-spinner').css('visibility', 'hidden');
+        document.getElementById("model-name").innerHTML = awsData.htmlheader + vector_text
         $("button.assistant").prop('disabled', true)
         $('[data-toggle="tooltip"]').tooltip();
       });
@@ -500,11 +540,11 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
       var ws = null;
       var chat_id = null;
       var awsData = {
-          apiGatewayUrl: '<apiGatewayUrl>',
-          staticPageUrl: '<apiGatewayUrl>',
-          htmlheader: '<htmlheader>',
-          websocketUrl: '<websocketUrl>'
-          
+        apiGatewayUrl: '<apiGatewayUrl>',
+        staticPageUrl: '<apiGatewayUrl>',
+        htmlheader: '<htmlheader>',
+        websocketUrl: '<websocketUrl>'
+
       };
 
       function setApiKey() {
@@ -513,18 +553,18 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
           awsData['apiKey'] = api_key
           $('#apikey_modal').hide()
           $.ajaxSetup({
-            headers: { 'x-api-key':  api_key}
+            headers: { 'x-api-key': api_key }
           });
           $('#main-bedrock-content').show();
         }
       }
 
       function indexDocuments() {
-        
-        $('#index-spinner').css('visibility','visible');
-        $('#index-button').css('visibility','hidden');
-        $('#query-button').css('visibility','hidden');
-        $('#delete-button').css('visibility','hidden');
+
+        $('#index-spinner').css('visibility', 'visible');
+        $('#index-button').css('visibility', 'hidden');
+        $('#query-button').css('visibility', 'hidden');
+        $('#delete-button').css('visibility', 'hidden');
         //Retrieve list of dashboards that the user can access from QuickSight.
         $.ajax({
           type: "POST",
@@ -533,17 +573,17 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
           dataType: 'json',
           data: JSON.stringify({ "text": $('#index_txt').val() }),
           success: function (result) {
-            $('#index-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
             alertbuilder(result['result'], true)
           },
           error: function (err) {
-            $('#index-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
             console.log('Error on making API gateway call to index documents ..');
             console.log(err.responseText);
             console.log(err)
@@ -558,11 +598,11 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
       }
 
       function reset() {
-        $('#index-spinner').css('visibility','visible');
-        $('#index-button').css('visibility','hidden');
-        $('#query-button').css('visibility','hidden');
-        $('#delete-button').css('visibility','hidden');
-        $('#response').css('visibility','hidden');
+        $('#index-spinner').css('visibility', 'visible');
+        $('#index-button').css('visibility', 'hidden');
+        $('#query-button').css('visibility', 'hidden');
+        $('#delete-button').css('visibility', 'hidden');
+        $('#response').css('visibility', 'hidden');
         $.ajax({
           type: "DELETE",
           url: awsData.apiGatewayUrl + '/index-documents',
@@ -570,18 +610,18 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
           dataType: 'json',
           success: function (result) {
             $('#response').val(result['result'])
-            $('#index-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
             alertbuilder(result['result'], true)
-            
+
           },
           error: function (err) {
-            $('#index-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
             console.log('Error on making API gateway call to delete index..');
             console.log(err.responseText);
             alertbuilder(err.responseText.replaceAll('"', ''), false)
@@ -595,10 +635,10 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
         if (success) {
           alert_css = 'alert-success'
         }
-        $('#alert-placeholder').append('<div id="alertdiv" class="alert '+ alert_css + ' toast-config"><a class="close" data-dismiss="alert"></a><span>'+message+'</span></div>')
+        $('#alert-placeholder').append('<div id="alertdiv" class="alert ' + alert_css + ' toast-config"><a class="close" data-dismiss="alert"></a><span>' + message + '</span></div>')
         setTimeout(() => {
-              $('#alertdiv').remove();
-            }, 5000)
+          $('#alertdiv').remove();
+        }, 5000)
       }
 
       function model_selected(val) {
@@ -607,12 +647,12 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
         alertbuilder('Model Selected: ' + val, true)
         $("button.assistant").prop('disabled', false)
       }
-      
+
       function indexSampleDocument(type) {
-        $('#index-spinner').css('visibility','visible');
-        $('#index-button').css('visibility','hidden');
-        $('#query-button').css('visibility','hidden');
-        $('#delete-button').css('visibility','hidden');
+        $('#index-spinner').css('visibility', 'visible');
+        $('#index-button').css('visibility', 'hidden');
+        $('#query-button').css('visibility', 'hidden');
+        $('#delete-button').css('visibility', 'hidden');
         $.ajax({
           type: "POST",
           url: awsData.apiGatewayUrl + '/index-sample-data',
@@ -620,17 +660,17 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
           dataType: 'json',
           data: JSON.stringify({ "type": type }),
           success: function (result) {
-            $('#index-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
             alertbuilder('Indexed Successfully', true)
           },
           error: function (err) {
-            $('#index-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
             console.log('Error on making API gateway call to index documents ..');
             console.log(err.responseText);
             var err_message = err.responseText
@@ -640,70 +680,70 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
             alertbuilder(err_message.replaceAll('"', ''), false)
           }
         });
-        
+
       }
 
       function hasWhiteSpace(s) {
-          return /\s/g.test(s);
+        return /\s/g.test(s);
       }
 
       function query(assistant_type) {
-        $('#custom-spinner').css('visibility','visible');
-        $('#index-button').css('visibility','hidden');
-        $('#query-button').css('visibility','hidden');
-        $('#delete-button').css('visibility','hidden');
-        
+        $('#custom-spinner').css('visibility', 'visible');
+        $('#index-button').css('visibility', 'hidden');
+        $('#query-button').css('visibility', 'hidden');
+        $('#delete-button').css('visibility', 'hidden');
+
         document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + '\n' + assistant_type.toUpperCase() + ': \n'
-        
+
         query_str = " " + $('#query').val()
-        data = '{"query": "'+query_str + '",  "behaviour": "'+ assistant_type + '", "model_id": "'+ model_id + '" ,"action": "bedrock"}'
+        data = '{"query": "' + query_str + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
           if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-           
-              ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
-            ws.onerror=function(event){
-                  console.log(event);
-                  $('#custom-spinner').css('visibility','hidden');
-                  $('#index-button').css('visibility','visible');
-                  $('#query-button').css('visibility','visible');
-                  $('#delete-button').css('visibility','visible');
-                  alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
-                }
-            
+
+            ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
+            ws.onerror = function (event) {
+              console.log(event);
+              $('#custom-spinner').css('visibility', 'hidden');
+              $('#index-button').css('visibility', 'visible');
+              $('#query-button').css('visibility', 'visible');
+              $('#delete-button').css('visibility', 'visible');
+              alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
+            }
+
           } else {
             ws.send(data);
           }
-          
-          ws.onopen = function() {
+
+          ws.onopen = function () {
             ws.send(data);
           }
         }
-        
-        ws.onmessage = function (evt) { 
-            $('#custom-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
-            var received_msg = '' ;
-            response_json = JSON.parse(evt.data)
-            if (response_json['text']) {
-              str_len = -1
-              try {
-                str_len = response_json['text'].trim().length
-              } catch (error) {
-                console.log('str_len error')
-              }
-              if(str_len != 0) {
-                received_msg = response_json['text']
-              }
-            } else {
-              received_msg = JSON.stringify(response_json)
+
+        ws.onmessage = function (evt) {
+          $('#custom-spinner').css('visibility', 'hidden');
+          $('#index-button').css('visibility', 'visible');
+          $('#query-button').css('visibility', 'visible');
+          $('#delete-button').css('visibility', 'visible');
+          var received_msg = '';
+          response_json = JSON.parse(evt.data)
+          if (response_json['text']) {
+            str_len = -1
+            try {
+              str_len = response_json['text'].trim().length
+            } catch (error) {
+              console.log('str_len error')
             }
-            console.log("streaming message is received.. " + received_msg);
-            document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg 
-            
-           }
+            if (str_len != 0) {
+              received_msg = response_json['text']
+            }
+          } else {
+            received_msg = JSON.stringify(response_json)
+          }
+          console.log("streaming message is received.. " + received_msg);
+          document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg
+
+        }
 
       }
 
@@ -711,90 +751,139 @@ box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
       // Chat functions 
 
       function showChatBox() {
-        if (!showChat){
-          $('#conversations-box').show();
-          $("#conversations-footer").show();
-          // Reset Chat_ID to null. Start a new Chat session
-          chat_id = null
-          showChat = true
-        } else {
-          $('#conversations-box').hide();
-          $("#conversations-footer").hide();
-          showChat = false
-        }
+        ws = null
+        chat_id = null
+        
+        reset_chat_html = '<div class="d-flex flex-row justify-content-start">' +
+            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"' +
+            ' alt="avatar 1" style="width: 45px; height: 100%;"> ' + 
+            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+             'Hello I am Claude' +
+            '</p></div></div>'
+
+        document.getElementById('conversations-box').innerHTML = reset_chat_html
+          
       }
 
       function guidGenerator() {
-           var S4 = function() {
-            return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
-          };
-          return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+        var S4 = function () {
+          return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+        };
+        return (S4() + S4() + "-" + S4());
       }
-      
-      function sendChat(assistant_type) {
-        $('#custom-spinner').css('visibility','visible');
-        $('#index-button').css('visibility','hidden');
-        $('#query-button').css('visibility','hidden');
-        $('#delete-button').css('visibility','hidden');
 
-        if (chat_id == null) {
-          chat_id = guidGenerator()
-        }
+      function sendChat(assistant_type) {
+        $('#custom-spinner').css('visibility', 'visible');
+        $('#index-button').css('visibility', 'hidden');
+        $('#query-button').css('visibility', 'hidden');
+        $('#delete-button').css('visibility', 'hidden');
+        var message_store = '';
+        var end_of_response = false;
+        chat_id = guidGenerator()
         
+        hard_coded_model = 'anthropic.claude-instant-v1'
         query_str = " " + $('#chat-text').val()
-        data = '{"query": "'+query_str + '",  "behaviour": "'+ assistant_type + '", "model_id": "'+ model_id + '" ,"action": "bedrock"}'
+        data = '{"query": "' + query_str + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
+
+        request_html = '<div class="d-flex flex-row justify-content-start">' +
+            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+              query_str +
+            '</p></div></div>' +
+            '<div class="divider d-flex align-items-center mb-4"></div>'
+        document.getElementById('conversations-box').innerHTML = document.getElementById('conversations-box').innerHTML + request_html
+
+        claude_wait_id= "claude-wait" + chat_id
+        claude_wait_html = '<div id="' + claude_wait_id + '" class="d-flex flex-row justify-content-start">' +
+            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+            '...' +
+            '</p></div></div>' +
+            '<div class="divider d-flex align-items-center mb-4"></div>'
+        document.getElementById('conversations-box').innerHTML = document.getElementById('conversations-box').innerHTML + claude_wait_html
+
+
+        $(document).on('click', '#'+claude_wait_id, function(){
+          $(this).removeClass('d-flex');
+          $(this).hide();
+          $(this).css('visibility', 'hidden');
+        });
+
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
           if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-           
-              ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
-            ws.onerror=function(event){
-                  console.log(event);
-                  $('#custom-spinner').css('visibility','hidden');
-                  $('#index-button').css('visibility','visible');
-                  $('#query-button').css('visibility','visible');
-                  $('#delete-button').css('visibility','visible');
-                  alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
-                }
-            
+
+            ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
+            ws.onerror = function (event) {
+              console.log(event);
+              $('#custom-spinner').css('visibility', 'hidden');
+              $('#index-button').css('visibility', 'visible');
+              $('#query-button').css('visibility', 'visible');
+              $('#delete-button').css('visibility', 'visible');
+              alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
+            }
+
           } else {
             ws.send(data);
           }
-          
-          ws.onopen = function() {
+
+          ws.onopen = function () {
             ws.send(data);
           }
         }
-        
-        ws.onmessage = function (evt) { 
-            $('#custom-spinner').css('visibility','hidden');
-            $('#index-button').css('visibility','visible');
-            $('#query-button').css('visibility','visible');
-            $('#delete-button').css('visibility','visible');
-            var received_msg = '' ;
-            response_json = JSON.parse(evt.data)
-            if (response_json['text']) {
-              str_len = -1
-              try {
-                str_len = response_json['text'].trim().length
-              } catch (error) {
-                console.log('str_len error')
-              }
-              if(str_len != 0) {
-                received_msg = response_json['text']
-              }
-            } else {
-              received_msg = JSON.stringify(response_json)
+
+        ws.onmessage = function (evt) {
+          $('#custom-spinner').css('visibility', 'hidden');
+          $('#index-button').css('visibility', 'visible');
+          $('#query-button').css('visibility', 'visible');
+          $('#delete-button').css('visibility', 'visible');
+          var received_msg = '';
+          response_json = JSON.parse(evt.data)
+          if (response_json['text']) {
+            str_len = -1
+            try {
+              str_len = response_json['text'].trim().length
+            } catch (error) {
+              console.log('str_len error')
             }
-            console.log("streaming message is received.. " + received_msg);
-            document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg 
+            if (str_len != 0) {
+              received_msg = response_json['text']
+              if (received_msg == 'ack-end-of-string') {
+                end_of_response = true
+              }
+              else{
+                message_store = message_store + received_msg
+              }
+            }
+          } else {
+            received_msg = JSON.stringify(response_json)
+            message_store = message_store + received_msg
+            end_of_response = true
+          }
+          console.log("streaming message is received.. " + received_msg);
+          if (end_of_response) {
+            response_html = '<div class="d-flex flex-row justify-content-start">' +
+            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+            message_store +
+            '</p></div></div>' +
+            '<div class="divider d-flex align-items-center mb-4"></div>'
             
-           }
+            $("#"+claude_wait_id).trigger("click");
+            setTimeout(()=> {
+              document.getElementById('conversations-box').innerHTML = document.getElementById('conversations-box').innerHTML + response_html
+            }, 2);
+            message_store=''
+            end_of_response = false
+          }
+            
+
+        }
 
       }
 
 
-</script>
+    </script>
 
 
   </footer>
