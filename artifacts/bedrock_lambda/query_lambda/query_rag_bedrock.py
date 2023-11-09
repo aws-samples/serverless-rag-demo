@@ -86,11 +86,11 @@ def query_data(query, behaviour, model_id, connect_id):
     prompt_history=''
     if behaviour == 'chat':
         prompt_history = get_conversations(connect_id)
-        if len(prompt_history.split('')) > 0:
+        if len(prompt_history.split()) > 0:
             print('Previous history exists. Do not search for context')
 
 
-    if query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact'] and len(prompt_history.split('')) <= 0:
+    if query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact'] and len(prompt_history.split()) <= 1:
         try:
             # Get the query embedding from amazon-titan-embed model
             response = bedrock_client.invoke_model(
@@ -241,6 +241,7 @@ def get_conversations(connect_id):
     response = get_conversations_query(connect_id)
     prompt_template = ''
     if response is not None:
+        print(f'method=get_conversations {response}')
         for data in response["hits"]['hits']:
             human = data['_source']['Human']
             assistant = data['_source']['Assistant']
@@ -272,7 +273,7 @@ def parse_response(model_id, response):
 def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
-        if prompt_history is not None and len(prompt_history.split('') > 0):
+        if prompt_history is not None and len(prompt_history.split() > 1):
             prompt_template = {"prompt":f"{prompt_history} \n Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}    
         else:
             prompt_template = {"prompt":f"Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}
