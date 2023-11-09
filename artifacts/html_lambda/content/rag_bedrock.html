@@ -150,7 +150,31 @@ body{
     transform:translateX(-200px);
   }
 }
-    </style>
+
+.conversations .gradient-custom {
+/* fallback for old browsers */
+background: #fccb90 !important;
+
+/* Chrome 10-25, Safari 5.1-6 */
+background: -webkit-linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important;
+
+/* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+background: linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important
+}
+
+.conversations .mask-custom {
+background: rgba(24, 24, 16, .2) !important;
+border-radius: 2em; 
+backdrop-filter: blur(15px);
+border: 2px solid rgba(255, 255, 255, 0.05) !important;
+background-clip: padding-box !important;
+box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
+}
+
+
+
+
+  </style>
 
 
 </head>
@@ -207,6 +231,9 @@ body{
     </li>
     <li class="nav-item" role="presentation">
       <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-div" type="button" role="tab" aria-controls="Query" aria-selected="false">Query Data</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="conversations-tab" data-bs-toggle="tab" data-bs-target="#conversations-div" type="button" role="tab" aria-controls="Conversations" aria-selected="false">Conversations</button>
     </li>
       </ul>
       <div class="tab-content" id="myTabContent">
@@ -355,12 +382,11 @@ body{
         <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">Identify PII</button>
         <button type="button" id="redact" class="btn btn-info assistant" onclick="javascript:query('redact')">Redact PII</button>
         <button type="button" id="clear" class="btn btn-info" onclick="clear_response()">Clear Data</button>
-      </div>
-      
+      </div>      
       <div style="padding-bottom: 30px;"></div>
       
       <div style="padding-left: 10px;">
-      
+        
       <table>
         <tr>
           <td>
@@ -378,6 +404,67 @@ body{
       </table>
     </div>
     
+    
+  
+  
+  </div>
+
+  <div class="tab-pane fade" id="conversations-div" role="tabpanel" aria-labelledby="conversations-tab">
+    <!-- style="background-color: #eee;" -->
+    <section  class="gradient-custom">
+      <div class="container py-5">
+    
+        <div class="row d-flex justify-content-center">
+          <div class="col-md-10 col-lg-8 col-xl-6">
+    
+            <div class="card" id="chat2">
+              <div class="card-header d-flex justify-content-between align-items-center p-3">
+                <h5 class="mb-0">Chat</h5>
+                <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark" onclick="showChatBox()">Start a new chat session</button>
+              </div>
+              <div id="conversations-box" class="card-body" data-mdb-perfect-scrollbar="true" style="position: relative;">
+                <!-- Assistant -->
+                <div class="d-flex flex-row justify-content-start">
+                  <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
+                    alt="avatar 1" style="width: 45px; height: 100%;">
+                  <div>
+                    <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">Hello how are you doing</p>
+                    <!-- <p class="small ms-3 mb-3 rounded-3 text-muted">23:58</p> -->
+                  </div>
+                </div>
+    
+                <div class="divider d-flex align-items-center mb-4">
+                  <p class="text-center mx-3 mb-0" style="color: #a2aab7;">Today</p>
+                </div>
+
+                <!-- Human -->
+                <!-- <div class="d-flex flex-row justify-content-end mb-4 pt-1">
+                  <div>
+                    <p class="small p-2 me-3 mb-1 text-white rounded-3 bg-primary">Hello, how are you doing</p>
+                    <p class="small me-3 mb-3 rounded-3 text-muted d-flex justify-content-end">00:06</p>
+                  </div>
+                  <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava4-bg.webp"
+                    alt="avatar 1" style="width: 45px; height: 100%;">
+                </div> -->
+    
+              </div>
+              <div id="conversations-footer" class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
+                  alt="avatar 3" style="width: 40px; height: 100%;">
+                <input type="text" class="form-control form-control-lg" id="chat-text"
+                  placeholder="Type message">
+                <a class="ms-1 text-muted" href="#!"><i class="fas fa-paperclip"></i></a>
+                <a class="ms-3 text-muted" href="#!"><i class="fas fa-smile"></i></a>
+                <a class="ms-3" href="#!" onclick="sendChat('chat')"><i class="bi bi-send">Send</i></a>
+              </div>
+            </div>
+    
+          </div>
+        </div>
+    
+      </div>
+    </section>
+
   </div>
 
 
@@ -394,9 +481,12 @@ body{
     <script type="text/javascript">
       var model_name = 'Llama2-7B'
       var vector_text = ' with Opensearch Serverless vector db demo'
+      var showChat = false;
       // do stuff
       $(document).ready(function () {
         $('#main-bedrock-content').hide();
+        $('#conversations-box').hide();
+        $("#conversations-footer").hide();
         $('#apikey_modal').css('top', '12vh')
         $('#apikey_modal').show()
         $('#custom-spinner').css('visibility','hidden');
@@ -408,6 +498,7 @@ body{
 
       var model_id = null;
       var ws = null;
+      var chat_id = null;
       var awsData = {
           apiGatewayUrl: '<apiGatewayUrl>',
           staticPageUrl: '<apiGatewayUrl>',
@@ -616,7 +707,94 @@ body{
 
       }
 
-    </script>
+
+      // Chat functions 
+
+      function showChatBox() {
+        if (!showChat){
+          $('#conversations-box').show();
+          $("#conversations-footer").show();
+          // Reset Chat_ID to null. Start a new Chat session
+          chat_id = null
+          showChat = true
+        } else {
+          $('#conversations-box').hide();
+          $("#conversations-footer").hide();
+          showChat = false
+        }
+      }
+
+      function guidGenerator() {
+           var S4 = function() {
+            return (((1+Math.random())*0x10000)|0).toString(16).substring(1);
+          };
+          return (S4()+S4()+"-"+S4()+"-"+S4()+"-"+S4()+"-"+S4()+S4()+S4());
+      }
+      
+      function sendChat(assistant_type) {
+        $('#custom-spinner').css('visibility','visible');
+        $('#index-button').css('visibility','hidden');
+        $('#query-button').css('visibility','hidden');
+        $('#delete-button').css('visibility','hidden');
+
+        if (chat_id == null) {
+          chat_id = guidGenerator()
+        }
+        
+        query_str = " " + $('#chat-text').val()
+        data = '{"query": "'+query_str + '",  "behaviour": "'+ assistant_type + '", "model_id": "'+ model_id + '" ,"action": "bedrock"}'
+        if ("WebSocket" in window) {
+          console.log("WebSocket is supported by your Browser!");
+          if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
+           
+              ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
+            ws.onerror=function(event){
+                  console.log(event);
+                  $('#custom-spinner').css('visibility','hidden');
+                  $('#index-button').css('visibility','visible');
+                  $('#query-button').css('visibility','visible');
+                  $('#delete-button').css('visibility','visible');
+                  alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
+                }
+            
+          } else {
+            ws.send(data);
+          }
+          
+          ws.onopen = function() {
+            ws.send(data);
+          }
+        }
+        
+        ws.onmessage = function (evt) { 
+            $('#custom-spinner').css('visibility','hidden');
+            $('#index-button').css('visibility','visible');
+            $('#query-button').css('visibility','visible');
+            $('#delete-button').css('visibility','visible');
+            var received_msg = '' ;
+            response_json = JSON.parse(evt.data)
+            if (response_json['text']) {
+              str_len = -1
+              try {
+                str_len = response_json['text'].trim().length
+              } catch (error) {
+                console.log('str_len error')
+              }
+              if(str_len != 0) {
+                received_msg = response_json['text']
+              }
+            } else {
+              received_msg = JSON.stringify(response_json)
+            }
+            console.log("streaming message is received.. " + received_msg);
+            document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg 
+            
+           }
+
+      }
+
+
+</script>
 
 
   </footer>

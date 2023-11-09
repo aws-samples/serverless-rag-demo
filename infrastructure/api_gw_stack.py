@@ -24,12 +24,17 @@ class ApiGw_Stack(Stack):
         region=os.getenv('CDK_DEFAULT_REGION')
         account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
         collection_endpoint = 'random'
+        chat_collection_endpoint = 'random'
         llm_model_id = self.node.try_get_context("llm_model_id")
         secret_api_key = self.node.try_get_context("secret_api_key")
         html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
+
+            chat_collection_endpoint = self.node.get_context("chat_collection_endpoint")
+            chat_collection_endpoint = chat_collection_endpoint.replace("https://", "")
+
         except Exception as e:
             pass
 
@@ -149,8 +154,8 @@ class ApiGw_Stack(Stack):
                                   role=custom_lambda_role,
                                   timeout=_cdk.Duration.seconds(300),
                                   description="Create embeddings in Amazon Bedrock",
-                                  environment={ 'INDEX_NAME': env_params['index_name'],
-                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                  environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
+                                                'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
                                                 'REGION': region
                                   },
                                   memory_size=4096,
@@ -165,8 +170,10 @@ class ApiGw_Stack(Stack):
                                   role=custom_lambda_role,
                                   timeout=_cdk.Duration.seconds(300),
                                   description="Query Models in Amazon Bedrock",
-                                  environment={ 'INDEX_NAME': env_params['index_name'],
-                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                  environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
+                                                'CHAT_INDEX_NAME': env_params['chat_index_name'],
+                                                'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
+                                                'OPENSEARCH_CHAT_ENDPOINT': chat_collection_endpoint,
                                                 'REGION': region,
                                                 'SECRET_KEY': secret_api_key,
                                                 'REST_ENDPOINT_URL': rest_endpoint_url
