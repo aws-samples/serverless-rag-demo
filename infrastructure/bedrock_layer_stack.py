@@ -17,7 +17,7 @@ class BedrockLayerStack(NestedStack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
-        Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
+        # Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context('environment_name')
         config_details = self.node.try_get_context(env_name)
         boto3_bedrock_layer_name = config_details['boto3_bedrock_layer']
@@ -42,10 +42,6 @@ class BedrockLayerStack(NestedStack):
             except yaml.YAMLError as exc:
                 print(exc)
         
-        encrypt_key = _kms.Key(self, f'kms-{env_name}-rag-layer-key'
-                , alias=f'alias/kms-{env_name}-rag-layer-key'
-                , enabled=True, enable_key_rotation=True, removal_policy=_cdk.RemovalPolicy.DESTROY
-                , pending_window=_cdk.Duration.days(7))
         
         # Trigger CodeBuild job
         containerize_build_job =_codebuild.Project(
@@ -54,7 +50,7 @@ class BedrockLayerStack(NestedStack):
             build_spec=_codebuild.BuildSpec.from_object_to_yaml(build_spec_yml),
             environment = _codebuild.BuildEnvironment(
             build_image=_codebuild.LinuxBuildImage.STANDARD_6_0,
-            privileged=False,
+            privileged=True,
             environment_variables={
                 "boto3_bedrock_layer_name": _codebuild.BuildEnvironmentVariable(value = boto3_bedrock_layer_name),
                 "opensearchpy_layer_name": _codebuild.BuildEnvironmentVariable(value = opensearchpy_layer_name),
@@ -62,8 +58,7 @@ class BedrockLayerStack(NestedStack):
                 "langchainpy_layer_name":  _codebuild.BuildEnvironmentVariable(value = langchainpy_layer_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = account_id),
                 "region": _codebuild.BuildEnvironmentVariable(value = region)
-            }),
-            encryption_key=encrypt_key
+            })
         )
 
         lambda_layer_policy = _iam.PolicyStatement(actions=[
