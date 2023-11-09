@@ -12,7 +12,11 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 
 <details>
   <summary><b>Project Updates</b></summary>
- 
+
+  #### (09-Nov-2023):
+  * Support Conversations with Opensearch Serverless
+    <img width="1433" alt="Screenshot 2023-11-09 at 7 06 17 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/a913109f-29fa-497b-816a-10bbce090a76">
+
   #### (27-Oct-2023):
   * Improve UI
   <img width="1424" alt="Screenshot 2023-10-27 at 1 51 17 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/7568e38e-ffdf-4ad1-8a2e-9e79cf11d91e">
