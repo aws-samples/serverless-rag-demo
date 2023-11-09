@@ -5,29 +5,36 @@ from aws_cdk import (
     aws_lambda as _lambda,
     aws_ecr as _ecr,
     aws_apigatewayv2,
-    
+    Aspects
     
 )
 
 import aws_cdk as _cdk
 import os
 from constructs import Construct, DependencyGroup
-
+import cdk_nag as _cdk_nag
+from cdk_nag import NagSuppressions, NagPackSuppression
 
 class ApiGw_Stack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        self.stack_level_suppressions()
         env_name = self.node.try_get_context("environment_name")
         current_timestamp = self.node.try_get_context('current_timestamp')
         region=os.getenv('CDK_DEFAULT_REGION')
         account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
         collection_endpoint = 'random'
+        chat_collection_endpoint = 'random'
         llm_model_id = self.node.try_get_context("llm_model_id")
         secret_api_key = self.node.try_get_context("secret_api_key")
         html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
+
+            chat_collection_endpoint = self.node.get_context("chat_collection_endpoint")
+            chat_collection_endpoint = chat_collection_endpoint.replace("https://", "")
+
         except Exception as e:
             pass
 
@@ -147,8 +154,8 @@ class ApiGw_Stack(Stack):
                                   role=custom_lambda_role,
                                   timeout=_cdk.Duration.seconds(300),
                                   description="Create embeddings in Amazon Bedrock",
-                                  environment={ 'INDEX_NAME': env_params['index_name'],
-                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                  environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
+                                                'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
                                                 'REGION': region
                                   },
                                   memory_size=4096,
@@ -163,8 +170,10 @@ class ApiGw_Stack(Stack):
                                   role=custom_lambda_role,
                                   timeout=_cdk.Duration.seconds(300),
                                   description="Query Models in Amazon Bedrock",
-                                  environment={ 'INDEX_NAME': env_params['index_name'],
-                                                'OPENSEARCH_ENDPOINT': collection_endpoint,
+                                  environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
+                                                'CHAT_INDEX_NAME': env_params['chat_index_name'],
+                                                'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
+                                                'OPENSEARCH_CHAT_ENDPOINT': chat_collection_endpoint,
                                                 'REGION': region,
                                                 'SECRET_KEY': secret_api_key,
                                                 'REST_ENDPOINT_URL': rest_endpoint_url
@@ -182,7 +191,12 @@ class ApiGw_Stack(Stack):
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
-                    "aoss:*", "bedrock:*", "iam:ListUsers", "iam:ListRoles", "execute-api:*" ],
+                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll",
+                    "apigateway:GET", "apigateway:DELETE", "apigateway:PATCH", "apigateway:POST", "apigateway:PUT",
+                    "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
+                    "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
+                    "bedrock:GetFoundationModelAvailability", "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
+                    "iam:ListUsers", "iam:ListRoles"],
                 resources=["*"],
             )
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
@@ -414,3 +428,12 @@ class ApiGw_Stack(Stack):
                 }
             ],
         )
+    
+    def stack_level_suppressions(self):
+        NagSuppressions.add_stack_suppressions(self, [
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM5', reason='Its a basic lambda execution role, only has access to create/write to a cloudwatch stream'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-IAM4', reason='Its a basic lambda execution role, only has access to create/write to a cloudwatch stream'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-APIG4', reason='Remediated, we are using API keys for access control'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-APIG1', reason='Logging is expensive for websocket streaming responses coming in from LLMs'),
+            _cdk_nag.NagPackSuppression(id='AwsSolutions-COG4', reason='Remediated, we are using API keys for access control')
+        ])

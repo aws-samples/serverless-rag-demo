@@ -8,15 +8,20 @@ import os
 import json
 from decimal import Decimal
 import logging
+import datetime
 
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = 'amazon.titan-embed-text-v1'
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
-endpoint = getenv("OPENSEARCH_ENDPOINT",
+endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT",
+                  "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
+
+chat_endpoint = getenv("OPENSEARCH_CHAT_ENDPOINT",
                   "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
 SAMPLE_DATA_DIR = getenv("SAMPLE_DATA_DIR", "/var/task")
-INDEX_NAME = getenv("INDEX_NAME", "sample-embeddings-store-dev")
+INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
+CHAT_INDEX_NAME = getenv("CHAT_INDEX_NAME", "sample-chat-store-dev")
 wss_url = getenv("WSS_URL", "WEBSOCKET_URL_MISSING")
 rest_api_url = getenv("REST_ENDPOINT_URL", "REST_URL_MISSING")
 websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=wss_url)
@@ -45,6 +50,15 @@ ops_client = client = OpenSearch(
     timeout=300
 )
 
+ops_chat_client = OpenSearch(
+    hosts=[{'host': chat_endpoint, 'port': 443}],
+    http_auth=awsauth,
+    use_ssl=True,
+    verify_certs=True,
+    connection_class=RequestsHttpConnection,
+    timeout=300
+)
+
 bedrock_client = boto3.client('bedrock-runtime')
 
 
@@ -64,11 +78,21 @@ def query_data(query, behaviour, model_id, connect_id):
         prompt = 'Does the below text contain PII data. If so list the type of PII data'
     elif behaviour == 'redact':
         prompt = 'Please redact all personally identifiable information from the below text '
+    elif behaviour == 'chat':
+        prompt = 'You are Claude a chatbot that supports human-like conversations'
     else:
         prompt = DEFAULT_PROMPT
     
     context = None
-    if query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact']:
+    # Prompt History to retain conversations
+    prompt_history=''
+    if behaviour == 'chat':
+        prompt_history = get_conversations(connect_id)
+        if len(prompt_history.split()) > 0:
+            print('Previous history exists. Do not search for context')
+
+
+    if query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact'] and len(prompt_history.split()) <= 1:
         try:
             # Get the query embedding from amazon-titan-embed model
             response = bedrock_client.invoke_model(
@@ -122,17 +146,16 @@ def query_data(query, behaviour, model_id, connect_id):
                             'ai21.j2-ultra-v1',
                             'ai21.j2-mid-v1']:
             if context is not None:
-                context = f'\n\n context: {context} \n\n Query: {query}'
+                context = f"""{context} 
+                                {query}"""
             else:
-                context = f'\n\ncontext: {query}'
-            prompt_template = prepare_prompt_template(model_id, prompt, context)
-            print(prompt_template)
-            query_bedrock_models(model_id, prompt_template, connect_id)
+                context = f'{query}'
+            prompt_template = prepare_prompt_template(model_id, prompt, context, prompt_history)
+            query_bedrock_models(model_id, prompt_template, connect_id, behaviour)
         else:
             print('Defaulting to Amazon Titan(titan-text-lite-v1) model, Model_id not passed.')
-            prompt_template = prepare_prompt_template('amazon.titan-text-lite-v1', prompt, query)
-            print(prompt_template)
-            query_bedrock_models('amazon.titan-text-lite-v1', prompt_template, connect_id)
+            prompt_template = prepare_prompt_template('amazon.titan-text-lite-v1', prompt, query, prompt_history)
+            query_bedrock_models('amazon.titan-text-lite-v1', prompt_template, connect_id, behaviour)
                 
     except Exception as e:
         print(f'Exception {e}')
@@ -140,7 +163,8 @@ def query_data(query, behaviour, model_id, connect_id):
 
 
 
-def query_bedrock_models(model, prompt, connect_id):
+def query_bedrock_models(model, prompt, connect_id, behaviour):
+    print(f'Bedrock prompt {prompt}')
     response = bedrock_client.invoke_model_with_response_stream(
         body=json.dumps(prompt),
         modelId=model,
@@ -150,15 +174,25 @@ def query_bedrock_models(model, prompt, connect_id):
     print('EventStream')
     print(dir(response['body']))
 
+    assistant_chat = ''
+    counter=0
+    sent_ack = False
     for evt in response['body']:
         print('---- evt ----')
+        counter = counter + 1
         print(dir(evt))
         if 'chunk' in evt:
+            sent_ack = False
             chunk = evt['chunk']['bytes']
             print(f'Chunk JSON {json.loads(str(chunk, "UTF-8"))}' )
             chunk_str = json.loads(chunk.decode())['completion']
             print(f'chunk string {chunk_str}')
             websocket_send(connect_id, { "text": chunk_str } )
+            assistant_chat = assistant_chat + chunk_str
+            if behaviour == 'chat' and counter%10 == 0:
+                # send ACK to UI, so it print the chats
+                websocket_send(connect_id, { "text": "ack-end-of-string" } )
+                sent_ack = True
             #websocket_send(connect_id, { "text": result } )
         elif 'internalServerException' in evt:
             result = evt['internalServerException']['message']
@@ -176,8 +210,64 @@ def query_bedrock_models(model, prompt, connect_id):
             result = evt['validationException']['message']
             websocket_send(connect_id, { "text": result } )
             break
-        
-        # call websocket here
+
+    if behaviour == 'chat':
+        if 'prompt' in prompt:
+            index_conversations(connect_id, prompt['prompt'], assistant_chat)
+        if not sent_ack:
+            sent_ack = True
+            websocket_send(connect_id, { "text": "ack-end-of-string" } )
+            
+def index_conversations(connect_id, prompt, assistant_chat):
+    chat_data = {"context": prompt + assistant_chat,
+                "timestamp" : datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                "connect_id": connect_id}
+    ops_chat_client.index(index=CHAT_INDEX_NAME, body=chat_data)
+
+
+def get_conversations_query(connect_id):
+    query = {
+        "size": 20,
+        "query": {
+            "bool": {
+              "must": [
+               {
+                 "match": {
+                   "connect_id": connect_id
+                } 
+               }
+              ]
+            }
+        },
+        "sort": [
+          {
+            "timestamp": {
+              "order": "asc"
+            }
+          }
+        ]
+    }
+    return query
+
+
+def get_conversations(connect_id):
+    prompt_template = ''
+    try:
+        response = ops_chat_client.search(body=get_conversations_query(connect_id), index=CHAT_INDEX_NAME)
+        print(f'get_conversations {response}')
+        for data in response["hits"]['hits']:
+            context = data['_source']['context']
+            if prompt_template is None:
+                prompt_template = f"{context}"
+            else:
+                prompt_template = f"{prompt_template} \n {context}"
+    except Exception as e:
+        print(f'Exception  {e}')
+    return prompt_template
+
+
+
+
 
 def parse_response(model_id, response): 
     print(f'parse_response {response}')
@@ -197,10 +287,20 @@ def parse_response(model_id, response):
     print('parse_response_final_result' + result)
     return result
 
-def prepare_prompt_template(model_id, prompt, query):
+def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
-        prompt_template = {"prompt":f"Human:{prompt}. \n{query}\n\nAssistant:", "max_tokens_to_sample": 900, "temperature": 0.1}
+        if prompt_history is not None and len(prompt_history.split()) > 1:
+            prompt_template = {"prompt":f"""{prompt_history}
+                                            \n\nHuman:{prompt}.
+                                                  {query}
+                                            \n\nAssistant:""",
+                                "max_tokens_to_sample": 20000, "temperature": 0.1}    
+        else:
+            prompt_template = {"prompt":f"""\n\nHuman:{prompt}.
+                                                  {query}
+                                            \n\nAssistant:""",
+                                "max_tokens_to_sample": 20000, "temperature": 0.1}
     elif model_id == 'cohere.command-text-v14':
         prompt_template = {"prompt": f"""{prompt}\n
                               {query}"""}
