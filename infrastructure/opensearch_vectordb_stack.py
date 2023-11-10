@@ -57,11 +57,11 @@ class OpensearchVectorDbStack(NestedStack):
             chat_network_policy = _oss.CfnSecurityPolicy(self, f'sample-chatstore-nw-{env_name}', 
                                                 name=f'sample-chatstore-nw-{env_name}',
                                 type='network',
-                                policy="""[{\"Rules\":[{\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ chat_collection_name + """\"]}, {\"ResourceType\":\"dashboard\",\"Resource\":[\"collection/"""+ collection_name + """\"]}],\"AllowFromPublic\":true}]""") 
+                                policy="""[{\"Rules\":[{\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ chat_collection_name + """\"]}, {\"ResourceType\":\"dashboard\",\"Resource\":[\"collection/"""+ chat_collection_name + """\"]}],\"AllowFromPublic\":true}]""") 
             
             chat_data_access_policy = _oss.CfnAccessPolicy(self, f'sample-chatstore-data-{env_name}', name=f'sample-chatstore-data-{env_name}',
                                 type='data',
-                                policy="""[{\"Rules\":[{\"ResourceType\":\"index\",\"Resource\":[\"index/"""+ chat_collection_name +"""/*\"], \"Permission\": [\"aoss:*\"]}, {\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ collection_name +"""\"], \"Permission\": [\"aoss:*\"]}], \"Principal\": [\"""" + lambda_role_arn + """\"]}]""")
+                                policy="""[{\"Rules\":[{\"ResourceType\":\"index\",\"Resource\":[\"index/"""+ chat_collection_name +"""/*\"], \"Permission\": [\"aoss:*\"]}, {\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ chat_collection_name +"""\"], \"Permission\": [\"aoss:*\"]}], \"Principal\": [\"""" + lambda_role_arn + """\"]}]""")
         
         
             cfn_chat_collection = _oss.CfnCollection(self, f"sample_chat_store_{env_name}",
