@@ -172,7 +172,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 
 <details>
- <summary><b> Deploy the RAG based Solution </b></summary>
+ <summary><b> Deploy the RAG based Solution _(Total deployment time 40 minutes)_ </b></summary>
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
