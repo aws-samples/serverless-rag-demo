@@ -23,7 +23,7 @@ if [ -z "$deployment_region" ]
 then
     printf  "$Red !!! Cannot detect region. Manually select your AWS Cloudshell region from the below list $NC"
     printf "\n"
-    printf "$Green Please enter your current AWS cloudshell region (1/2/3/4/5/7): $NC"
+    printf "$Green Please enter your current AWS cloudshell region (1/2/3/4/5/6): $NC"
     printf "\n"
     region_options=("us-east-1" "us-west-2" "ap-southeast-1" "ap-northeast-1" "eu-central-1" "Quit")
     select region_opts in "${region_options[@]}"
@@ -31,18 +31,24 @@ then
         case $region_opts in 
             "us-east-1")
                 deployment_region='us-east-1'
+                printf "$Green Deploy in US East(N.Virginia) $NC"
+                printf "\n"
                 ;; 
             "us-west-2")
                 deployment_region='us-west-2'
+                printf "$Green Deploy in US West(Oregon) $NC"
                 ;;
             "ap-southeast-1")
                 deployment_region='ap-southeast-1'
+                printf "$Green Deploy in Asia Pacific (Singapore) $NC"
                 ;;
             "ap-northeast-1")
-                deployment_region='ap-southeast-1'
+                deployment_region='ap-northeast-1'
+                printf "$Green Deploy in Asia Pacific (Tokyo) $NC"
                 ;;
             "eu-central-1")
                 deployment_region='eu-central-1'
+                printf "$Green Deploy in Europe (Frankfurt) $NC"
                 ;;
             "Quit")
                 break
