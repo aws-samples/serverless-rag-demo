@@ -51,6 +51,7 @@ then
                 printf "$Green Deploy in Europe (Frankfurt) $NC"
                 ;;
             "Quit")
+                exit 1
                 break
                 ;;
             *) echo "invalid option $REPLY";;
