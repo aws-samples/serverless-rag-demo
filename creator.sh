@@ -18,20 +18,47 @@ fi
 echo "Environment: $infra_env"
 
 deployment_region=$(curl -s http://169.254.169.254/task/AvailabilityZone | sed 's/\(.*\)[a-z]/\1/')
-echo "Region: $deployment_region "
-echo '*************************************************************'
-echo ' '
+
+if [ -z "$deployment_region" ]
+then
+    printf  "$Red !!! Cannot detect region. Manually select your AWS Cloudshell region from the below list $NC"
+    printf "\n"
+    printf "$Green Please enter your current AWS cloudshell region (1/2/3/4/5/7): $NC"
+    printf "\n"
+    region_options=("us-east-1" "us-west-2" "ap-southeast-1" "ap-northeast-1" "eu-central-1" "Quit")
+    select region_opts in "${region_options[@]}"
+    do
+        case $region_opts in 
+            "us-east-1")
+                deployment_region='us-east-1'
+                ;; 
+            "us-west-2")
+                deployment_region='us-west-2'
+                ;;
+            "ap-southeast-1")
+                deployment_region='ap-southeast-1'
+                ;;
+            "ap-northeast-1")
+                deployment_region='ap-southeast-1'
+                ;;
+            "eu-central-1")
+                deployment_region='eu-central-1'
+                ;;
+            "Quit")
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+        break
+    done
+fi
+echo "Selected region: $deployment_region "
 
 echo '*************************************************************'
 echo ' '
 
-# if [ -z "$2" ]
-# then
-#     echo "Region not passed. Defaulting to us-east-1"
-#     deployment_region='us-east-1'
-# else
-#     deployment_region=$2
-# fi
+echo '*************************************************************'
+echo ' '
 
 printf "$Green Please enter your LLM choice (1/2/3/4/5/6/7): $NC"
 printf "\n"
