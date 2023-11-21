@@ -145,9 +145,9 @@ def query_data(query, behaviour, model_id, connect_id):
                             'amazon.titan-text-express-v1',
                             'ai21.j2-ultra-v1',
                             'ai21.j2-mid-v1']:
-            if context is not None:
-                context = f"""{context} 
-                                {query}"""
+            if  context is not None:
+                context = f""" Data points: {context}
+                               Question: {query}"""
             else:
                 context = f'{query}'
             prompt_template = prepare_prompt_template(model_id, prompt, context, prompt_history)
