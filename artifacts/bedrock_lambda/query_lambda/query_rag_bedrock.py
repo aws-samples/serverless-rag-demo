@@ -70,7 +70,7 @@ def query_data(query, behaviour, model_id, connect_id):
     if behaviour in ['english', 'hindi', 'thai', 'spanish', 'french', 'german', 'bengali', 'tamil']:
         prompt = f''' Output Rules :
                        {DEFAULT_PROMPT}
-                       This rule is of highest priority. You will always reply in {behaviour.upper()} language only.
+                       This rule is of highest priority. You will always reply in {behaviour.upper()} language only. Do not forget this line
                   '''
     elif behaviour == 'sentiment':
         prompt =  '. You will identify the sentiment of the below context.'
@@ -292,13 +292,15 @@ def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
     if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
         if prompt_history is not None and len(prompt_history.split()) > 1:
             prompt_template = {"prompt":f"""{prompt_history}
-                                            \n\nHuman:{prompt}.
-                                                  {query}
+                                            \n\nHuman: {query}
+                                                       {prompt}
                                             \n\nAssistant:""",
                                 "max_tokens_to_sample": 20000, "temperature": 0.1}    
         else:
-            prompt_template = {"prompt":f"""\n\nHuman:{prompt}.
-                                                  {query}
+            prompt_template = {"prompt":f"""\n\nHuman:
+                                                    {query}                   
+                                                    {prompt}
+                                                  
                                             \n\nAssistant:""",
                                 "max_tokens_to_sample": 20000, "temperature": 0.1}
     elif model_id == 'cohere.command-text-v14':
