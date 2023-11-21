@@ -51,10 +51,13 @@ then
                 printf "$Green Deploy in Europe (Frankfurt) $NC"
                 ;;
             "Quit")
+                printf "$Red Quit deployment $NC"
                 exit 1
                 break
                 ;;
-            *) echo "invalid option $REPLY";;
+            *)
+            printf "$Red Exiting, Invalid option $REPLY. Select from 1/2/3/4/5/6 $NC"
+            exit 1;;
         esac
         break
     done
@@ -104,9 +107,14 @@ do
             model_id='huggingface-llm-falcon-180b-bf16'
             ;;
         "Quit")
+            printf "$Red Quit deployment $NC"
+            exit 1
             break
             ;;
-        *) echo "invalid option $REPLY";;
+        *)
+        printf "$Red Exiting, Invalid option $REPLY . Select from 1/2/3/4/5/6/7 $NC"
+        exit 1
+        ;;
     esac
     break
 done
