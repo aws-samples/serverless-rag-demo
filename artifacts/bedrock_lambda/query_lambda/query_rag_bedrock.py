@@ -295,14 +295,14 @@ def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
                                             \n\nHuman: {query}
                                                        {prompt}
                                             \n\nAssistant:""",
-                                "max_tokens_to_sample": 20000, "temperature": 0.1}    
+                                "max_tokens_to_sample": 10000, "temperature": 0.1}    
         else:
             prompt_template = {"prompt":f"""\n\nHuman:
                                                     {query}                   
                                                     {prompt}
                                                   
                                             \n\nAssistant:""",
-                                "max_tokens_to_sample": 20000, "temperature": 0.1}
+                                "max_tokens_to_sample": 10000, "temperature": 0.1}
     elif model_id == 'cohere.command-text-v14':
         prompt_template = {"prompt": f"""{prompt}\n
                               {query}"""}
