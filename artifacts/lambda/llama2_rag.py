@@ -117,10 +117,12 @@ def index_documents(event):
 
 def query_falcon(encoded_json):
     client = boto3.client("runtime.sagemaker")
+    print(f' Invoke Falcon with Payload -> {encoded_json}')
     response = client.invoke_endpoint(
         EndpointName=sagemaker_endpoint, ContentType="application/json", Body=encoded_json
     )
     model_predictions = json.loads(response["Body"].read().decode("utf8"))
+    print(f'Falcon response -> {model_predictions}')
     txt = model_predictions[0]["generated_text"]
     return txt
     
@@ -135,14 +137,14 @@ def query_data(event):
         if behaviour == 'pirate':
             if 'False' in BEHAVIOUR_OVERRIDE:
                 DEFAULT_SYSTEM_PROMPT='You are a daring and brutish Pirate. Always answer as a Pirate do not share the context when answering.' + BEHAVIOUR
-                DEFAULT_FALCON_PROMPT="Answer the question as a daring and brutish Pirate, and if the answer is not contained within the text below, rudely reply 'I dont know' " + BEHAVIOUR
+                DEFAULT_FALCON_PROMPT="Answer the question as a daring and brutish Pirate, and if the answer is not contained within the context below, politely reply 'I dont know' " + BEHAVIOUR
             else:
                 DEFAULT_SYSTEM_PROMPT = BEHAVIOUR
                 DEFAULT_FALCON_PROMPT = BEHAVIOUR
         elif behaviour == 'jarvis':
             if 'False' in BEHAVIOUR_OVERRIDE:
-                DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant that controls all machines on Planet Earth. Reply as an AI assistant' + BEHAVIOUR
-                DEFAULT_FALCON_PROMPT="Answer the question as a sophisticated artificial intelligence assistant that controls all machines on Planet Earth, and if the answer is not contained within the text below, politely decline to comment " + BEHAVIOUR
+                DEFAULT_SYSTEM_PROMPT='You are a sophisticated artificial intelligence assistant. Reply as an AI assistant' + BEHAVIOUR
+                DEFAULT_FALCON_PROMPT="Answer the question as a sophisticated artificial intelligence assistant, if the answer is not contained within the context below, politely decline to comment " + BEHAVIOUR
             else:
                 DEFAULT_SYSTEM_PROMPT = BEHAVIOUR
                 DEFAULT_FALCON_PROMPT = BEHAVIOUR
@@ -184,16 +186,9 @@ def query_data(event):
     
     try:
         if  'llama' in LLM_MODEL_ID:
-            print(f' Pass content to Llama2 -> {content}')
-            dialog = [
-                {"role": "system", "content": DEFAULT_SYSTEM_PROMPT + f""" 
-                    {content}
-                    """},
-                {"role": "user", "content": f"{query} ? "}
-            ]
             payload = {
-                "inputs": [dialog], 
-                "parameters": {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "return_full_text": False}
+                "inputs": f"<|prompter|>{'Behaviour: ' + DEFAULT_SYSTEM_PROMPT}<|endoftext|><|prompter|>{'context: '+ content}<|endoftext|><|prompter|>{query + ' ?'}<|endoftext|><|assistant|>",  
+                "parameters": {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "return_full_text": False, "repetition_penalty": 1.03, "stop": ["<|endoftext|>"]}
             }
             response_list = []
             result = query_endpoint(payload)[0]
@@ -204,25 +199,15 @@ def query_data(event):
             print(f'Response from Llama2 llm : {response_list}')
             return success_response(response_list)
         elif 'falcon' in LLM_MODEL_ID:
-            print(f' Pass content to Falcon -> {content}')
             query = query
-            template = """ {behaviour}
-
-                  Context:
-                      {context}
-
-                 {query}""".strip()
-            template = template.replace('{behaviour}', DEFAULT_FALCON_PROMPT)
-            template = template.replace('{context}', content)
-            template = template.replace('{query}', query)
-            params = {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "top_k": top_k, "num_return_sequences": 1}
+            template = f"<|prompter|>{'Behaviour: ' + DEFAULT_FALCON_PROMPT}<|endoftext|><|prompter|>{'context: '+ content}<|endoftext|><|prompter|>{query + ' ?'}<|endoftext|><|assistant|>",  
+            params = {"max_new_tokens": tokens, "top_p": top_p, "temperature": temperature, "top_k": top_k, "num_return_sequences": 1, "repetition_penalty": 1.03, "stop": ["<|endoftext|>"]}
             response_list = []
             result = query_falcon(json.dumps({"inputs": template , "parameters": params}).encode("utf-8"))
             resp = {
                 "Assistant" : result
             }
             response_list.append(resp)
-            print(f'Response from Falcon llm : {response_list}')
             return success_response(response_list)
     except Exception as e:
         print(f'Exception {e}')
@@ -231,6 +216,8 @@ def query_data(event):
 
 def query_endpoint(payload):
     client = boto3.client("sagemaker-runtime")
+    print(f' Invoke Llama2 with Payload -> {payload}')
+            
     response = client.invoke_endpoint(
         EndpointName=sagemaker_endpoint,
         ContentType="application/json",
@@ -238,7 +225,7 @@ def query_endpoint(payload):
         CustomAttributes="accept_eula=true",
     )
     response = response["Body"].read().decode("utf8")
-    print(f'Query Output {response}')
+    print(f'Llama2 Output {response}')
     response = json.loads(response)
     return response
     
