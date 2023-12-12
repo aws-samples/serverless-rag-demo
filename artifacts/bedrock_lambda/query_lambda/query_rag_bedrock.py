@@ -188,7 +188,10 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
             sent_ack = False
             chunk = evt['chunk']['bytes']
             print(f'Chunk JSON {json.loads(str(chunk, "UTF-8"))}' )
-            chunk_str = json.loads(chunk.decode())['completion']
+            if 'llama2' in model:
+                chunk_str = json.loads(chunk.decode())['generation']
+            else:
+                chunk_str = json.loads(chunk.decode())['completion']    
             print(f'chunk string {chunk_str}')
             websocket_send(connect_id, { "text": chunk_str } )
             assistant_chat = assistant_chat + chunk_str
@@ -328,7 +331,7 @@ def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
             "prompt": f"""{prompt}\n
                             {query}
                             """,
-            "max_gen_len":512, "temperature":0.1, "top_p":0.9
+            "max_gen_len":512, "temperature":0.1, "top_p":0.1
         }
     return prompt_template
 
