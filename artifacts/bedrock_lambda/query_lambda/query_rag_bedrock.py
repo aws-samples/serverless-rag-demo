@@ -138,9 +138,12 @@ def query_data(query, behaviour, model_id, connect_id):
         if model_id in ['amazon.titan-text-lite-v1',
                             'amazon.titan-text-express-v1',
                             'amazon.titan-text-agile-v1',
+                            'anthropic.claude-v2:1',
                             'anthropic.claude-v2',
                             'anthropic.claude-v1',
                             'anthropic.claude-instant-v1',
+                            'meta.llama2-13b-chat-v1',
+                            'meta.llama2-70b-chat-v1',
                             'cohere.command-text-v14',
                             'amazon.titan-text-express-v1',
                             'ai21.j2-ultra-v1',
@@ -272,7 +275,7 @@ def get_conversations(connect_id):
 def parse_response(model_id, response): 
     print(f'parse_response {response}')
     result = ''
-    if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
+    if 'claude' in model_id:
         result = response['completion']
     elif model_id == 'cohere.command-text-v14':
         text = ''
@@ -284,12 +287,16 @@ def parse_response(model_id, response):
         result = response
     elif model_id in ['ai21.j2-ultra-v1', 'ai21.j2-mid-v1']:
         result = response
+    else:
+        result = str(response)
     print('parse_response_final_result' + result)
     return result
 
 def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
-    if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
+    #if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
+    # Define Template for all anthropic claude models
+    if 'claude' in model_id:
         if prompt_history is not None and len(prompt_history.split()) > 1:
             prompt_template = {"prompt":f"""{prompt_history}
                                             \n\nHuman: {query}
@@ -315,6 +322,13 @@ def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
             "prompt": f"""{prompt}\n
                             {query}
                             """
+        }
+    elif 'llama2' in model_id:
+        prompt_template = {
+            "prompt": f"""{prompt}\n
+                            {query}
+                            """,
+            "max_gen_len":512, "temperature":0.1, "top_p":0.9
         }
     return prompt_template
 
