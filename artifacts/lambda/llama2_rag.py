@@ -193,7 +193,7 @@ def query_data(event):
             response_list = []
             result = query_endpoint(payload)[0]
             resp = {
-                result['generation']['role'].capitalize(): result['generation']['content']
+                "Assistant": result['generated_text']
             }
             response_list.append(resp)
             print(f'Response from Llama2 llm : {response_list}')
