@@ -328,8 +328,8 @@ def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
         }
     elif 'llama2' in model_id:
         prompt_template = {
-            "prompt": f"""{prompt}\n
-                            {query}
+            "prompt": f"""[INST]<<SYS>>{prompt} <</SYS>> [/INST]\n
+                            [INST]{query} [/INST]
                             """,
             "max_gen_len":512, "temperature":0.1, "top_p":0.1
         }
