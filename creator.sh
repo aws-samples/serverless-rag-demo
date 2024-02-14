@@ -127,13 +127,19 @@ then
     printf  "$Red !!! Attention The $opt model will be deployed on $instance_type . Check Service Quotas to apply for limit increase $NC"
     
 else
-    printf "$Green Enter a custom secret API Key(atleast 20 Characters long) to secure access to Bedrock APIs $NC"
+    printf "$Green Enter a custom secret API Key(atleast 20 Characters long) to secure access to Bedrock APIs. Secret can contain (alphabets, numbers and hyphens) $NC"
     read secret_api_key
     secret_len=${#secret_api_key}
 
     if [ $secret_len -lt 20 ]
     then
         printf "$Red Secret Cannot be less than 20 characters. \n Exit \n $NC"
+        exit
+    fi
+
+    if ! [[ $secret_api_key =~ ^[a-zA-Z0-9-]+$ ]]
+    then
+        printf "$Red Secret can contain only words/digits or hyphens example: bedrock-sample-demo-access. \n Exiting setup \n $NC"
         exit
     fi
 

@@ -31,7 +31,6 @@ service = 'aoss'
 region = getenv("REGION", "us-east-1")
 awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
                    region, service, session_token=credentials.token)
-SECRET_API_KEY = getenv("SECRET_KEY", "random_key")
 
 DEFAULT_PROMPT = """You are a helpful, respectful and honest assistant.
                     Always answer as helpfully as possible, while being safe.
