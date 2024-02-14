@@ -731,7 +731,7 @@
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
           response_json = JSON.parse(evt.data)
-          if (response_json['text']) {
+          if ("text" in response_json) {
             str_len = -1
             try {
               str_len = response_json['text'].trim().length
@@ -845,7 +845,7 @@
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
           response_json = JSON.parse(evt.data)
-          if (response_json['text']) {
+          if ("text" in response_json) {
             str_len = -1
             try {
               str_len = response_json['text'].trim().length

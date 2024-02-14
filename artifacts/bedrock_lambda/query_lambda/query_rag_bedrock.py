@@ -194,7 +194,7 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
             print(f'chunk string {chunk_str}')
             websocket_send(connect_id, { "text": chunk_str } )
             assistant_chat = assistant_chat + chunk_str
-            if behaviour == 'chat' and counter%10 == 0:
+            if behaviour == 'chat' and counter%50 == 0:
                 # send ACK to UI, so it print the chats
                 websocket_send(connect_id, { "text": "ack-end-of-string" } )
                 sent_ack = True
