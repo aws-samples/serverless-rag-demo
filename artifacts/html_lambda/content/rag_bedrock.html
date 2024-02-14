@@ -477,7 +477,7 @@
                           alt="avatar 1" style="width: 45px; height: 100%;">
                         <div>
                             <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">
-                                Hello I am Claude</p>
+                                Hello I am Claude V2</p>
                         </div>
                     </div>
                     
@@ -762,7 +762,7 @@
             '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"' +
             ' alt="avatar 1" style="width: 45px; height: 100%;"> ' + 
             '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
-             'Hello I am Claude' +
+             'Hello I am Claude V2' +
             '</p></div></div>'
 
         document.getElementById('conversations-box').innerHTML = reset_chat_html
@@ -786,7 +786,7 @@
         var end_of_response = false;
         chat_id = guidGenerator()
         
-        hard_coded_model = 'anthropic.claude-v2:1'
+        hard_coded_model = 'anthropic.claude-v2'
         query_str = " " + $('#chat-text').val()
         data = '{"query": "' + query_str + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
 
