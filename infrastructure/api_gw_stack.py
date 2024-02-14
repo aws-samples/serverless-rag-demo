@@ -175,7 +175,6 @@ class ApiGw_Stack(Stack):
                                                 'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
                                                 'OPENSEARCH_CHAT_ENDPOINT': chat_collection_endpoint,
                                                 'REGION': region,
-                                                'SECRET_KEY': secret_api_key,
                                                 'REST_ENDPOINT_URL': rest_endpoint_url
                                   },
                                   memory_size=2048,
