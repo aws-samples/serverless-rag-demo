@@ -134,19 +134,11 @@ def query_data(query, behaviour, model_id, connect_id):
     try:
         response = None
         print(f'LLM Model ID -> {model_id}')
-        if model_id in ['amazon.titan-text-lite-v1',
-                            'amazon.titan-text-express-v1',
-                            'amazon.titan-text-agile-v1',
-                            'anthropic.claude-v2:1',
-                            'anthropic.claude-v2',
-                            'anthropic.claude-v1',
-                            'anthropic.claude-instant-v1',
-                            'meta.llama2-13b-chat-v1',
-                            'meta.llama2-70b-chat-v1',
-                            'cohere.command-text-v14',
-                            'amazon.titan-text-express-v1',
-                            'ai21.j2-ultra-v1',
-                            'ai21.j2-mid-v1']:
+
+        model_list = ['anthropic.claude-','meta.llama2-', 'cohere.command', 'amazon.titan-', 'ai21.j2-']
+        
+
+        if model_id.startswith(tuple(model_list)):
             if  context is not None:
                 context = f""" Data points: {context}
                                Question: {query}"""
@@ -155,9 +147,7 @@ def query_data(query, behaviour, model_id, connect_id):
             prompt_template = prepare_prompt_template(model_id, prompt, context, prompt_history)
             query_bedrock_models(model_id, prompt_template, connect_id, behaviour)
         else:
-            print('Defaulting to Amazon Titan(titan-text-lite-v1) model, Model_id not passed.')
-            prompt_template = prepare_prompt_template('amazon.titan-text-lite-v1', prompt, query, prompt_history)
-            query_bedrock_models('amazon.titan-text-lite-v1', prompt_template, connect_id, behaviour)
+            return failure_response(connect_id, f'Model not available on Amazon Bedrock {model_id}')
                 
     except Exception as e:
         print(f'Exception {e}')
@@ -300,7 +290,17 @@ def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
     # Define Template for all anthropic claude models
     if 'claude' in model_id:
         if prompt_history is not None and len(prompt_history.split()) > 1:
-            prompt_template = {"prompt":f"""{prompt_history}
+            if 'anthropic.claude-3-' in model_id:
+                user_messages =  {"role": "user", "content": prompt}
+                prompt_template= {
+                                    "anthropic_version": "bedrock-2023-05-31",
+                                    "max_tokens": 10000,
+                                    "system": query,
+                                    "messages": user_messages
+                                }  
+                
+            else:
+                prompt_template = {"prompt":f"""{prompt_history}
                                             \n\nHuman: {query}
                                                        {prompt}
                                             \n\nAssistant:""",
