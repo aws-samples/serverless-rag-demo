@@ -13,6 +13,9 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Project Updates</b></summary>
 
+  #### (11-Mar-2024):
+  * Anthropic Claude-3 Sonnet Text based support
+    
   #### (13-Dec-2023):
   * Support Meta Llama2 models on Amazon Bedrock. Support for Anthropic's latest Claude 2.1 model (200K context length).
     <img width="1421" alt="Screenshot 2023-12-13 at 11 12 40 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/ed146d50-d00e-40b0-8e95-738030dbadeb">
