@@ -241,21 +241,15 @@ done
 if [ $build_status = "SUCCEEDED" ]
 then
     COLLECTION_ENDPOINT=https://dummy-vector-endpoint.amazonaws.com
-    CHAT_COLLECTION_ENDPOINT=https://dummy-chat-endpoint.amazonaws.com
+    
 
     if [ $aoss_selected == "yes"]
     then
         COLLECTION_NAME=$(jq '.context.'$infra_env'.collection_name' cdk.json -r)
         COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
-    
-        if [ "$opt" = "Amazon Bedrock" ]
-        then
-            CHAT_COLLECTION_NAME=$(jq '.context.'$infra_env'.chat_collection_name' cdk.json -r)
-            CHAT_COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $CHAT_COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
-        fi
     fi
 
-    cdk deploy -c environment_name=$infra_env -c chat_collection_endpoint=$CHAT_COLLECTION_ENDPOINT -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected ApiGwLlmsLambda"$infra_env"Stack --require-approval never
+    cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected ApiGwLlmsLambda"$infra_env"Stack --require-approval never
    
 
     if [ "$opt" != "Amazon Bedrock" ]

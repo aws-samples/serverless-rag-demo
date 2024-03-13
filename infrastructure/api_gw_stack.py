@@ -1,12 +1,8 @@
 from aws_cdk import (
     Stack,
-    NestedStack,
     aws_iam as _iam,
     aws_lambda as _lambda,
-    aws_ecr as _ecr,
-    aws_apigatewayv2,
-    Aspects
-    
+    aws_ecr as _ecr 
 )
 
 import aws_cdk as _cdk
@@ -24,7 +20,6 @@ class ApiGw_Stack(Stack):
         region=os.getenv('CDK_DEFAULT_REGION')
         account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
         collection_endpoint = 'random'
-        chat_collection_endpoint = 'random'
         llm_model_id = self.node.try_get_context("llm_model_id")
         secret_api_key = self.node.try_get_context("secret_api_key")
         is_opensearch = self.node.try_get_context("is_aoss")
@@ -33,9 +28,6 @@ class ApiGw_Stack(Stack):
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
-
-            chat_collection_endpoint = self.node.get_context("chat_collection_endpoint")
-            chat_collection_endpoint = chat_collection_endpoint.replace("https://", "")
 
         except Exception as e:
             pass
@@ -175,9 +167,7 @@ class ApiGw_Stack(Stack):
                                   timeout=_cdk.Duration.seconds(300),
                                   description="Query Models in Amazon Bedrock",
                                   environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
-                                                'CHAT_INDEX_NAME': env_params['chat_index_name'],
                                                 'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
-                                                'OPENSEARCH_CHAT_ENDPOINT': chat_collection_endpoint,
                                                 'REGION': region,
                                                 'REST_ENDPOINT_URL': rest_endpoint_url,
                                                 'IS_RAG_ENABLED': is_opensearch
