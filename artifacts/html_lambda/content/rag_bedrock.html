@@ -670,7 +670,6 @@
       </div>
 
 
-
       <div id="err"></div>
 
       <div id="sse"></div>
@@ -687,6 +686,7 @@
       // do stuff
       $(document).ready(function () {
         $('#main-bedrock-content').hide();
+        $('#index-tab').hide();
         $('#index-div').hide();
         $('#apikey_modal').css('top', '12vh')
         $('#apikey_modal').show()
@@ -695,6 +695,7 @@
         document.getElementById("model-name").innerHTML = awsData.htmlheader + vector_text
         $("button.assistant").prop('disabled', true)
         $('[data-toggle="tooltip"]').tooltip();
+        $('[id^=agent-]').hide()
       });
 
       var model_id = null;
@@ -704,13 +705,16 @@
         apiGatewayUrl: '<apiGatewayUrl>',
         staticPageUrl: '<apiGatewayUrl>',
         htmlheader: '<htmlheader>',
-        websocketUrl: '<websocketUrl>'
         websocketUrl: '<websocketUrl>',
         isRagEnabled: '<is_rag_enabled>'
       };
       
       setTimeout(() => {
         if(awsData.isRagEnabled == 'yes') {
+          $('#index-tab').show();
+          $('#index-div').show();
+        }
+      }, 1000)
 
       function setApiKey() {
         api_key = $('#api_key').val()
@@ -918,13 +922,16 @@
       function showChatBox() {
         ws = null
         chat_id = null
-        
 
         reset_chat_html = '<div class="d-flex flex-row justify-content-start">' +
+          '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"' +
+          ' alt="avatar 1" style="width: 45px; height: 100%;"> ' +
           '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+          'Hello I am Claude V2' +
+          '</p></div></div>'
 
         document.getElementById('conversations-box').innerHTML = reset_chat_html
-          
+
       }
 
       function guidGenerator() {
@@ -934,6 +941,7 @@
         return (S4() + S4() + "-" + S4());
       }
 
+      chat_messages = [{'Assistant': 'Hello I am claude'}]
 
       function sendChat(assistant_type) {
         $('#send-chat-button').prop('disabled', true)
@@ -963,10 +971,6 @@
 
         claude_wait_id = "claude-wait" + chat_id
         claude_wait_html = '<div id="' + claude_wait_id + '" class="d-flex flex-row justify-content-start">' +
-            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
-            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
-            '...' +
-            '</p></div></div>' +
           '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
           '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
           '...' +
@@ -1037,10 +1041,10 @@
           console.log("streaming message is received.. " + received_msg);
           if (end_of_response) {
             response_html = '<div class="d-flex flex-row justify-content-start">' +
-            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
               '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
               '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
               message_store +
+              '</p></div></div>' +
               '<div class="divider d-flex align-items-center mb-4"></div>'
 
             $("#" + claude_wait_id).trigger("click");
@@ -1051,6 +1055,7 @@
             message_store = ''
             end_of_response = false
           }
+
 
         }
 

@@ -255,12 +255,12 @@ then
         fi
     fi
 
-    cdk deploy -c environment_name=$infra_env -c chat_collection_endpoint=$CHAT_COLLECTION_ENDPOINT -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key ApiGwLlmsLambda"$infra_env"Stack --require-approval never
+    cdk deploy -c environment_name=$infra_env -c chat_collection_endpoint=$CHAT_COLLECTION_ENDPOINT -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected ApiGwLlmsLambda"$infra_env"Stack --require-approval never
    
 
     if [ "$opt" != "Amazon Bedrock" ]
     then
-        cdk deploy -c environment_name=$infra_env -c llm_model_id="$model_id" SagemakerLlmdevStack --require-approval never
+        cdk deploy -c environment_name=$infra_env -c llm_model_id="$model_id" -c is_aoss=$aoss_selected SagemakerLlmdevStack --require-approval never
         echo "--- Get Sagemaker Deployment Container ---"
         project=sagemakerdeploy"$infra_env"
         build_container=$(aws codebuild list-projects|grep -o $project'[^,"]*')
