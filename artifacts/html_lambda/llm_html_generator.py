@@ -24,6 +24,7 @@ def handler(event, context):
     htmlContent = re.sub('<apiGatewayUrl>', apiGatewayUrl, htmlContent)
     htmlContent = re.sub('<htmlheader>', html_header, htmlContent)
     htmlContent = re.sub('<websocketUrl>', bedrock_streaming_socket, htmlContent)
+    htmlContent = re.sub('<isRagEnabled>', is_rag_enabled, htmlContent)
     return {
         'statusCode': 200,
         'headers': {"Content-Type":"text/html"},
