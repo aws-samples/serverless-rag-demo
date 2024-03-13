@@ -21,7 +21,6 @@ class OpensearchVectorDbStack(NestedStack):
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
         region=os.getenv('CDK_DEFAULT_REGION')
         collection_name = env_params['collection_name']
-        chat_collection_name = env_params["chat_collection_name"]
         index_name = env_params['index_name']
         lambda_role_arn = f"arn:aws:iam::{account_id}:role/{env_params['lambda_role_name']}_{region}"
         encryption_policy = _oss.CfnSecurityPolicy(self, f'sample-vectordb-encrypt-{env_name}',  name=f'sample-vectordb-encryption-{env_name}',
@@ -47,34 +46,6 @@ class OpensearchVectorDbStack(NestedStack):
         cfn_collection.add_dependency(network_policy)
         cfn_collection.add_dependency(data_access_policy)
 
-        llm_model_id = self.node.try_get_context("llm_model_id")
-
-        if 'Amazon Bedrock' in llm_model_id:
-            chat_encryption_policy = _oss.CfnSecurityPolicy(self, f'sample-chatstore-encrypt-{env_name}',  name=f'sample-chatstore-encryption-{env_name}',
-                                type='encryption',
-                                policy="""{\"Rules\":[{\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ chat_collection_name +"""\"]}],\"AWSOwnedKey\":true}""")
-            
-            chat_network_policy = _oss.CfnSecurityPolicy(self, f'sample-chatstore-nw-{env_name}', 
-                                                name=f'sample-chatstore-nw-{env_name}',
-                                type='network',
-                                policy="""[{\"Rules\":[{\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ chat_collection_name + """\"]}, {\"ResourceType\":\"dashboard\",\"Resource\":[\"collection/"""+ chat_collection_name + """\"]}],\"AllowFromPublic\":true}]""") 
-            
-            chat_data_access_policy = _oss.CfnAccessPolicy(self, f'sample-chatstore-data-{env_name}', name=f'sample-chatstore-data-{env_name}',
-                                type='data',
-                                policy="""[{\"Rules\":[{\"ResourceType\":\"index\",\"Resource\":[\"index/"""+ chat_collection_name +"""/*\"], \"Permission\": [\"aoss:*\"]}, {\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ chat_collection_name +"""\"], \"Permission\": [\"aoss:*\"]}], \"Principal\": [\"""" + lambda_role_arn + """\"]}]""")
-        
-        
-            cfn_chat_collection = _oss.CfnCollection(self, f"sample_chat_store_{env_name}",
-                name=chat_collection_name,
-                # the properties below are optional
-                description="serverless search example",
-                type="SEARCH"
-            )
-
-            cfn_chat_collection.add_dependency(chat_encryption_policy)
-            cfn_chat_collection.add_dependency(chat_network_policy)
-            cfn_chat_collection.add_dependency(chat_data_access_policy)
-        
         _output(self, f'collection_endpoint_{env_name}',
                 value=cfn_collection.attr_collection_endpoint,
                 description='Collection Endpoint',

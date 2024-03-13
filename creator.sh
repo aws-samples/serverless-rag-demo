@@ -70,6 +70,38 @@ echo ' '
 echo '*************************************************************'
 echo ' '
 
+printf "$Green Do you want to deploy Opensearch Serverless or Just try out Amazon Bedrock: $NC"
+printf "\n"
+options=("Yes - Deploy Amazon Opensearch Serverless vector engine for RAG(Retrieval Augmented Generation)" "No - I will only test Amazon Bedrock without RAG" "Quit")
+aoss_selected='yes'
+select opt in "${options[@]}"
+do
+    case $opt in
+        "Yes - Deploy Amazon Opensearch Serverless for RAG")
+            aoss_selected='yes'
+            ;;
+        "No - I will only test Amazon Bedrock without RAG")
+            aoss_selected='no'
+            printf "$Green You can re-run this script to deploy Opensearch Serverless later $NC"
+            ;;
+        "Quit")
+            printf "$Red Quit deployment $NC"
+            exit 1
+            break
+            ;;
+        *)
+        printf "$Red Exiting, Invalid option $REPLY . Select from 1/2/3 $NC"
+        exit 1
+        ;;
+    esac
+    break
+done
+    
+
+echo '*************************************************************'
+echo ' '        
+
+
 printf "$Green Please enter your LLM choice (1/2/3/4/5/6/7): $NC"
 printf "\n"
 options=("Amazon Bedrock" "Llama2-7B" "Llama2-13B" "Llama2-70B" "Falcon-7B" "Falcon-40B" "Falcon-180B" "Quit")
@@ -168,12 +200,12 @@ echo "--- pip install requirements ---"
 python3 -m pip install -r requirements.txt
 
 echo "--- CDK synthesize ---"
-cdk synth -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key
+cdk synth -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected
 
 echo "--- CDK deploy ---"
 CURRENT_UTC_TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
 echo Setting Tagging Lambda Image with timestamp $CURRENT_UTC_TIMESTAMP
-cdk deploy -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key="$secret_api_key" LlmsWithServerlessRag"$infra_env"Stack --require-approval never
+cdk deploy -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key="$secret_api_key" -c is_aoss="$aoss_selected" LlmsWithServerlessRag"$infra_env"Stack --require-approval never
 echo "--- Get Build Container ---"
 project=lambdaragllmcontainer"$infra_env"
 echo project: $project
@@ -208,21 +240,21 @@ done
 
 if [ $build_status = "SUCCEEDED" ]
 then
-    COLLECTION_NAME=$(jq '.context.'$infra_env'.collection_name' cdk.json -r)
-    COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
+    COLLECTION_ENDPOINT=https://dummy-vector-endpoint.amazonaws.com
     
-    if [ "$opt" = "Amazon Bedrock" ]
+
+    if [ $aoss_selected = "yes" ]
     then
-        CHAT_COLLECTION_NAME=$(jq '.context.'$infra_env'.chat_collection_name' cdk.json -r)
-        CHAT_COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $CHAT_COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
-        cdk deploy -c environment_name=$infra_env -c chat_collection_endpoint=$CHAT_COLLECTION_ENDPOINT -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key ApiGwLlmsLambda"$infra_env"Stack --require-approval never
-    else
-        cdk deploy -c environment_name=$infra_env -c chat_collection_endpoint=https://dummy-endpoint.amazonaws.com  -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key ApiGwLlmsLambda"$infra_env"Stack --require-approval never
+        COLLECTION_NAME=$(jq '.context.'$infra_env'.collection_name' cdk.json -r)
+        COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
     fi
+
+    cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected ApiGwLlmsLambda"$infra_env"Stack --require-approval never
+   
 
     if [ "$opt" != "Amazon Bedrock" ]
     then
-        cdk deploy -c environment_name=$infra_env -c llm_model_id="$model_id" SagemakerLlmdevStack --require-approval never
+        cdk deploy -c environment_name=$infra_env -c llm_model_id="$model_id" -c is_aoss=$aoss_selected SagemakerLlmdevStack --require-approval never
         echo "--- Get Sagemaker Deployment Container ---"
         project=sagemakerdeploy"$infra_env"
         build_container=$(aws codebuild list-projects|grep -o $project'[^,"]*')
@@ -251,7 +283,7 @@ then
                 fi
                 ((j++))
             done
-            fi
+        fi
     
     fi
 else

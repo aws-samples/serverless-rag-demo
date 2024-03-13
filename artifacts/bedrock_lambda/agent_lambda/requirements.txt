@@ -1,0 +1,4 @@
+yfinance=0.1.63
+pytickersymbols=1.15.0
+pandas
+bs4
