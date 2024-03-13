@@ -243,7 +243,7 @@ then
     COLLECTION_ENDPOINT=https://dummy-vector-endpoint.amazonaws.com
     
 
-    if [ $aoss_selected = "yes"]
+    if [ $aoss_selected = "yes" ]
     then
         COLLECTION_NAME=$(jq '.context.'$infra_env'.collection_name' cdk.json -r)
         COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
