@@ -72,12 +72,12 @@ echo ' '
 
 printf "$Green Do you want to deploy Opensearch Serverless or Just try out Amazon Bedrock: $NC"
 printf "\n"
-options=("Yes - Deploy Amazon Opensearch Serverless vector engine for RAG(Retrieval Augmented Generation)" "No - I will only test Amazon Bedrock without RAG" "Quit")
+options=("Yes - Deploy Amazon Opensearch Serverless vector engine for RAG" "No - I will only test Amazon Bedrock without RAG" "Quit")
 aoss_selected='yes'
 select opt in "${options[@]}"
 do
     case $opt in
-        "Yes - Deploy Amazon Opensearch Serverless for RAG")
+        "Yes - Deploy Amazon Opensearch Serverless vector engine for RAG")
             aoss_selected='yes'
             ;;
         "No - I will only test Amazon Bedrock without RAG")
