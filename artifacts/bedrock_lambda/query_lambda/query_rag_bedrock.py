@@ -296,7 +296,7 @@ def prepare_prompt_template(model_id, prompt, query, prompt_history=None):
                                     "anthropic_version": "bedrock-2023-05-31",
                                     "max_tokens": 10000,
                                     "system": query,
-                                    "messages": user_messages
+                                    "messages": [user_messages]
                                 }  
                 
             else:
