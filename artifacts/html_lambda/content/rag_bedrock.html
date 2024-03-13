@@ -535,7 +535,6 @@
             <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude V2.1</a>
             </li>
             <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v1')">Anthropic Claude V1</a></li>
             <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude
                 Instant</a></li>
             <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B
@@ -895,7 +894,7 @@
           $('#query-button').css('visibility', 'visible');
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
-          response_json = JSON.parse(evt.data)
+          response_json = JSON.parse(atob(evt.data))
           if ("text" in response_json) {
             str_len = -1
             try {
@@ -922,7 +921,8 @@
       function showChatBox() {
         ws = null
         chat_id = null
-
+        chat_messages = []
+        assitant_messages = []
         reset_chat_html = '<div class="d-flex flex-row justify-content-start">' +
           '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"' +
           ' alt="avatar 1" style="width: 45px; height: 100%;"> ' +
@@ -941,7 +941,9 @@
         return (S4() + S4() + "-" + S4());
       }
 
-      chat_messages = [{'Assistant': 'Hello I am claude'}]
+      chat_messages = [{'Assistant': 'Hello How may I help you today'}]
+
+      assitant_messages = []
 
       function sendChat(assistant_type) {
         $('#send-chat-button').prop('disabled', true)
@@ -956,8 +958,12 @@
         hard_coded_model = 'anthropic.claude-v2'
         query_str = " " + $('#chat-text').val()
 
-        chat_messages.append({'human': query_str})
-        btoa(JSON.stringify(chat_messages))
+        if (assitant_messages.length > 0) {
+          chat_messages.push({'Assistant': assitant_messages.join(' ')})
+          assitant_messages = []
+        }
+
+        chat_messages.push({'Human': query_str})
 
         data = '{"query": "' + btoa(JSON.stringify(chat_messages)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
 
@@ -1015,7 +1021,7 @@
           $('#query-button').css('visibility', 'visible');
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
-          response_json = JSON.parse(evt.data)
+          response_json = JSON.parse(atob(evt.data))
           if ("text" in response_json) {
             str_len = -1
             try {
@@ -1025,11 +1031,11 @@
             }
             if (str_len != 0) {
               received_msg = response_json['text']
-              received_msg = atob(received_msg)
               if (received_msg == 'ack-end-of-string') {
                 end_of_response = true
               }
               else {
+                assitant_messages.push(received_msg)
                 message_store = message_store + received_msg
               }
             }
