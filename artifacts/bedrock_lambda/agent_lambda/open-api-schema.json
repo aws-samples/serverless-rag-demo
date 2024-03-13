@@ -1,0 +1,114 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Sample Bedrock Agents",
+        "version": "1.0.0",
+        "description": "APIs for fetching weather data/ stock reports / web-searches."
+    },
+    "paths": {
+        "/weather": {
+            "get": {
+                "summary": "Get weather reports",
+                "description": "Get the weather data for a country, state or city",
+                "operationId": "getWeatherReport",
+                "responses": {
+                    "200": {
+                        "description": "Gets the weather report for a country, state or city",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "weather": {
+                                                "type": "string",
+                                                "description": "Weather report"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/stockreport": {
+            "get": {
+                "summary": "Get stock reports",
+                "description": "Get the stock report for a company",
+                "operationId": "getStockReport",
+                "parameters": [
+                    {
+                        "name": "company",
+                        "in": "query",
+                        "description": "Company name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }],
+                "responses": {
+                    "200": {
+                        "description": "Gets the stock report for a company",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "stockAnalysis": {
+                                                "type": "string",
+                                                "description": "Returns the stock analysis template that could be shared with an LLM"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/websearch": {
+            "get": {
+                "summary": "web search based assistant",
+                "description": "web search based assistant",
+                "operationId": "getWebSearch",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "The query to search for",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }],
+                "responses": {
+                    "200": {
+                        "description": "web search based assistant",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "webAnalysis": {
+                                                "type": "string",
+                                                "description": "Returns a template based on web searches, that could be shared with an LLM"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

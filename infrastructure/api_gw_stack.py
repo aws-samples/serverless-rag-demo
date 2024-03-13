@@ -27,6 +27,8 @@ class ApiGw_Stack(Stack):
         chat_collection_endpoint = 'random'
         llm_model_id = self.node.try_get_context("llm_model_id")
         secret_api_key = self.node.try_get_context("secret_api_key")
+        is_opensearch = self.node.try_get_context("is_aoss")
+
         html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
@@ -145,6 +147,8 @@ class ApiGw_Stack(Stack):
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
             
             print('--- Amazon Bedrock Deployment ---')
+
+            
             
             bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
                                   function_name=env_params['bedrock_indexing_function_name'],
@@ -175,7 +179,8 @@ class ApiGw_Stack(Stack):
                                                 'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
                                                 'OPENSEARCH_CHAT_ENDPOINT': chat_collection_endpoint,
                                                 'REGION': region,
-                                                'REST_ENDPOINT_URL': rest_endpoint_url
+                                                'REST_ENDPOINT_URL': rest_endpoint_url,
+                                                'IS_RAG_ENABLED': is_opensearch
                                   },
                                   memory_size=2048,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
@@ -298,6 +303,7 @@ class ApiGw_Stack(Stack):
                                             environment={ 'ENVIRONMENT': env_name,
                                                           'LLM_MODEL_NAME': html_header_name,
                                                           'WSS_URL': wss_url + '/' + env_name,
+                                                          'IS_RAG_ENABLED': is_opensearch
                                                         })        
     
         oss_policy = _iam.PolicyStatement(

@@ -188,6 +188,150 @@
       background-clip: padding-box !important;
       box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
     }
+
+
+
+    /* Stepper css */
+    .md-stepper-horizontal {
+      display: table;
+      width: 100%;
+      margin: 0 auto;
+      background-color: #FFFFFF;
+      box-shadow: 0 3px 8px -6px rgba(0, 0, 0, .50);
+    }
+
+    .md-stepper-horizontal .md-step {
+      display: table-cell;
+      position: relative;
+      padding: 24px;
+    }
+
+    .md-stepper-horizontal .md-step:hover,
+    .md-stepper-horizontal .md-step:active {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+
+    .md-stepper-horizontal .md-step:active {
+      border-radius: 15% / 75%;
+    }
+
+    .md-stepper-horizontal .md-step:first-child:active {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+
+    .md-stepper-horizontal .md-step:last-child:active {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .md-stepper-horizontal .md-step:hover .md-step-circle {
+      background-color: #757575;
+    }
+
+    .md-stepper-horizontal .md-step:first-child .md-step-bar-left,
+    .md-stepper-horizontal .md-step:last-child .md-step-bar-right {
+      display: none;
+    }
+
+    .md-stepper-horizontal .md-step .md-step-circle {
+      width: 30px;
+      height: 30px;
+      margin: 0 auto;
+      background-color: #999999;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 30px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+
+    .md-stepper-horizontal.green .md-step.active .md-step-circle {
+      background-color: #00AE4D;
+    }
+
+    .md-stepper-horizontal.orange .md-step.active .md-step-circle {
+      background-color: #F96302;
+    }
+
+    .md-stepper-horizontal .md-step.active .md-step-circle {
+      background-color: rgb(33, 150, 243);
+    }
+
+    .md-stepper-horizontal .md-step.done .md-step-circle:before {
+      font-family: 'FontAwesome';
+      font-weight: 100;
+      content: "\f00c";
+    }
+
+    .md-stepper-horizontal .md-step.done .md-step-circle *,
+    .md-stepper-horizontal .md-step.editable .md-step-circle * {
+      display: none;
+    }
+
+    .md-stepper-horizontal .md-step.editable .md-step-circle {
+      -moz-transform: scaleX(-1);
+      -o-transform: scaleX(-1);
+      -webkit-transform: scaleX(-1);
+      transform: scaleX(-1);
+    }
+
+    .md-stepper-horizontal .md-step.editable .md-step-circle:before {
+      font-family: 'FontAwesome';
+      font-weight: 100;
+      content: "\f040";
+    }
+
+    .md-stepper-horizontal .md-step .md-step-title {
+      margin-top: 16px;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .md-stepper-horizontal .md-step .md-step-title,
+    .md-stepper-horizontal .md-step .md-step-optional {
+      text-align: center;
+      color: rgba(0, 0, 0, .26);
+    }
+
+    .md-stepper-horizontal .md-step.active .md-step-title {
+      font-weight: 600;
+      color: rgba(0, 0, 0, .87);
+    }
+
+    .md-stepper-horizontal .md-step.active.done .md-step-title,
+    .md-stepper-horizontal .md-step.active.editable .md-step-title {
+      font-weight: 600;
+    }
+
+    .md-stepper-horizontal .md-step .md-step-optional {
+      font-size: 12px;
+    }
+
+    .md-stepper-horizontal .md-step.active .md-step-optional {
+      color: rgba(0, 0, 0, .54);
+    }
+
+    .md-stepper-horizontal .md-step .md-step-bar-left,
+    .md-stepper-horizontal .md-step .md-step-bar-right {
+      position: absolute;
+      top: 36px;
+      height: 1px;
+      border-top: 1px solid #DDDDDD;
+    }
+
+    .md-stepper-horizontal .md-step .md-step-bar-right {
+      right: 0;
+      left: 50%;
+      margin-left: 20px;
+    }
+
+    .md-stepper-horizontal .md-step .md-step-bar-left {
+      left: 0;
+      right: 50%;
+      margin-right: 20px;
+    }
   </style>
 
 
@@ -251,6 +395,10 @@
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="conversations-tab" data-bs-toggle="tab" data-bs-target="#conversations-div"
           type="button" role="tab" aria-controls="Conversations" aria-selected="false">Conversations (BETA)</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="agents-tab" data-bs-toggle="tab" data-bs-target="#agents-div" type="button"
+          role="tab" aria-controls="Agents" aria-selected="false">Agents</button>
       </li>
     </ul>
     <div class="tab-content" id="myTabContent">
@@ -382,14 +530,19 @@
             <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li> -->
             <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
             <!-- Anthropic -->
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic Claude-3 Sonnet (New)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude V2.1</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic
+                Claude-3 Sonnet (New)</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude V2.1</a>
+            </li>
             <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a></li>
             <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v1')">Anthropic Claude V1</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude Instant</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B (Experimental)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B (Experimental)</a></li>
-            
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude
+                Instant</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B
+                (Experimental)</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B
+                (Experimental)</a></li>
+
             <!-- Cohere not supported for Streaming ingestion -->
             <!-- <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li> -->
           </ul>
@@ -456,7 +609,8 @@
 
       </div>
 
-      <div class="tab-pane fade" id="conversations-div" role="tabpanel" aria-labelledby="conversations-tab" style="margin-top:-5vh">
+      <div class="tab-pane fade" id="conversations-div" role="tabpanel" aria-labelledby="conversations-tab"
+        style="margin-top:-5vh">
         <!-- style="background-color: #eee;" -->
         <section class="gradient-custom">
           <div class="container py-5">
@@ -474,14 +628,14 @@
                     style="position: relative; height: 60vh; overflow-x: hidden; overflow-y: auto;">
                     <!-- Assistant -->
                     <div class="d-flex flex-row justify-content-start">
-                        <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
-                          alt="avatar 1" style="width: 45px; height: 100%;">
-                        <div>
-                            <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">
-                                Hello I am Claude V2</p>
-                        </div>
+                      <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
+                        alt="avatar 1" style="width: 45px; height: 100%;">
+                      <div>
+                        <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">
+                          Hello I am Claude V2</p>
+                      </div>
                     </div>
-                    
+
                     <!-- <div class="divider d-flex align-items-center mb-4">
                       <p class="text-center mx-3 mb-0" style="color: #a2aab7;">Today</p>
                     </div> -->
@@ -502,7 +656,8 @@
                     <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp"
                       alt="avatar 3" style="width: 40px; height: 100%;">
                     <input type="text" class="form-control form-control-lg" id="chat-text" placeholder="Type message">
-                    <button id="send-chat-button" type="button" class="btn btn-info" onclick="sendChat('chat')">send</button>
+                    <button id="send-chat-button" type="button" class="btn btn-info"
+                      onclick="sendChat('chat')">send</button>
                   </div>
                 </div>
 
@@ -532,6 +687,7 @@
       // do stuff
       $(document).ready(function () {
         $('#main-bedrock-content').hide();
+        $('#index-div').hide();
         $('#apikey_modal').css('top', '12vh')
         $('#apikey_modal').show()
         $('#custom-spinner').css('visibility', 'hidden');
@@ -549,8 +705,12 @@
         staticPageUrl: '<apiGatewayUrl>',
         htmlheader: '<htmlheader>',
         websocketUrl: '<websocketUrl>'
-
+        websocketUrl: '<websocketUrl>',
+        isRagEnabled: '<is_rag_enabled>'
       };
+      
+      setTimeout(() => {
+        if(awsData.isRagEnabled == 'yes') {
 
       function setApiKey() {
         api_key = $('#api_key').val()
@@ -759,12 +919,9 @@
         ws = null
         chat_id = null
         
+
         reset_chat_html = '<div class="d-flex flex-row justify-content-start">' +
-            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"' +
-            ' alt="avatar 1" style="width: 45px; height: 100%;"> ' + 
-            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
-             'Hello I am Claude V2' +
-            '</p></div></div>'
+          '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
 
         document.getElementById('conversations-box').innerHTML = reset_chat_html
           
@@ -777,6 +934,7 @@
         return (S4() + S4() + "-" + S4());
       }
 
+
       function sendChat(assistant_type) {
         $('#send-chat-button').prop('disabled', true)
         $('#custom-spinner').css('visibility', 'visible');
@@ -786,30 +944,38 @@
         var message_store = '';
         var end_of_response = false;
         chat_id = guidGenerator()
-        
+
         hard_coded_model = 'anthropic.claude-v2'
         query_str = " " + $('#chat-text').val()
-        data = '{"query": "' + query_str + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
+
+        chat_messages.append({'human': query_str})
+        btoa(JSON.stringify(chat_messages))
+
+        data = '{"query": "' + btoa(JSON.stringify(chat_messages)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
 
         request_html = '<div class="d-flex flex-row justify-content-start">' +
-            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
-            '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
-              query_str +
-            '</p></div></div>' +
-            '<div class="divider d-flex align-items-center mb-4"></div>'
+          '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+          '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+          query_str +
+          '</p></div></div>' +
+          '<div class="divider d-flex align-items-center mb-4"></div>'
         document.getElementById('conversations-box').innerHTML = document.getElementById('conversations-box').innerHTML + request_html
 
-        claude_wait_id= "claude-wait" + chat_id
+        claude_wait_id = "claude-wait" + chat_id
         claude_wait_html = '<div id="' + claude_wait_id + '" class="d-flex flex-row justify-content-start">' +
             '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
             '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
             '...' +
             '</p></div></div>' +
-            '<div class="divider d-flex align-items-center mb-4"></div>'
+          '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+          '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+          '...' +
+          '</p></div></div>' +
+          '<div class="divider d-flex align-items-center mb-4"></div>'
         document.getElementById('conversations-box').innerHTML = document.getElementById('conversations-box').innerHTML + claude_wait_html
 
 
-        $(document).on('click', '#'+claude_wait_id, function(){
+        $(document).on('click', '#' + claude_wait_id, function () {
           $(this).removeClass('d-flex');
           $(this).hide();
           $(this).css('visibility', 'hidden');
@@ -855,10 +1021,11 @@
             }
             if (str_len != 0) {
               received_msg = response_json['text']
+              received_msg = atob(received_msg)
               if (received_msg == 'ack-end-of-string') {
                 end_of_response = true
               }
-              else{
+              else {
                 message_store = message_store + received_msg
               }
             }
@@ -870,27 +1037,29 @@
           console.log("streaming message is received.. " + received_msg);
           if (end_of_response) {
             response_html = '<div class="d-flex flex-row justify-content-start">' +
-            '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
             '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
-            message_store +
-            '</p></div></div>' +
-            '<div class="divider d-flex align-items-center mb-4"></div>'
-            
-            $("#"+claude_wait_id).trigger("click");
+              '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+              '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+              message_store +
+              '<div class="divider d-flex align-items-center mb-4"></div>'
+
+            $("#" + claude_wait_id).trigger("click");
             $('#send-chat-button').prop('disabled', false)
-            setTimeout(()=> {
+            setTimeout(() => {
               document.getElementById('conversations-box').innerHTML = document.getElementById('conversations-box').innerHTML + response_html
             }, 2);
-            message_store=''
+            message_store = ''
             end_of_response = false
           }
-            
 
         }
 
       }
-
-
+      
+      function agentworkflow(div_id) {
+        $('[id^=agent-]').hide()
+        $('#'+div_id).show()
+      }
     </script>
 
 

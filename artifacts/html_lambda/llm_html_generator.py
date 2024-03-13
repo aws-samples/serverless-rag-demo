@@ -6,6 +6,7 @@ from os import getenv
 env = getenv('ENVIRONMENT', 'dev')
 html_header = getenv('LLM_MODEL_NAME', 'Llama2-7B')
 bedrock_streaming_socket =  getenv('WSS_URL', 'Not Set')
+is_rag_enabled = getenv('IS_RAG_ENABLED', 'yes')
 
 def handler(event, context):
     # TODO implement
