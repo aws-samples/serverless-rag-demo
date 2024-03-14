@@ -530,17 +530,13 @@
             <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li> -->
             <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
             <!-- Anthropic -->
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic
-                Claude-3 Sonnet (New)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude V2.1</a>
-            </li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-haiku-20240307-v1:0')">Anthropic Claude-3 Haiku (New)</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic Claude-3 Sonnet (New)</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude V2.1</a></li>
             <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude
-                Instant</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B
-                (Experimental)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B
-                (Experimental)</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude Instant</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B (Experimental)</a></li>
+            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B (Experimental)</a></li>
 
             <!-- Cohere not supported for Streaming ingestion -->
             <!-- <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li> -->
@@ -685,8 +681,6 @@
       // do stuff
       $(document).ready(function () {
         $('#main-bedrock-content').hide();
-        $('#index-tab').hide();
-        $('#index-div').hide();
         $('#apikey_modal').css('top', '12vh')
         $('#apikey_modal').show()
         $('#custom-spinner').css('visibility', 'hidden');
@@ -708,12 +702,6 @@
         isRagEnabled: '<isRagEnabled>'
       };
       
-      setTimeout(() => {
-        if(awsData.isRagEnabled == 'yes') {
-          $('#index-tab').show();
-          $('#index-div').show();
-        }
-      }, 1000)
 
       function setApiKey() {
         api_key = $('#api_key').val()
@@ -724,6 +712,18 @@
             headers: { 'x-api-key': api_key }
           });
           $('#main-bedrock-content').show();
+
+          if(awsData.isRagEnabled == 'yes') {
+              $("#index-tab").click()
+          } else {
+              $('#index-tab').hide();
+              $('#index-div').hide();
+              $("#query-tab").click()
+              
+              
+          }
+        } else {
+          alertbuilder('Please add an API Key to proceed', false)
         }
       }
 

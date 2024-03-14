@@ -13,6 +13,9 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Project Updates</b></summary>
 
+  #### (14-Mar-2024):
+  * Anthropic Claude-3 Haiku Text based support
+  
   #### (11-Mar-2024):
   * Anthropic Claude-3 Sonnet Text based support
     
