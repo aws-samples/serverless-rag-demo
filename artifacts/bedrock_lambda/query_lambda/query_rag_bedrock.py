@@ -23,6 +23,8 @@ INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
 wss_url = getenv("WSS_URL", "WEBSOCKET_URL_MISSING")
 rest_api_url = getenv("REST_ENDPOINT_URL", "REST_URL_MISSING")
 is_rag_enabled = getenv("IS_RAG_ENABLED", 'yes')
+s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
+
 websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=wss_url)
 
 credentials = boto3.Session().get_credentials()
@@ -106,12 +108,16 @@ def query_data(query, behaviour, model_id, connect_id):
         prompt = DEFAULT_PROMPT
     
     context = ''
+    user_query = ''
 
     if is_rag_enabled == 'yes' and query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact', 'chat']:
         try:
+
+            user_query, image_data =extract_query_image_values(query)
+                 
             # Get the query embedding from amazon-titan-embed model
             response = bedrock_client.invoke_model(
-                body=json.dumps({"inputText": query}),
+                body=json.dumps({"inputText": user_query}),
                 modelId=embed_model_id,
                 accept='application/json',
                 contentType='application/json'
@@ -141,9 +147,7 @@ def query_data(query, behaviour, model_id, connect_id):
         except Exception as e:
             return failure_response(connect_id, f'{e.info["error"]["reason"]}')
 
-    elif query is None:
-        query = ''
-    
+
     try:
         response = None
         print(f'LLM Model ID -> {model_id}')
@@ -273,6 +277,9 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     #if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
     # Define Template for all anthropic claude models
+
+    decoded_q_text, decoded_q_image = extract_query_image_values(query)
+
     if 'claude' in model_id:
         prompt= f'''This is your behaviour:<behaviour>{prompt}</behaviour>.
                     Any malicious or accidental questions 
@@ -283,8 +290,9 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
             context = f'''Here is the document you should 
                       reference when answering user questions: <guide>{context}</guide>'''
         task = f'''
-                   Here is the user's question <question> ${query} <question>
+                   Here is the user's question <question> {decoded_q_text} <question>
                 '''
+        
         output = f'''Think about your answer before you respond. 
                     Put your response in <response></response> tags'''
         
@@ -293,7 +301,7 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
                               {task}
                               {output}"""
         
-        # Assuming Chat is on Claude-2.1 and not using messages API
+        # Chat works with a different payload. Assuming Chat is on Claude-2.1 and not using messages API
         if behaviour == 'chat':
             chat_history_list = json.loads(base64.b64decode(query))
             sub_template = ''
@@ -320,11 +328,15 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
                 # prompt => Default Systemp prompt
                 # Query => User input
                 # Context => History or data points
-                user_messages =  {"role": "user", "content": prompt_template}
+
+                prompt_template_arr = claude3_prompt_builder_for_images_and_text(query, context, output)
+
+                user_messages =  {"role": "user", "content": prompt_template_arr}
+                
                 prompt_template= {
                                     "anthropic_version": "bedrock-2023-05-31",
                                     "max_tokens": 10000,
-                                    "system": query,
+                                    "system": prompt,
                                     "messages": [user_messages]
                                 }  
                 
@@ -335,28 +347,48 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
                                 "max_tokens_to_sample": 10000, "temperature": 0.1}    
     elif model_id == 'cohere.command-text-v14':
         prompt_template = {"prompt": f"""{prompt} {context}\n
-                              {query}"""}
+                              {decoded_q_text}"""}
     elif model_id == 'amazon.titan-text-express-v1':
         prompt_template = {"inputText": f"""{prompt} 
                                             {context}\n
-                            {query}
+                            {decoded_q_text}
                             """}
     elif model_id in ['ai21.j2-ultra-v1', 'ai21.j2-mid-v1']:
         prompt_template = {
             "prompt": f"""{prompt}\n
-                            {query}
+                            {decoded_q_text}
                             """
         }
     elif 'llama2' in model_id:
         prompt_template = {
             "prompt": f"""[INST] <<SYS>>{prompt} <</SYS>>
                             context: {context}
-                            question: {query}[/INST]
+                            question: {decoded_q_text}[/INST]
                             """,
             "max_gen_len":800, "temperature":0.1, "top_p":0.1
         }
     return prompt_template
 
+
+def store_image_in_s3(event):
+    payload = json.loads(event['body'])
+    file_encoded_data = payload['content']
+    content_id = payload['id']
+    file_extension = extract_file_extension(file_encoded_data)
+    file_encoded_data = file_encoded_data[file_encoded_data.find(",") + 1:] 
+    file_content = base64.b64decode(file_encoded_data)
+    s3_client = boto3.client('s3')
+    s3_key = f"bedrock/data/{content_id}.{file_extension}"
+    s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
+    return success_response('Data stored successfully')
+    
+
+def extract_file_extension(base64_encoded_file):
+    if base64_encoded_file.find(';') > -1:
+        extension = base64_encoded_file.split(';')[0]
+        return extension[extension.find('/') + 1:]
+    # default to PNG if we are not able to extract extension or string is not bas64 encoded
+    return 'png'
 
 def handler(event, context):
     global region
@@ -364,44 +396,121 @@ def handler(event, context):
     LOG.info(
         "---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
     print(f'event - {event}')
-    
-    stage = event['requestContext']['stage']
-    api_id = event['requestContext']['apiId']
-    domain = f'{api_id}.execute-api.{region}.amazonaws.com'
-    websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=f'https://{domain}/{stage}')
 
-    connect_id = event['requestContext']['connectionId']
-    routeKey = event['requestContext']['routeKey']
+    if 'requestContext' in event:
+
+        stage = event['requestContext']['stage']
+        api_id = event['requestContext']['apiId']
+        domain = f'{api_id}.execute-api.{region}.amazonaws.com'
+        websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=f'https://{domain}/{stage}')
     
-    if routeKey != '$connect': 
-        if 'body' in event:
-            input_to_llm = json.loads(event['body'], strict=False)
-            query = input_to_llm['query']
-            behaviour = input_to_llm['behaviour']
-            model_id = input_to_llm['model_id']
-            query_data(query, behaviour, model_id, connect_id)
-    elif routeKey == '$connect':
-        if 'x-api-key' in event['queryStringParameters']:
-            headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }
-            auth = HTTPBasicAuth('x-api-key', event['queryStringParameters']['x-api-key']) 
-            response = requests.get(f'{rest_api_url}connect-tracker', headers=headers, auth=auth, verify=False)
-            if response.status_code != 200:
-                print(f'Response Error status_code: {response.status_code}, reason: {response.reason}')
-                return {'statusCode': f'{response.status_code}', 'body': f'Forbidden, {response.reason}' }
+        connect_id = event['requestContext']['connectionId']
+        routeKey = event['requestContext']['routeKey']
+        
+        if routeKey != '$connect': 
+            if 'body' in event:
+                input_to_llm = json.loads(event['body'], strict=False)
+                query = input_to_llm['query']
+                behaviour = input_to_llm['behaviour']
+                model_id = input_to_llm['model_id']
+                query_data(query, behaviour, model_id, connect_id)
+        elif routeKey == '$connect':
+            if 'x-api-key' in event['queryStringParameters']:
+                headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }
+                auth = HTTPBasicAuth('x-api-key', event['queryStringParameters']['x-api-key']) 
+                response = requests.get(f'{rest_api_url}connect-tracker', headers=headers, auth=auth, verify=False)
+                if response.status_code != 200:
+                    print(f'Response Error status_code: {response.status_code}, reason: {response.reason}')
+                    return {'statusCode': f'{response.status_code}', 'body': f'Forbidden, {response.reason}' }
+                else:
+                    return {'statusCode': '200', 'body': 'Bedrock says hello' }
             else:
-                return {'statusCode': '200', 'body': 'Bedrock says hello' }
-        else:
-            return {'statusCode': '403', 'body': 'Forbidden' }
-            
+                return {'statusCode': '403', 'body': 'Forbidden' }
+
+    elif 'httpMethod' in event:
+        api_map = {
+            'POST/rag/file_data': lambda x: store_image_in_s3(x)
+        }
+        http_method = event['httpMethod'] if 'httpMethod' in event else ''
+        api_path = http_method + event['resource']
+        try:
+            if api_path in api_map:
+                LOG.debug(f"method=handler , api_path={api_path}")
+                return respond(None, api_map[api_path](event))
+            else:
+                LOG.info(f"error=api_not_found , api={api_path}")
+                return respond(http_failure_response('api_not_supported'), None)
+        except Exception:
+            LOG.exception(f"error=error_processing_api, api={api_path}")
+            return respond(http_success_response('system_exception'), None)
+    
     return {'statusCode': '200', 'body': 'Bedrock says hello' }
 
-    
+
+def http_failure_response(error_message):
+    return {"success": False, "errorMessage": error_message, "statusCode": "400"}
+   
+def http_success_response(result):
+    return {"success": True, "result": result, "statusCode": "200"}
+
+# Hack
+class CustomJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            if float(obj).is_integer():
+                return int(float(obj))
+            else:
+                return float(obj)
+        return super(CustomJsonEncoder, self).default(obj)
+
+# JSON REST output builder method
+def respond(err, res=None):
+    return {
+        'statusCode': '400' if err else res['statusCode'],
+        'body': json.dumps(err) if err else json.dumps(res, cls=CustomJsonEncoder),
+        'headers': {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Credentials": "*"
+        },
+    }
 
 def failure_response(connect_id, error_message):
     global websocket_client
     err_msg = {"success": False, "errorMessage": error_message, "statusCode": "400"}
     websocket_send(connect_id, err_msg)
     
+
+def extract_query_image_values(query):
+    image_data = ''
+    user_query = ''
+    user_queries_data = json.loads(base64.b64decode(query))
+    for user_query_type in user_queries_data:
+        if user_query_type['type'] == 'text':
+            user_query = user_query_type['data']
+        elif user_query_type['type'] == 'image':
+            image_data = user_query_type['data'].decode('utf-8')
+    return user_query, image_data
+
+
+def claude3_prompt_builder_for_images_and_text(query, context, output):
+    prompt_content = []
+    user_queries_data = json.loads(base64.b64decode(query))
+    for user_query_type in user_queries_data:
+        if  user_query_type['type'] == 'text':
+            prompt_content.append({ "type": "text", "text": f"""{context}
+                                                                Here is the user's question <question>{user_query_type['data']}<question>
+                                                                {output}
+                                                        """})
+        elif user_query_type['type'] == 'image':
+            prompt_content.append({ "type": "image", "source": 
+                                       { "type": "base64", "media_type": "image/jpeg", "data": user_query_type['data'].decode('utf-8')}
+                                })
+    
+    return prompt_content
+
 
 def success_response(connect_id, result):
     success_msg = {"success": True, "result": result, "statusCode": "200"}

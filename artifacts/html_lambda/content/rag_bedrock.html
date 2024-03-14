@@ -180,6 +180,112 @@
       background: linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important
     }
 
+    .screen_divider {
+      max-width: 400px;
+      width: 100%;
+      padding: 30px;
+      border-radius: 30px;
+    }
+
+    .image_viewer {
+      max-width: 400px;
+      width: 100%;
+      background: #fff;
+      padding: 30px;
+      border-radius: 30px;
+
+      .img-area {
+        position: relative;
+        width: 100%;
+        height: 350px;
+        background: grey;
+        /* margin-bottom: 30px; */
+        border-radius: 15px;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      .img-area .icon {
+        font-size: 100px;
+      }
+
+      .img-area h3 {
+        font-size: 20px;
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+
+      .img-area p {
+        color: #999;
+      }
+
+      .img-area p span {
+        font-weight: 600;
+      }
+
+      .img-area img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        z-index: 100;
+      }
+
+      .img-area::before {
+        content: attr(data-img);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, .5);
+        color: #fff;
+        font-weight: 500;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        opacity: 0;
+        transition: all .3s ease;
+        z-index: 200;
+      }
+
+      .img-area.active:hover::before {
+        opacity: 1;
+      }
+
+      .select-image {
+        display: block;
+        width: 100%;
+        padding: 5px 0;
+        border-radius: 15px;
+        /* color: #fff; */
+        font-weight: 500;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .remove-image {
+        display: block;
+        width: 100%;
+        padding: 5px 0;
+        border-radius: 15px;
+        /* color: #fff; */
+        font-weight: 500;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+    }
+
+
     .conversations .mask-custom {
       background: rgba(24, 24, 16, .2) !important;
       border-radius: 2em;
@@ -187,150 +293,6 @@
       border: 2px solid rgba(255, 255, 255, 0.05) !important;
       background-clip: padding-box !important;
       box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
-    }
-
-
-
-    /* Stepper css */
-    .md-stepper-horizontal {
-      display: table;
-      width: 100%;
-      margin: 0 auto;
-      background-color: #FFFFFF;
-      box-shadow: 0 3px 8px -6px rgba(0, 0, 0, .50);
-    }
-
-    .md-stepper-horizontal .md-step {
-      display: table-cell;
-      position: relative;
-      padding: 24px;
-    }
-
-    .md-stepper-horizontal .md-step:hover,
-    .md-stepper-horizontal .md-step:active {
-      background-color: rgba(0, 0, 0, 0.04);
-    }
-
-    .md-stepper-horizontal .md-step:active {
-      border-radius: 15% / 75%;
-    }
-
-    .md-stepper-horizontal .md-step:first-child:active {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-    }
-
-    .md-stepper-horizontal .md-step:last-child:active {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    .md-stepper-horizontal .md-step:hover .md-step-circle {
-      background-color: #757575;
-    }
-
-    .md-stepper-horizontal .md-step:first-child .md-step-bar-left,
-    .md-stepper-horizontal .md-step:last-child .md-step-bar-right {
-      display: none;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-circle {
-      width: 30px;
-      height: 30px;
-      margin: 0 auto;
-      background-color: #999999;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 30px;
-      font-size: 16px;
-      font-weight: 600;
-      color: #FFFFFF;
-    }
-
-    .md-stepper-horizontal.green .md-step.active .md-step-circle {
-      background-color: #00AE4D;
-    }
-
-    .md-stepper-horizontal.orange .md-step.active .md-step-circle {
-      background-color: #F96302;
-    }
-
-    .md-stepper-horizontal .md-step.active .md-step-circle {
-      background-color: rgb(33, 150, 243);
-    }
-
-    .md-stepper-horizontal .md-step.done .md-step-circle:before {
-      font-family: 'FontAwesome';
-      font-weight: 100;
-      content: "\f00c";
-    }
-
-    .md-stepper-horizontal .md-step.done .md-step-circle *,
-    .md-stepper-horizontal .md-step.editable .md-step-circle * {
-      display: none;
-    }
-
-    .md-stepper-horizontal .md-step.editable .md-step-circle {
-      -moz-transform: scaleX(-1);
-      -o-transform: scaleX(-1);
-      -webkit-transform: scaleX(-1);
-      transform: scaleX(-1);
-    }
-
-    .md-stepper-horizontal .md-step.editable .md-step-circle:before {
-      font-family: 'FontAwesome';
-      font-weight: 100;
-      content: "\f040";
-    }
-
-    .md-stepper-horizontal .md-step .md-step-title {
-      margin-top: 16px;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-title,
-    .md-stepper-horizontal .md-step .md-step-optional {
-      text-align: center;
-      color: rgba(0, 0, 0, .26);
-    }
-
-    .md-stepper-horizontal .md-step.active .md-step-title {
-      font-weight: 600;
-      color: rgba(0, 0, 0, .87);
-    }
-
-    .md-stepper-horizontal .md-step.active.done .md-step-title,
-    .md-stepper-horizontal .md-step.active.editable .md-step-title {
-      font-weight: 600;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-optional {
-      font-size: 12px;
-    }
-
-    .md-stepper-horizontal .md-step.active .md-step-optional {
-      color: rgba(0, 0, 0, .54);
-    }
-
-    .md-stepper-horizontal .md-step .md-step-bar-left,
-    .md-stepper-horizontal .md-step .md-step-bar-right {
-      position: absolute;
-      top: 36px;
-      height: 1px;
-      border-top: 1px solid #DDDDDD;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-bar-right {
-      right: 0;
-      left: 50%;
-      margin-left: 20px;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-bar-left {
-      left: 0;
-      right: 50%;
-      margin-right: 20px;
     }
   </style>
 
@@ -499,109 +461,132 @@
         <div class="alert alert-primary" role="alert">
           Once you've indexed documents, you can query your data here
         </div>
-        <div style="padding-bottom: 10px;"></div>
-        <div style="padding-left: 10px;">
-          <!-- <textarea id="query" style="width: 34vw;" name="response" rows="5" cols="20"
-        placeholder="Query your data here"></textarea>   -->
 
-          <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-            <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 3"
-              style="width: 40px; height: 100%;">
-            <textarea id="query" type="text" class="form-control form-control-lg"
-              placeholder="Query your data here"></textarea>
-          </div>
+        <div class='row'>
+          <div class="col-lg-12" id="query_viewer_details">
+            <div class="row">
+              <div class="dropdown" style="padding-left: 20px; padding-bottom: 10px;">
+                <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  Select Model on Amazon Bedrock
+                </button>
+                <ul class="dropdown-menu">
+                  <!-- Anthropic -->
+                  <li><a class="dropdown-item"
+                      onclick="model_selected('anthropic.claude-3-haiku-20240307-v1:0')">Anthropic
+                      Claude-3 Haiku (New)</a></li>
+                  <li><a class="dropdown-item"
+                      onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic
+                      Claude-3 Sonnet (New)</a></li>
+                  <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude
+                      V2.1</a>
+                  </li>
+                  <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a>
+                  </li>
+                  <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude
+                      Instant</a></li>
+                  <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B
+                      (Experimental)</a></li>
+                  <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B
+                      (Experimental)</a></li>
+                </ul>
+                <span id="set_model"></span>
+                <div class="d-flex justify-content-center" id="custom-spinner">
+                  <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+            <div class="row" style="padding-left: 20px;">
+              <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 3"
+                  style="width: 40px; height: 100%;">
+                <textarea id="query" type="text" class="form-control form-control-lg"
+                  placeholder="Query your data here"></textarea>
+              </div>
+            </div>
+            <div class="row">
+              <div id="query-button" style="padding-left: 20px;" data-toggle="tooltip"
+                title="Select an Amazon Bedrock Model to continue" data-placement="left">
+                <button type="button" id="english" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('english')">English</button>
+                <button type="button" id="hindi" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('hindi')">Hindi</button>
+                <button type="button" id="thai" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('thai')">Thai</button>
+                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('spanish')">Spanish</button>
+                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('french')">French</button>
+                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('german')">German</button>
+                <button type="button" id="bengali" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('bengali')">Bengali</button>
+                <button type="button" id="tamil" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('tamil')">Tamil</button>
+
+                <button type="button" id="sentiment" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('sentiment')">Sentiment Analysis</button>
+                <button type="button" id="pii" class="btn btn-info assistant btn-sm" onclick="javascript:query('pii')">Identify
+                  PII</button>
+                <button type="button" id="redact" class="btn btn-info btn-sm assistant"
+                  onclick="javascript:query('redact')">Redact
+                  PII</button>
+                <button type="button" id="clear" class="btn btn-info btn-sm" onclick="clear_response()">Clear Output</button>
+              </div>
+            </div>
+
+            <div class="row">
+              <div style="padding-left: 10px;">
+
+                <table>
+                  <tr>
+                    <td>
+                      <div>
+                        <!-- <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea> -->
+                        <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                          <textarea id="query-response" type="text" cols="500" rows="9"
+                            class="form-control form-control-lg" placeholder="Query response here"></textarea>
+                        </div>
 
 
-
-        </div>
-        <div style="padding-bottom: 10px;"></div>
-
-        <div class="dropdown" style="padding-left: 10px; padding-bottom: 10px;">
-          <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            Select Model on Amazon Bedrock
-          </button>
-          <ul class="dropdown-menu">
-            <!-- AI21 not supported for Streaming ingestion-->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li> -->
-            <!-- Amazon express is not yet available-->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li> -->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li> -->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
-            <!-- Anthropic -->
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-haiku-20240307-v1:0')">Anthropic Claude-3 Haiku (New)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic Claude-3 Sonnet (New)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude V2.1</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude Instant</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B (Experimental)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B (Experimental)</a></li>
-
-            <!-- Cohere not supported for Streaming ingestion -->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li> -->
-          </ul>
-
-          <span id="set_model"></span>
-          <div class="d-flex justify-content-center" id="custom-spinner">
-            <div class="spinner-border" role="status">
-              <span class="sr-only">Loading...</span>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
             </div>
           </div>
+          <div class="col" id="image_viewer_details">
+            <!-- Image Viewer component -->
+            <div id="image_viewer_container">
 
-        </div>
-
-        <div id="query-button" style="padding-left: 10px;" data-toggle="tooltip"
-          title="Select an Amazon Bedrock Model to continue" data-placement="left">
-          <button type="button" id="english" class="btn btn-info assistant"
-            onclick="javascript:query('english')">English</button>
-          <button type="button" id="hindi" class="btn btn-info assistant"
-            onclick="javascript:query('hindi')">Hindi</button>
-          <button type="button" id="thai" class="btn btn-info assistant"
-            onclick="javascript:query('thai')">Thai</button>
-          <button type="button" id="spanish" class="btn btn-info assistant"
-            onclick="javascript:query('spanish')">Spanish</button>
-          <button type="button" id="spanish" class="btn btn-info assistant"
-            onclick="javascript:query('french')">French</button>
-          <button type="button" id="spanish" class="btn btn-info assistant"
-            onclick="javascript:query('german')">German</button>
-          <button type="button" id="bengali" class="btn btn-info assistant"
-            onclick="javascript:query('bengali')">Bengali</button>
-          <button type="button" id="tamil" class="btn btn-info assistant"
-            onclick="javascript:query('tamil')">Tamil</button>
-
-          <button type="button" id="sentiment" class="btn btn-info assistant"
-            onclick="javascript:query('sentiment')">Sentiment Analysis</button>
-          <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">Identify
-            PII</button>
-          <button type="button" id="redact" class="btn btn-info assistant" onclick="javascript:query('redact')">Redact
-            PII</button>
-          <button type="button" id="clear" class="btn btn-info" onclick="clear_response()">Clear Data</button>
-        </div>
-        <div style="padding-bottom: 30px;"></div>
-
-        <div style="padding-left: 10px;">
-
-          <table>
-            <tr>
-              <td>
-                <div>
-                  <!-- <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea> -->
-                  <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-                    <textarea id="query-response" type="text" cols="500" rows="9" class="form-control form-control-lg"
-                      placeholder="Query response here"></textarea>
-                  </div>
-
-
+              <div class="image_viewer">
+                <input type="file" id="file" accept="image/*" hidden>
+                <div class="img-area" data-img="">
+                  <i class='bx bxs-cloud-upload icon'></i>
+                  <h3>Upload Image</h3>
+                  <p>Image size must be less than <span>2MB</span></p>
                 </div>
-              </td>
-            </tr>
-          </table>
+                <div class="row"></div>
+                <div class="row">
+                  <div class="col">
+                    <button class="select-image btn-primary">Select Image</button>
+                  </div>
+                  <div class="col">
+                    <button class="remove-image btn-info">Remove Image</button>
+                  </div>
+                </div>
+                
+                
+              </div>
+
+            </div>
+            <!-- Image Viewer component end -->
+          </div>
         </div>
-
-
-
-
       </div>
 
       <div class="tab-pane fade" id="conversations-div" role="tabpanel" aria-labelledby="conversations-tab"
@@ -689,9 +674,54 @@
         $("button.assistant").prop('disabled', true)
         $('[data-toggle="tooltip"]').tooltip();
         $('[id^=agent-]').hide()
+
+        // Image upload code start
+        $('#image_viewer_details').hide();
+        $('#image_viewer_container').hide();
+        const selectImage = document.querySelector('.select-image');
+        const removeImage = document.querySelector('.remove-image');
+
+        const inputFile = document.querySelector('#file');
+        const imgArea = document.querySelector('.img-area');
+
+        selectImage.addEventListener('click', function () {
+          inputFile.click();
+        })
+
+        removeImage.addEventListener('click', function () {
+          const allImg = imgArea.querySelectorAll('img');
+          allImg.forEach(item => item.remove());
+          base64Image = ''
+        })
+
+
+
+        inputFile.addEventListener('change', function () {
+          const image = this.files[0]
+          if (image.size < 2000000) {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const allImg = imgArea.querySelectorAll('img');
+              allImg.forEach(item => item.remove());
+              const imgUrl = reader.result;
+              base64Image = imgUrl
+              const img = document.createElement('img');
+              img.src = imgUrl;
+              imgArea.appendChild(img);
+              imgArea.classList.add('active');
+              imgArea.dataset.img = image.name;
+            }
+            reader.readAsDataURL(image);
+          } else {
+            alertbuilder("Image size should be less than 2MB", false);
+          }
+        })
+
+        // Image upload code end
       });
 
       var model_id = null;
+      var base64Image = '';
       var ws = null;
       var chat_id = null;
       var awsData = {
@@ -701,7 +731,7 @@
         websocketUrl: '<websocketUrl>',
         isRagEnabled: '<isRagEnabled>'
       };
-      
+
 
       function setApiKey() {
         api_key = $('#api_key').val()
@@ -713,14 +743,14 @@
           });
           $('#main-bedrock-content').show();
 
-          if(awsData.isRagEnabled == 'yes') {
-              $("#index-tab").click()
+          if (awsData.isRagEnabled == 'yes') {
+            $("#index-tab").click()
           } else {
-              $('#index-tab').hide();
-              $('#index-div').hide();
-              $("#query-tab").click()
-              
-              
+            $('#index-tab').hide();
+            $('#index-div').hide();
+            $("#query-tab").click()
+
+
           }
         } else {
           alertbuilder('Please add an API Key to proceed', false)
@@ -811,6 +841,23 @@
 
       function model_selected(val) {
         $('#set_model').text('Model selected : ' + val)
+
+        if (val.startsWith('anthropic.claude-3-')) {
+          // Enable image uploads
+          $('#image_viewer_container').show();
+          $('#image_viewer_details').show();
+          $('#image_viewer_details').addClass('col-lg-3')
+          $('#query_viewer_details').addClass('col-lg-9')
+          $('#query_viewer_details').removeClass('col-lg-12')
+
+        } else {
+          $('#image_viewer_container').hide();
+          $('#image_viewer_details').hide();
+          $('#image_viewer_details').removeClass('col-lg-3')
+          $('#query_viewer_details').removeClass('col-lg-9')
+          $('#query_viewer_details').addClass('col-lg-12')
+        }
+
         model_id = val
         alertbuilder('Model Selected: ' + val, true)
         $("button.assistant").prop('disabled', false)
@@ -863,8 +910,20 @@
 
         document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + '\n' + assistant_type.toUpperCase() + ': \n'
 
+        user_query = []
+        if (model_id.startsWith('anthropic.claude-3-')) {
+          
+          if (base64Image != '') {
+            user_query.push({'type': 'image', 'data': base64Image.split("base64,")[1]})
+          }
+          
+        }
+
         query_str = " " + $('#query').val()
-        data = '{"query": "' + query_str + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
+        user_query.push({'type': 'text', 'data': query_str})   
+        user_query.sub
+        data = '{"query": "' + btoa(JSON.stringify(user_query)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
+        
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
           if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
@@ -941,7 +1000,7 @@
         return (S4() + S4() + "-" + S4());
       }
 
-      chat_messages = [{'Assistant': 'Hello How may I help you today'}]
+      chat_messages = [{ 'Assistant': 'Hello How may I help you today' }]
 
       assitant_messages = []
 
@@ -959,11 +1018,11 @@
         query_str = " " + $('#chat-text').val()
 
         if (assitant_messages.length > 0) {
-          chat_messages.push({'Assistant': assitant_messages.join(' ')})
+          chat_messages.push({ 'Assistant': assitant_messages.join(' ') })
           assitant_messages = []
         }
 
-        chat_messages.push({'Human': query_str})
+        chat_messages.push({ 'Human': query_str })
 
         data = '{"query": "' + btoa(JSON.stringify(chat_messages)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
 
@@ -1066,10 +1125,10 @@
         }
 
       }
-      
+
       function agentworkflow(div_id) {
         $('[id^=agent-]').hide()
-        $('#'+div_id).show()
+        $('#' + div_id).show()
       }
     </script>
 
