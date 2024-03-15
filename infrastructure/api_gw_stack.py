@@ -2,7 +2,8 @@ from aws_cdk import (
     Stack,
     aws_iam as _iam,
     aws_lambda as _lambda,
-    aws_ecr as _ecr 
+    aws_ecr as _ecr, 
+    aws_s3 as _s3
 )
 
 import aws_cdk as _cdk
@@ -37,6 +38,7 @@ class ApiGw_Stack(Stack):
         print(f'LLM_Model_Id={llm_model_id}')
         print(f'Secret Key={secret_api_key}')
         
+        bucket_name = f'{env_params["s3_images_data"]}-{account_id}-{region}'
         sagemaker_endpoint_name=env_params['sagemaker_endpoint']
         if 'llama-2-7b' in llm_model_id:
             sagemaker_endpoint_name=env_params['llama2_7b_sagemaker_endpoint']
@@ -81,6 +83,16 @@ class ApiGw_Stack(Stack):
         )
 
         if 'Amazon Bedrock' in llm_model_id:
+
+            # Lets create an S3 bucket to store Images and also an API call
+                    # create s3 bucket to store ocr related objects
+            self.images_bucket = _s3.Bucket(self,
+                                        id=env_params["s3_images_data"],
+                                        bucket_name=bucket_name,
+                                        auto_delete_objects=True,
+                                        removal_policy=_cdk.RemovalPolicy.DESTROY,
+                                        versioned=False)
+
             secure_key = _cdk.aws_apigateway.ApiKey(self, f"rag-api-key-{env_name}", api_key_name=secret_api_key, enabled=True,
                                                     value=secret_api_key,
                                                     description="Secure access to API's")
@@ -137,6 +149,7 @@ class ApiGw_Stack(Stack):
             
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
+                                                        
             
             print('--- Amazon Bedrock Deployment ---')
 
@@ -158,6 +171,7 @@ class ApiGw_Stack(Stack):
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
             
             lambda_function = bedrock_indexing_lambda_function
+
             bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
                                   function_name=env_params['bedrock_querying_function_name'],
                                   code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/query_lambda/')),
@@ -170,7 +184,8 @@ class ApiGw_Stack(Stack):
                                                 'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
                                                 'REGION': region,
                                                 'REST_ENDPOINT_URL': rest_endpoint_url,
-                                                'IS_RAG_ENABLED': is_opensearch
+                                                'IS_RAG_ENABLED': is_opensearch,
+                                                'S3_BUCKET_NAME': bucket_name
                                   },
                                   memory_size=2048,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
@@ -190,7 +205,7 @@ class ApiGw_Stack(Stack):
                     "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
                     "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
                     "bedrock:GetFoundationModelAvailability", "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
-                    "iam:ListUsers", "iam:ListRoles"],
+                    "iam:ListUsers", "iam:ListRoles", "s3:*", "textract:*"],
                 resources=["*"],
             )
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
@@ -199,6 +214,9 @@ class ApiGw_Stack(Stack):
 
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
             bedrock_indexing_lambda_function, proxy=True, allow_test_invoke=True)
+
+            bedrock_query_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
+            bedrock_querying_lambda_function, proxy=True, allow_test_invoke=True)
 
             apigw_role = _iam.Role(self, f'bedrock-lambda-invoke-{env_name}', assumed_by=_iam.ServicePrincipal('apigateway.amazonaws.com'))
 
@@ -325,6 +343,7 @@ class ApiGw_Stack(Stack):
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
+        file_data_api = rag_llm_api.add_resource("file_data")
         connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
         
         if llm_model_id == 'Amazon Bedrock':
@@ -350,6 +369,15 @@ class ApiGw_Stack(Stack):
                 method_responses=method_responses,
                 api_key_required=True
             )
+
+            file_data_api.add_method(
+                "POST",
+                bedrock_query_lambda_integration,
+                operation_name="Store documents",
+                method_responses=method_responses,
+                api_key_required=True
+            )
+            self.add_cors_options(file_data_api)
 
             connect_tracker_api.add_method(
                 "GET",

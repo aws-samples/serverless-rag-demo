@@ -15,6 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
     integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
     crossorigin="anonymous"></script>
+  <link rel="shortcut icon" href="#" />
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js"
     integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/"
     crossorigin="anonymous"></script>
@@ -180,6 +181,114 @@
       background: linear-gradient(to bottom right, rgba(252, 203, 144, 1), rgba(213, 126, 235, 1)) !important
     }
 
+    .screen_divider {
+      max-width: 400px;
+      width: 100%;
+      padding: 30px;
+      border-radius: 30px;
+    }
+
+    .image_viewer {
+      max-width: 50vw;
+      width: 100%;
+      background: #fff;
+      padding: 5px;
+      border-radius: 30px;
+
+      .img-area {
+        position: relative;
+        width: 100%;
+        height: 70vh;
+        background: #c8effb;
+        /* margin-bottom: 30px; */
+        border-radius: 15px;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      .img-area .icon {
+        font-size: 100px;
+      }
+
+      .img-area h3 {
+        font-size: 20px;
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+
+      .img-area p {
+        color: #999;
+      }
+
+      .img-area p span {
+        font-weight: 600;
+      }
+
+      .img-area object {
+        position: relative;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        z-index: 100;
+      }
+
+      .img-area::before {
+        /* content: attr(data-img); */
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* background: rgba(0, 0, 0, .5); */
+        color: #fff;
+        font-weight: 500;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        /* opacity: 0; */
+        transition: all .3s ease;
+        z-index: 200;
+      }
+
+      .img-area.active:hover::before {
+        opacity: 50;
+      }
+
+      .select-image {
+        display: block;
+        width: 100%;
+        padding: 5px 0;
+        margin-top: 5px;
+        border-radius: 15px;
+        /* color: #fff; */
+        font-weight: 500;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      .remove-image {
+        display: block;
+        width: 100%;
+        padding: 5px 0;
+        margin-top: 5px;
+        border-radius: 15px;
+        /* color: #fff; */
+        font-weight: 500;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+    }
+
+
     .conversations .mask-custom {
       background: rgba(24, 24, 16, .2) !important;
       border-radius: 2em;
@@ -187,150 +296,6 @@
       border: 2px solid rgba(255, 255, 255, 0.05) !important;
       background-clip: padding-box !important;
       box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03) !important;
-    }
-
-
-
-    /* Stepper css */
-    .md-stepper-horizontal {
-      display: table;
-      width: 100%;
-      margin: 0 auto;
-      background-color: #FFFFFF;
-      box-shadow: 0 3px 8px -6px rgba(0, 0, 0, .50);
-    }
-
-    .md-stepper-horizontal .md-step {
-      display: table-cell;
-      position: relative;
-      padding: 24px;
-    }
-
-    .md-stepper-horizontal .md-step:hover,
-    .md-stepper-horizontal .md-step:active {
-      background-color: rgba(0, 0, 0, 0.04);
-    }
-
-    .md-stepper-horizontal .md-step:active {
-      border-radius: 15% / 75%;
-    }
-
-    .md-stepper-horizontal .md-step:first-child:active {
-      border-top-left-radius: 0;
-      border-bottom-left-radius: 0;
-    }
-
-    .md-stepper-horizontal .md-step:last-child:active {
-      border-top-right-radius: 0;
-      border-bottom-right-radius: 0;
-    }
-
-    .md-stepper-horizontal .md-step:hover .md-step-circle {
-      background-color: #757575;
-    }
-
-    .md-stepper-horizontal .md-step:first-child .md-step-bar-left,
-    .md-stepper-horizontal .md-step:last-child .md-step-bar-right {
-      display: none;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-circle {
-      width: 30px;
-      height: 30px;
-      margin: 0 auto;
-      background-color: #999999;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 30px;
-      font-size: 16px;
-      font-weight: 600;
-      color: #FFFFFF;
-    }
-
-    .md-stepper-horizontal.green .md-step.active .md-step-circle {
-      background-color: #00AE4D;
-    }
-
-    .md-stepper-horizontal.orange .md-step.active .md-step-circle {
-      background-color: #F96302;
-    }
-
-    .md-stepper-horizontal .md-step.active .md-step-circle {
-      background-color: rgb(33, 150, 243);
-    }
-
-    .md-stepper-horizontal .md-step.done .md-step-circle:before {
-      font-family: 'FontAwesome';
-      font-weight: 100;
-      content: "\f00c";
-    }
-
-    .md-stepper-horizontal .md-step.done .md-step-circle *,
-    .md-stepper-horizontal .md-step.editable .md-step-circle * {
-      display: none;
-    }
-
-    .md-stepper-horizontal .md-step.editable .md-step-circle {
-      -moz-transform: scaleX(-1);
-      -o-transform: scaleX(-1);
-      -webkit-transform: scaleX(-1);
-      transform: scaleX(-1);
-    }
-
-    .md-stepper-horizontal .md-step.editable .md-step-circle:before {
-      font-family: 'FontAwesome';
-      font-weight: 100;
-      content: "\f040";
-    }
-
-    .md-stepper-horizontal .md-step .md-step-title {
-      margin-top: 16px;
-      font-size: 16px;
-      font-weight: 600;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-title,
-    .md-stepper-horizontal .md-step .md-step-optional {
-      text-align: center;
-      color: rgba(0, 0, 0, .26);
-    }
-
-    .md-stepper-horizontal .md-step.active .md-step-title {
-      font-weight: 600;
-      color: rgba(0, 0, 0, .87);
-    }
-
-    .md-stepper-horizontal .md-step.active.done .md-step-title,
-    .md-stepper-horizontal .md-step.active.editable .md-step-title {
-      font-weight: 600;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-optional {
-      font-size: 12px;
-    }
-
-    .md-stepper-horizontal .md-step.active .md-step-optional {
-      color: rgba(0, 0, 0, .54);
-    }
-
-    .md-stepper-horizontal .md-step .md-step-bar-left,
-    .md-stepper-horizontal .md-step .md-step-bar-right {
-      position: absolute;
-      top: 36px;
-      height: 1px;
-      border-top: 1px solid #DDDDDD;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-bar-right {
-      right: 0;
-      left: 50%;
-      margin-left: 20px;
-    }
-
-    .md-stepper-horizontal .md-step .md-step-bar-left {
-      left: 0;
-      right: 50%;
-      margin-right: 20px;
     }
   </style>
 
@@ -386,7 +351,7 @@
     <ul class="nav nav-tabs" id="myTab" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button"
-          role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
+          role="tab" aria-controls="Index" aria-selected="true" data-toggle="tooltip">Index Documents</button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-div" type="button"
@@ -495,113 +460,140 @@
       </div>
 
       <div class="tab-pane fade" id="query-div" role="tabpanel" aria-labelledby="query-tab">
-        <div style="padding-bottom: 10px;"></div>
-        <div class="alert alert-primary" role="alert">
-          Once you've indexed documents, you can query your data here
-        </div>
-        <div style="padding-bottom: 10px;"></div>
-        <div style="padding-left: 10px;">
-          <!-- <textarea id="query" style="width: 34vw;" name="response" rows="5" cols="20"
-        placeholder="Query your data here"></textarea>   -->
+        <div class='row'>
+          <div class="col-lg-12" id="query_viewer_details">
+            <div class="row">
+              <div style="padding-bottom: 10px;"></div>
+              <div class="alert alert-primary" role="alert">
+                  Once you've indexed documents, you can query your data here
+              </div>
+              <div class="dropdown" style="padding-left: 20px; padding-bottom: 10px;">
+                <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                  aria-expanded="false">
+                  Select Model on Amazon Bedrock
+                </button>
+                <ul class="dropdown-menu">
+                  <!-- Anthropic -->
+                  <li><a class="dropdown-item"
+                      onclick="model_selected('anthropic.claude-3-haiku-20240307-v1:0')">Anthropic
+                      Claude-3 Haiku (New)</a></li>
+                  <li><a class="dropdown-item"
+                      onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic
+                      Claude-3 Sonnet (New)</a></li>
+                  <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude
+                      V2.1</a>
+                  </li>
+                  <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a>
+                  </li>
+                  <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude
+                      Instant</a></li>
+                  <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B
+                      (Experimental)</a></li>
+                  <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B
+                      (Experimental)</a></li>
+                </ul>
+                <span id="set_model"></span>
+                <div class="d-flex justify-content-center" id="custom-spinner">
+                  <div class="spinner-border" role="status">
+                    <span class="sr-only">Loading...</span>
+                  </div>
+                </div>
 
-          <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-            <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 3"
-              style="width: 40px; height: 100%;">
-            <textarea id="query" type="text" class="form-control form-control-lg"
-              placeholder="Query your data here"></textarea>
-          </div>
+              </div>
+            </div>
+            <div class="row" style="padding-left: 20px;">
+              <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 3"
+                  style="width: 40px; height: 100%;">
+                <textarea id="query" type="text" class="form-control form-control-lg"
+                  placeholder="Query your data here"></textarea>
+              </div>
+            </div>
+            <div class="row">
+              <div id="query-button" style="padding-left: 20px;" data-toggle="tooltip"
+                title="Select an Amazon Bedrock Model to continue" data-placement="left">
+                <button type="button" id="english" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('english')">English</button>
+                <button type="button" id="hindi" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('hindi')">Hindi</button>
+                <button type="button" id="thai" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('thai')">Thai</button>
+                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('spanish')">Spanish</button>
+                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('french')">French</button>
+                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('german')">German</button>
+                <button type="button" id="bengali" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('bengali')">Bengali</button>
+                <button type="button" id="tamil" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('tamil')">Tamil</button>
+                <button type="button" id="tamil" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('arabic')">Arabic</button>
+                <button type="button" id="sentiment" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('sentiment')">Sentiment Analysis</button>
+                <button type="button" id="pii" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('pii')">Identify
+                  PII</button>
+                <button type="button" id="redact" class="btn btn-info btn-sm assistant"
+                  onclick="javascript:query('redact')">Redact
+                  PII</button>
+                <button type="button" id="clear" class="btn btn-info btn-sm" onclick="clear_response()">Clear
+                  Output</button>
+              </div>
+            </div>
+
+            <div class="row">
+              <div style="padding-left: 10px;">
+
+                <table>
+                  <tr>
+                    <td>
+                      <div>
+                        <!-- <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea> -->
+                        <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                          <textarea id="query-response" type="text" cols="500" rows="9"
+                            class="form-control form-control-lg" placeholder="Query response here"></textarea>
+                        </div>
 
 
-
-        </div>
-        <div style="padding-bottom: 10px;"></div>
-
-        <div class="dropdown" style="padding-left: 10px; padding-bottom: 10px;">
-          <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-            aria-expanded="false">
-            Select Model on Amazon Bedrock
-          </button>
-          <ul class="dropdown-menu">
-            <!-- AI21 not supported for Streaming ingestion-->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('ai21.j2-mid-v1')">AI21 Labs Jurassic-2 Mid</a></li>
-          <li><a class="dropdown-item" onclick="model_selected('ai21.j2-ultra-v1')">AI21 Labs Jurassic-2 Ultra</a></li> -->
-            <!-- Amazon express is not yet available-->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-lite-v1')"> AmazonTitan Text G1 - Lite</a></li> -->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-express-v1')">AmazonTitan Text G1 - Express</a></li> -->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('amazon.titan-text-agile-v1')">Amazon Titan Text G1 - Agile</a></li> -->
-            <!-- Anthropic -->
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-haiku-20240307-v1:0')">Anthropic Claude-3 Haiku (New)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-3-sonnet-20240229-v1:0')">Anthropic Claude-3 Sonnet (New)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2:1')">Anthropic Claude V2.1</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-v2')">Anthropic Claude V2</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('anthropic.claude-instant-v1')">Anthropic Claude Instant</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-13b-chat-v1')">Meta Llama2-13B (Experimental)</a></li>
-            <li><a class="dropdown-item" onclick="model_selected('meta.llama2-70b-chat-v1')">Meta Llama2-70B (Experimental)</a></li>
-
-            <!-- Cohere not supported for Streaming ingestion -->
-            <!-- <li><a class="dropdown-item" onclick="model_selected('cohere.command-text-v14')">Cohere	Command</a></li> -->
-          </ul>
-
-          <span id="set_model"></span>
-          <div class="d-flex justify-content-center" id="custom-spinner">
-            <div class="spinner-border" role="status">
-              <span class="sr-only">Loading...</span>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
             </div>
           </div>
+          <div class="col" id="image_viewer_details">
+            <!-- Image Viewer component -->
+            <div id="image_viewer_container">
 
-        </div>
-
-        <div id="query-button" style="padding-left: 10px;" data-toggle="tooltip"
-          title="Select an Amazon Bedrock Model to continue" data-placement="left">
-          <button type="button" id="english" class="btn btn-info assistant"
-            onclick="javascript:query('english')">English</button>
-          <button type="button" id="hindi" class="btn btn-info assistant"
-            onclick="javascript:query('hindi')">Hindi</button>
-          <button type="button" id="thai" class="btn btn-info assistant"
-            onclick="javascript:query('thai')">Thai</button>
-          <button type="button" id="spanish" class="btn btn-info assistant"
-            onclick="javascript:query('spanish')">Spanish</button>
-          <button type="button" id="spanish" class="btn btn-info assistant"
-            onclick="javascript:query('french')">French</button>
-          <button type="button" id="spanish" class="btn btn-info assistant"
-            onclick="javascript:query('german')">German</button>
-          <button type="button" id="bengali" class="btn btn-info assistant"
-            onclick="javascript:query('bengali')">Bengali</button>
-          <button type="button" id="tamil" class="btn btn-info assistant"
-            onclick="javascript:query('tamil')">Tamil</button>
-
-          <button type="button" id="sentiment" class="btn btn-info assistant"
-            onclick="javascript:query('sentiment')">Sentiment Analysis</button>
-          <button type="button" id="pii" class="btn btn-info assistant" onclick="javascript:query('pii')">Identify
-            PII</button>
-          <button type="button" id="redact" class="btn btn-info assistant" onclick="javascript:query('redact')">Redact
-            PII</button>
-          <button type="button" id="clear" class="btn btn-info" onclick="clear_response()">Clear Data</button>
-        </div>
-        <div style="padding-bottom: 30px;"></div>
-
-        <div style="padding-left: 10px;">
-
-          <table>
-            <tr>
-              <td>
-                <div>
-                  <!-- <textarea id="query-response" name="response" rows="10" cols="100" placeholder="query response" readonly=""></textarea> -->
-                  <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-                    <textarea id="query-response" type="text" cols="500" rows="9" class="form-control form-control-lg"
-                      placeholder="Query response here"></textarea>
+              <div class="image_viewer">
+                <input type="file" id="file" accept="png, .jpg, .txt, .json, .csv, .pdf" hidden multiple>
+                <div class="img-area" data-img="">
+                  <div id="image_guidance">
+                       <i class='bx bxs-cloud-upload icon'></i>
+                       <h3>Upload File png/jpg/txt/json/pdf</h3>
+                       <p>Image size must be less than <span>2MB</span></p>
                   </div>
-
-
                 </div>
-              </td>
-            </tr>
-          </table>
+                <div class="row"></div>
+                <div class="row">
+                  <div class="col">
+                    <button class="select-image btn-primary btn-sm">Select File</button>
+                  </div>
+                  <div class="col">
+                    <button class="remove-image btn-warning btn-sm">Remove File</button>
+                  </div>
+                </div>
+
+
+              </div>
+
+            </div>
+            <!-- Image Viewer component end -->
+          </div>
         </div>
-
-
-
-
       </div>
 
       <div class="tab-pane fade" id="conversations-div" role="tabpanel" aria-labelledby="conversations-tab"
@@ -685,13 +677,78 @@
         $('#apikey_modal').show()
         $('#custom-spinner').css('visibility', 'hidden');
         $('#index-spinner').css('visibility', 'hidden');
+        $('#index-tab').prop('disabled', true);
+        $('#index-tab').prop('title', 'Enable Amazon Opensearch serverless to index documents for RAG');
+        $('#index-div').css('visibility', 'hidden');
         document.getElementById("model-name").innerHTML = awsData.htmlheader + vector_text
         $("button.assistant").prop('disabled', true)
         $('[data-toggle="tooltip"]').tooltip();
         $('[id^=agent-]').hide()
+
+        // Image upload code start
+        $('#image_viewer_details').hide();
+        $('#image_viewer_container').hide();
+        const selectImage = document.querySelector('.select-image');
+        const removeImage = document.querySelector('.remove-image');
+
+        const inputFile = document.querySelector('#file');
+        const imgArea = document.querySelector('.img-area');
+
+        selectImage.addEventListener('click', function () {
+          inputFile.value = '';
+          inputFile.click();
+          $('#image_guidance').hide();
+        })
+
+        removeImage.addEventListener('click', function () {
+          $('#image_guidance').show();
+          const allImg = imgArea.querySelectorAll('object');
+          allImg.forEach(item => item.remove());
+          base64Image = []
+          imgArea.dataset.img = ''
+        })
+
+
+        inputFile.addEventListener('change', function () {
+          
+          if (this.files && this.files.length > 0) {
+            const allImg = imgArea.querySelectorAll('object');
+            allImg.forEach(item => item.remove());
+            for (var j=0; j<this.files.length; j++) {
+              const file = this.files[j];
+              if (file.size < 5000000) {
+                  const reader = new FileReader()
+                  
+                  reader.onload = () => {
+                          const imgUrl = reader.result;
+                          base64Image.push(imgUrl)
+                          const img = document.createElement('object');
+                          //img.src = imgUrl;
+                          img.data = imgUrl;
+                          imgArea.appendChild(img);
+                          imgArea.classList.add('active');
+                          if (imgArea.dataset.img) {
+                            imgArea.dataset.img = imgArea.dataset.img + ', ' + file.name;
+                          } else {
+                            imgArea.dataset.img = file.name;
+                          }
+                          
+                  }
+                  reader.readAsDataURL(file);
+
+                } else {
+                  alertbuilder("File size should be less than 5MB." + file.name + ' was not added', false);
+                }
+            }
+
+          }          
+        });
+
+        // Image upload code end
       });
 
       var model_id = null;
+      var base64Image = [];
       var ws = null;
       var chat_id = null;
       var awsData = {
@@ -701,7 +758,7 @@
         websocketUrl: '<websocketUrl>',
         isRagEnabled: '<isRagEnabled>'
       };
-      
+
 
       function setApiKey() {
         api_key = $('#api_key').val()
@@ -713,14 +770,18 @@
           });
           $('#main-bedrock-content').show();
 
-          if(awsData.isRagEnabled == 'yes') {
-              $("#index-tab").click()
+          if (awsData.isRagEnabled == 'yes') {
+            $('#index-tab').prop('disabled', false);
+            $('#index-tab').prop('title', 'Index documents in Amazon Opensearch serverless');
+            $("#index-div").css('visibility', 'visible');
+            $("#index-tab").click();
           } else {
-              $('#index-tab').hide();
-              $('#index-div').hide();
-              $("#query-tab").click()
-              
-              
+            $('#index-tab').prop('disabled', true);
+            $('#index-tab[data-toggle="tooltip"]').tooltip()
+            $('#index-div').css('visibility', 'hidden');
+            $("#query-tab").click()
+
+
           }
         } else {
           alertbuilder('Please add an API Key to proceed', false)
@@ -811,6 +872,23 @@
 
       function model_selected(val) {
         $('#set_model').text('Model selected : ' + val)
+
+        if (val.startsWith('anthropic.claude-3-')) {
+          // Enable image uploads
+          $('#image_viewer_container').show();
+          $('#image_viewer_details').show();
+          $('#image_viewer_details').addClass('col-lg-3')
+          $('#query_viewer_details').addClass('col-lg-9')
+          $('#query_viewer_details').removeClass('col-lg-12')
+
+        } else {
+          $('#image_viewer_container').hide();
+          $('#image_viewer_details').hide();
+          $('#image_viewer_details').removeClass('col-lg-3')
+          $('#query_viewer_details').removeClass('col-lg-9')
+          $('#query_viewer_details').addClass('col-lg-12')
+        }
+
         model_id = val
         alertbuilder('Model Selected: ' + val, true)
         $("button.assistant").prop('disabled', false)
@@ -855,6 +933,8 @@
         return /\s/g.test(s);
       }
 
+      
+      // Query with file content. Used for anthropic-claude-3 models
       function query(assistant_type) {
         $('#custom-spinner').css('visibility', 'visible');
         $('#index-button').css('visibility', 'hidden');
@@ -863,12 +943,71 @@
 
         document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + '\n' + assistant_type.toUpperCase() + ': \n'
 
+        user_query = []
+        upload_workflow = false
+        if (model_id.startsWith('anthropic.claude-3-')) {
+          for (var i = 0; i < base64Image.length; i++) {
+            upload_workflow = true
+            b64_img = base64Image[i]
+            upload_to_s3(b64_img, function(result) {
+              if (result) {
+                alertbuilder('Uploaded file ' + i + ' to S3', true)
+                file_type= b64_img.substring("data:".length, b64_img.indexOf(";base64"))
+                if (file_type.includes('/')) {
+                  file_extension = file_type.split('/')[1]
+                } else {
+                  file_extension = file_type
+                }
+                
+                if (b64_img.includes('image')) {
+                    user_query.push({ 'type': 'image', 'data': result['result']['file_id'], 'file_extension': result['result']['file_extension'], 'file_type': 'image/'+result['result']['file_extension'] })
+                } else {
+                    user_query.push({ 'type': 'other', 'data': result['result']['file_id'], 'file_extension': result['result']['file_extension'], 'file_type': file_type })
+                }
+              } else {
+                alertbuilder('File '+ i + ' wasnt successfully uploaded', false)
+              }
+              
+              
+            });
+          }
+        }
+
+        
+        
+        if (upload_workflow) {
+          interval_retry_counter = 0
+          upload_checker_interval = setInterval(() => {
+          interval_retry_counter = interval_retry_counter + 1
+          if (user_query.length >= base64Image.length) {
+            generate_and_send_query(user_query, assistant_type, model_id)
+            clearInterval(upload_checker_interval)
+          } else if (interval_retry_counter > 60) {
+            alertbuilder('All images were not uploaded within '+ (60) +' secs', false)
+            // After 10 seconds of waiting clear out the interval
+            generate_and_send_query(user_query, assistant_type, model_id)
+            clearInterval(upload_checker_interval)
+          }
+          }, 1000)
+
+        } else {
+          generate_and_send_query(user_query, assistant_type, model_id)
+          user_query = []
+        }
+        
+      }
+
+      function generate_and_send_query(user_query, assistant_type, model_id) {
         query_str = " " + $('#query').val()
-        data = '{"query": "' + query_str + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
+        user_query.push({ 'type': 'text', 'data': query_str })
+        data = '{"query": "' + btoa(JSON.stringify(user_query)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
+        send_over_websocket(data, 'query-response')
+      }
+
+      function send_over_websocket(data, dom_id) {
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
           if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-
             ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
             ws.onerror = function (event) {
               console.log(event);
@@ -878,7 +1017,7 @@
               $('#delete-button').css('visibility', 'visible');
               alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
             }
-
+          
           } else {
             ws.send(data);
           }
@@ -886,15 +1025,22 @@
           ws.onopen = function () {
             ws.send(data);
           }
-        }
 
+        }
+        
         ws.onmessage = function (evt) {
           $('#custom-spinner').css('visibility', 'hidden');
           $('#index-button').css('visibility', 'visible');
           $('#query-button').css('visibility', 'visible');
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
-          response_json = JSON.parse(atob(evt.data))
+          response_json = {}
+          try {
+            response_json = JSON.parse(atob(evt.data)) 
+          }
+          catch(error) {
+            console.log(error)
+          }
           if ("text" in response_json) {
             str_len = -1
             try {
@@ -909,13 +1055,28 @@
             received_msg = JSON.stringify(response_json)
           }
           console.log("streaming message is received.. " + received_msg);
-          document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg
+          document.getElementById(dom_id).innerHTML = document.getElementById(dom_id).innerHTML + received_msg
 
         }
-
       }
 
+      function upload_to_s3(file, callback) {
+        unique_id = crypto.randomUUID()
+        $.ajax({
+          type: "POST",
+          url: awsData.apiGatewayUrl + '/file_data',
+          contentType: "text/json",
+          dataType: 'json',
+          data: JSON.stringify({ "content": file, "id": unique_id }),
+          success: function (result) {
+            return callback(result);
+          },
+          error: function (err) {
+            return callback(null);
+          }
+        });
 
+      }
       // Chat functions 
 
       function showChatBox() {
@@ -941,7 +1102,7 @@
         return (S4() + S4() + "-" + S4());
       }
 
-      chat_messages = [{'Assistant': 'Hello How may I help you today'}]
+      chat_messages = [{ 'Assistant': 'Hello How may I help you today' }]
 
       assitant_messages = []
 
@@ -959,13 +1120,13 @@
         query_str = " " + $('#chat-text').val()
 
         if (assitant_messages.length > 0) {
-          chat_messages.push({'Assistant': assitant_messages.join(' ')})
+          chat_messages.push({ 'Assistant': assitant_messages.join(' ') })
           assitant_messages = []
         }
 
-        chat_messages.push({'Human': query_str})
+        chat_messages.push({ 'Human': query_str })
 
-        data = '{"query": "' + btoa(JSON.stringify(chat_messages)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
+        data = '{"query": "' + btoa(unescape(JSON.stringify(chat_messages))) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
 
         request_html = '<div class="d-flex flex-row justify-content-start">' +
           '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
@@ -1021,7 +1182,14 @@
           $('#query-button').css('visibility', 'visible');
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
-          response_json = JSON.parse(atob(evt.data))
+          response_json = {}
+          try {
+            response_json = JSON.parse(atob(evt.data)) 
+          }
+          catch(error) {
+            console.log(error)
+          }
+          
           if ("text" in response_json) {
             str_len = -1
             try {
@@ -1035,7 +1203,8 @@
                 end_of_response = true
               }
               else {
-                assitant_messages.push(received_msg)
+                ascii_string = specialToASCII(received_msg)
+                assitant_messages.push(ascii_string)
                 message_store = message_store + received_msg
               }
             }
@@ -1066,10 +1235,22 @@
         }
 
       }
+
+      function specialToASCII(data_str) {
+          let res = '';
+          for(let i = 0; i < data_str.length; i++){
+            if(data_str[i].charCodeAt(0) < 128){
+               res += data_str[i];
+               continue;
+            };
+            res += '<special_char>' + data_str[i].charCodeAt(0) + '</special_char>';
+          };
+          return res;
+      };
       
       function agentworkflow(div_id) {
         $('[id^=agent-]').hide()
-        $('#'+div_id).show()
+        $('#' + div_id).show()
       }
     </script>
 
