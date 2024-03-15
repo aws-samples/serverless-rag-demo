@@ -10,7 +10,7 @@ from decimal import Decimal
 import logging
 import base64
 import datetime
-import pandas as pd
+import csv
 
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = 'amazon.titan-embed-text-v1'
@@ -527,20 +527,15 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
 def get_contents(file_extension, file_bytes):
     content = ' '
     try:
-        if file_extension in ['vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xlsx', 'xls']:
-            content = pd.read_excel(file_bytes, 0).to_string()
-        elif file_extension in ['json']:
-            content = pd.read_json(file_bytes).to_string()
-        elif file_extension in ['sql']:
-            content = pd.read_sql(file_bytes).to_string()
-        elif file_extension in ['html']:
-            content = pd.read_html(file_bytes).to_string()
-        elif file_extension in ['csv']:
-            content = pd.read_csv(file_bytes).to_string()
-        elif file_extension in ['txt']:
+        if file_extension in ['csv']:
+            rows = csv.reader(file_bytes)
+            for row in rows:
+                content = content + (', '.join(row))
+        elif file_extension in ['sql', 'txt', 'json']:
             content = file_bytes.decode()
     except Exception as e:
         print(f'Exception reading contents from file {e}')
+    print(f'file-content {content}')
     return content
 
 def get_file_from_s3(s3bucket, key):

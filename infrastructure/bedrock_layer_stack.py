@@ -24,7 +24,6 @@ class BedrockLayerStack(NestedStack):
         opensearchpy_layer_name = config_details['opensearchpy_layer']
         langchainpy_layer_name = config_details['langchainpy_layer_name']
         aws4auth_layer_name = config_details['aws4auth_layer']
-        pandas_layer_name = config_details['pandas_layer_name']
         
         llm_model_id = 'random'
         try:
@@ -57,7 +56,6 @@ class BedrockLayerStack(NestedStack):
                 "opensearchpy_layer_name": _codebuild.BuildEnvironmentVariable(value = opensearchpy_layer_name),
                 "aws4auth_layer_name": _codebuild.BuildEnvironmentVariable(value = aws4auth_layer_name),
                 "langchainpy_layer_name":  _codebuild.BuildEnvironmentVariable(value = langchainpy_layer_name),
-                "pandas_layer_name": _codebuild.BuildEnvironmentVariable(value = pandas_layer_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = account_id),
                 "region": _codebuild.BuildEnvironmentVariable(value = region)
             })
