@@ -279,7 +279,7 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     #if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
     # Define Template for all anthropic claude models
-
+    
     decoded_q_text, image_ids = extract_query_image_values(query)
 
     if 'claude' in model_id:
@@ -491,9 +491,9 @@ def extract_query_image_values(query):
     user_query = []
     user_queries_data = json.loads(base64.b64decode(query))
     for user_query_type in user_queries_data:
-        if user_query_type['type'] == 'text':
+        if 'type' in user_query_type and user_query_type['type'] == 'text':
             user_query.append(user_query_type['data'])
-        elif user_query_type['type'] == 'image':
+        elif 'type' in user_query_type and user_query_type['type'] == 'image':
             image_id.append(user_query_type['data'])
     return ' '.join(user_query), image_id
 

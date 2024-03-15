@@ -1188,7 +1188,7 @@
 
         chat_messages.push({ 'Human': query_str })
 
-        data = '{"query": "' + btoa(JSON.stringify(chat_messages)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
+        data = '{"query": "' + btoa(unescape(JSON.stringify(chat_messages))) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + hard_coded_model + '" ,"action": "bedrock"}'
 
         request_html = '<div class="d-flex flex-row justify-content-start">' +
           '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
