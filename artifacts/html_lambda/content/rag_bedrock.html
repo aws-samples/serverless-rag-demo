@@ -199,7 +199,7 @@
         position: relative;
         width: 100%;
         height: 70vh;
-        background: grey;
+        background: #c8effb;
         /* margin-bottom: 30px; */
         border-radius: 15px;
         overflow: hidden;
@@ -227,7 +227,7 @@
         font-weight: 600;
       }
 
-      .img-area img {
+      .img-area object {
         position: relative;
         top: 0;
         left: 0;
@@ -239,13 +239,13 @@
       }
 
       .img-area::before {
-        content: attr(data-img);
+        /* content: attr(data-img); */
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, .5);
+        /* background: rgba(0, 0, 0, .5); */
         color: #fff;
         font-weight: 500;
         text-align: center;
@@ -253,13 +253,13 @@
         justify-content: center;
         align-items: center;
         pointer-events: none;
-        opacity: 0;
+        /* opacity: 0; */
         transition: all .3s ease;
         z-index: 200;
       }
 
       .img-area.active:hover::before {
-        opacity: 1;
+        opacity: 50;
       }
 
       .select-image {
@@ -568,21 +568,21 @@
             <div id="image_viewer_container">
 
               <div class="image_viewer">
-                <input type="file" id="file" accept=".xlsx, .xls, .csv, .png, .jpg, .txt" hidden multiple>
+                <input type="file" id="file" accept="png, .jpg, .txt, .json, .csv, .pdf" hidden multiple>
                 <div class="img-area" data-img="">
                   <div id="image_guidance">
                        <i class='bx bxs-cloud-upload icon'></i>
-                       <h3>Upload File png/jpg/csv/xlsx/txt</h3>
+                       <h3>Upload File png/jpg/txt/json</h3>
                        <p>Image size must be less than <span>2MB</span></p>
                   </div>
                 </div>
                 <div class="row"></div>
                 <div class="row">
                   <div class="col">
-                    <button class="select-image btn-primary btn-sm">Select Image</button>
+                    <button class="select-image btn-primary btn-sm">Select File</button>
                   </div>
                   <div class="col">
-                    <button class="remove-image btn-warning btn-sm">Remove Image</button>
+                    <button class="remove-image btn-warning btn-sm">Remove File</button>
                   </div>
                 </div>
 
@@ -701,7 +701,7 @@
 
         removeImage.addEventListener('click', function () {
           $('#image_guidance').show();
-          const allImg = imgArea.querySelectorAll('img');
+          const allImg = imgArea.querySelectorAll('object');
           allImg.forEach(item => item.remove());
           base64Image = []
           imgArea.dataset.img = ''
@@ -711,7 +711,7 @@
         inputFile.addEventListener('change', function () {
           
           if (this.files && this.files.length > 0) {
-            const allImg = imgArea.querySelectorAll('img');
+            const allImg = imgArea.querySelectorAll('object');
             allImg.forEach(item => item.remove());
             for (var j=0; j<this.files.length; j++) {
               const file = this.files[j];
@@ -721,8 +721,9 @@
                   reader.onload = () => {
                           const imgUrl = reader.result;
                           base64Image.push(imgUrl)
-                          const img = document.createElement('img');
-                          img.src = imgUrl;
+                          const img = document.createElement('object');
+                          //img.src = imgUrl;
+                          img.data = imgUrl;
                           imgArea.appendChild(img);
                           imgArea.classList.add('active');
                           if (imgArea.dataset.img) {
@@ -956,10 +957,11 @@
                 } else {
                   file_extension = file_type
                 }
+                
                 if (b64_img.includes('image')) {
-                    user_query.push({ 'type': 'image', 'data': result['result']['file_id'], 'file_extension': file_extension, 'file_type': file_type })
+                    user_query.push({ 'type': 'image', 'data': result['result']['file_id'], 'file_extension': result['result']['file_extension'], 'file_type': 'image/'+result['result']['file_extension'] })
                 } else {
-                    user_query.push({ 'type': 'other', 'data': result['result']['file_id'], 'file_extension': file_extension, 'file_type': file_type })
+                    user_query.push({ 'type': 'other', 'data': result['result']['file_id'], 'file_extension': result['result']['file_extension'], 'file_type': file_type })
                 }
               } else {
                 alertbuilder('File '+ i + ' wasnt successfully uploaded', false)

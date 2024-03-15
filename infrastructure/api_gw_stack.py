@@ -203,7 +203,7 @@ class ApiGw_Stack(Stack):
                     "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
                     "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
                     "bedrock:GetFoundationModelAvailability", "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
-                    "iam:ListUsers", "iam:ListRoles", "s3:*"],
+                    "iam:ListUsers", "iam:ListRoles", "s3:*", "textract:*"],
                 resources=["*"],
             )
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)

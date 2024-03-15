@@ -382,7 +382,7 @@ def store_image_in_s3(event):
     s3_client = boto3.client('s3')
     s3_key = f"bedrock/data/{content_id}.{file_extension}"
     s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
-    return http_success_response({'file_id': content_id, 'message': 'stored successfully'})
+    return http_success_response({'file_extension': file_extension, 'file_id': content_id, 'message': 'stored successfully'})
     
 
 def extract_file_extension(base64_encoded_file):
@@ -518,7 +518,7 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
             if 'data' in user_query_type and 'file_extension' in user_query_type:
                 s3_key = f"bedrock/data/{user_query_type['data']}.{user_query_type['file_extension']}"
                 text_data_from_file = get_contents(user_query_type['file_extension'], get_file_from_s3(s3_bucket_name, s3_key))
-                prompt_content.append({ "type": "text", "text": f"""{text_data_from_file}"""})
+                prompt_content.append({ "type": "text", "text": f"""This is additional data {text_data_from_file}. Provide useful insights"""})
                 
 
     return prompt_content
@@ -527,11 +527,15 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
 def get_contents(file_extension, file_bytes):
     content = ' '
     try:
-        if file_extension in ['csv']:
-            rows = csv.reader(file_bytes)
-            for row in rows:
-                content = content + (', '.join(row))
-        elif file_extension in ['sql', 'txt', 'json']:
+        if file_extension in ['pdf']:
+            textract_client = boto3.client('textract')
+            response = textract_client.detect_document_text(Document={'Bytes': file_bytes})
+            for block in response['Blocks']:
+                if block['BlockType'] == 'LINE':
+                    content = content + ' ' + block['Text']
+        
+        else: 
+            #file_extension in ['sql', 'txt', 'json', 'csv']:
             content = file_bytes.decode()
     except Exception as e:
         print(f'Exception reading contents from file {e}')
