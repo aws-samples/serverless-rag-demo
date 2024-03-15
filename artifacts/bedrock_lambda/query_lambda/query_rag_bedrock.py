@@ -10,6 +10,7 @@ from decimal import Decimal
 import logging
 import base64
 import datetime
+import pandas as pd
 
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = 'amazon.titan-embed-text-v1'
@@ -113,7 +114,8 @@ def query_data(query, behaviour, model_id, connect_id):
     if is_rag_enabled == 'yes' and query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact', 'chat']:
         try:
 
-            user_query, image_data =extract_query_image_values(query)
+            user_query, img_ids =extract_query_image_values(query)
+
                  
             # Get the query embedding from amazon-titan-embed model
             response = bedrock_client.invoke_model(
@@ -278,7 +280,7 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
     #if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
     # Define Template for all anthropic claude models
 
-    decoded_q_text, decoded_q_image = extract_query_image_values(query)
+    decoded_q_text, image_ids = extract_query_image_values(query)
 
     if 'claude' in model_id:
         prompt= f'''This is your behaviour:<behaviour>{prompt}</behaviour>.
@@ -380,7 +382,7 @@ def store_image_in_s3(event):
     s3_client = boto3.client('s3')
     s3_key = f"bedrock/data/{content_id}.{file_extension}"
     s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
-    return success_response('Data stored successfully')
+    return http_success_response({'file_id': content_id, 'message': 'stored successfully'})
     
 
 def extract_file_extension(base64_encoded_file):
@@ -397,8 +399,8 @@ def handler(event, context):
         "---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
     print(f'event - {event}')
 
-    if 'requestContext' in event:
-
+    if 'httpMethod' not in event and 'requestContext' in event:
+    # this is a websocket request
         stage = event['requestContext']['stage']
         api_id = event['requestContext']['apiId']
         domain = f'{api_id}.execute-api.{region}.amazonaws.com'
@@ -426,7 +428,8 @@ def handler(event, context):
                     return {'statusCode': '200', 'body': 'Bedrock says hello' }
             else:
                 return {'statusCode': '403', 'body': 'Forbidden' }
-
+        
+    
     elif 'httpMethod' in event:
         api_map = {
             'POST/rag/file_data': lambda x: store_image_in_s3(x)
@@ -484,15 +487,15 @@ def failure_response(connect_id, error_message):
     
 
 def extract_query_image_values(query):
-    image_data = ''
-    user_query = ''
+    image_id = []
+    user_query = []
     user_queries_data = json.loads(base64.b64decode(query))
     for user_query_type in user_queries_data:
         if user_query_type['type'] == 'text':
-            user_query = user_query_type['data']
+            user_query.append(user_query_type['data'])
         elif user_query_type['type'] == 'image':
-            image_data = user_query_type['data'].decode('utf-8')
-    return user_query, image_data
+            image_id.append(user_query_type['data'])
+    return ' '.join(user_query), image_id
 
 
 def claude3_prompt_builder_for_images_and_text(query, context, output):
@@ -505,12 +508,47 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
                                                                 {output}
                                                         """})
         elif user_query_type['type'] == 'image':
-            prompt_content.append({ "type": "image", "source": 
-                                       { "type": "base64", "media_type": "image/jpeg", "data": user_query_type['data'].decode('utf-8')}
+            if 'data' in user_query_type and 'file_extension' in user_query_type:
+                s3_key = f"bedrock/data/{user_query_type['data']}.{user_query_type['file_extension']}"
+                encoded_file = base64.b64encode(get_file_from_s3(s3_bucket_name, s3_key))
+                prompt_content.append({ "type": "image", "source": 
+                                       { "type": "base64", "media_type": "image/jpeg", "data": encoded_file.decode('utf-8')}
                                 })
-    
+        elif user_query_type['type'] == 'other':
+            if 'data' in user_query_type and 'file_extension' in user_query_type:
+                s3_key = f"bedrock/data/{user_query_type['data']}.{user_query_type['file_extension']}"
+                text_data_from_file = get_contents(user_query_type['file_extension'], get_file_from_s3(s3_bucket_name, s3_key))
+                prompt_content.append({ "type": "text", "text": f"""{text_data_from_file}"""})
+                
+
     return prompt_content
 
+
+def get_contents(file_extension, file_bytes):
+    content = ' '
+    try:
+        if file_extension in ['vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'xlsx', 'xls']:
+            content = pd.read_excel(file_bytes, 0).to_string()
+        elif file_extension in ['json']:
+            content = pd.read_json(file_bytes).to_string()
+        elif file_extension in ['sql']:
+            content = pd.read_sql(file_bytes).to_string()
+        elif file_extension in ['html']:
+            content = pd.read_html(file_bytes).to_string()
+        elif file_extension in ['csv']:
+            content = pd.read_csv(file_bytes).to_string()
+        elif file_extension in ['txt']:
+            content = file_bytes.decode()
+    except Exception as e:
+        print(f'Exception reading contents from file {e}')
+    return content
+
+def get_file_from_s3(s3bucket, key):
+    s3 = boto3.resource('s3')
+    obj = s3.Object(s3bucket, key)
+    file_bytes = obj.get()['Body'].read()
+    print(f'returns S3 encoded object from key {s3bucket}/{key}')
+    return file_bytes
 
 def success_response(connect_id, result):
     success_msg = {"success": True, "result": result, "statusCode": "200"}

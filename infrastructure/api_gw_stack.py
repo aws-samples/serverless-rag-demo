@@ -148,6 +148,10 @@ class ApiGw_Stack(Stack):
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
             
+            pandas_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'pandas-layer-{env_name}', 
+                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["pandas_layer_name"]}:1')
+                                                        
+            
             print('--- Amazon Bedrock Deployment ---')
 
             
@@ -165,7 +169,7 @@ class ApiGw_Stack(Stack):
                                                 'REGION': region
                                   },
                                   memory_size=4096,
-                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer, pandas_layer])
             
             lambda_function = bedrock_indexing_lambda_function
 

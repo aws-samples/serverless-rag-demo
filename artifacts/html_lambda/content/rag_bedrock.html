@@ -15,6 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
     integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
     crossorigin="anonymous"></script>
+  <link rel="shortcut icon" href="#" />
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.0.0-alpha1/js/bootstrap.min.js"
     integrity="sha384-oesi62hOLfzrys4LxRF63OJCXdXDipiYWBnvTl9Y9/TRlw5xlKIEHpNyvvDShgf/"
     crossorigin="anonymous"></script>
@@ -188,16 +189,16 @@
     }
 
     .image_viewer {
-      max-width: 400px;
+      max-width: 50vw;
       width: 100%;
       background: #fff;
-      padding: 30px;
+      padding: 5px;
       border-radius: 30px;
 
       .img-area {
         position: relative;
         width: 100%;
-        height: 350px;
+        height: 70vh;
         background: grey;
         /* margin-bottom: 30px; */
         border-radius: 15px;
@@ -227,7 +228,7 @@
       }
 
       .img-area img {
-        position: absolute;
+        position: relative;
         top: 0;
         left: 0;
         width: 100%;
@@ -265,6 +266,7 @@
         display: block;
         width: 100%;
         padding: 5px 0;
+        margin-top: 5px;
         border-radius: 15px;
         /* color: #fff; */
         font-weight: 500;
@@ -276,6 +278,7 @@
         display: block;
         width: 100%;
         padding: 5px 0;
+        margin-top: 5px;
         border-radius: 15px;
         /* color: #fff; */
         font-weight: 500;
@@ -348,7 +351,7 @@
     <ul class="nav nav-tabs" id="myTab" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="index-tab" data-bs-toggle="tab" data-bs-target="#index-div" type="button"
-          role="tab" aria-controls="Index" aria-selected="true">Index Documents</button>
+          role="tab" aria-controls="Index" aria-selected="true" data-toggle="tooltip">Index Documents</button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="query-tab" data-bs-toggle="tab" data-bs-target="#query-div" type="button"
@@ -457,14 +460,13 @@
       </div>
 
       <div class="tab-pane fade" id="query-div" role="tabpanel" aria-labelledby="query-tab">
-        <div style="padding-bottom: 10px;"></div>
-        <div class="alert alert-primary" role="alert">
-          Once you've indexed documents, you can query your data here
-        </div>
-
         <div class='row'>
           <div class="col-lg-12" id="query_viewer_details">
             <div class="row">
+              <div style="padding-bottom: 10px;"></div>
+              <div class="alert alert-primary" role="alert">
+                  Once you've indexed documents, you can query your data here
+              </div>
               <div class="dropdown" style="padding-left: 20px; padding-bottom: 10px;">
                 <button class="btn btn-info btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
                   aria-expanded="false">
@@ -529,12 +531,14 @@
 
                 <button type="button" id="sentiment" class="btn btn-info assistant btn-sm"
                   onclick="javascript:query('sentiment')">Sentiment Analysis</button>
-                <button type="button" id="pii" class="btn btn-info assistant btn-sm" onclick="javascript:query('pii')">Identify
+                <button type="button" id="pii" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('pii')">Identify
                   PII</button>
                 <button type="button" id="redact" class="btn btn-info btn-sm assistant"
                   onclick="javascript:query('redact')">Redact
                   PII</button>
-                <button type="button" id="clear" class="btn btn-info btn-sm" onclick="clear_response()">Clear Output</button>
+                <button type="button" id="clear" class="btn btn-info btn-sm" onclick="clear_response()">Clear
+                  Output</button>
               </div>
             </div>
 
@@ -564,23 +568,25 @@
             <div id="image_viewer_container">
 
               <div class="image_viewer">
-                <input type="file" id="file" accept="image/*" hidden>
+                <input type="file" id="file" accept=".xlsx, .xls, .csv, .png, .jpg, .txt" hidden multiple>
                 <div class="img-area" data-img="">
-                  <i class='bx bxs-cloud-upload icon'></i>
-                  <h3>Upload Image</h3>
-                  <p>Image size must be less than <span>2MB</span></p>
+                  <div id="image_guidance">
+                       <i class='bx bxs-cloud-upload icon'></i>
+                       <h3>Upload File png/jpg/csv/xlsx/txt</h3>
+                       <p>Image size must be less than <span>2MB</span></p>
+                  </div>
                 </div>
                 <div class="row"></div>
                 <div class="row">
                   <div class="col">
-                    <button class="select-image btn-primary">Select Image</button>
+                    <button class="select-image btn-primary btn-sm">Select Image</button>
                   </div>
                   <div class="col">
-                    <button class="remove-image btn-info">Remove Image</button>
+                    <button class="remove-image btn-warning btn-sm">Remove Image</button>
                   </div>
                 </div>
-                
-                
+
+
               </div>
 
             </div>
@@ -670,6 +676,9 @@
         $('#apikey_modal').show()
         $('#custom-spinner').css('visibility', 'hidden');
         $('#index-spinner').css('visibility', 'hidden');
+        $('#index-tab').prop('disabled', true);
+        $('#index-tab').prop('title', 'Enable Amazon Opensearch serverless to index documents for RAG');
+        $('#index-div').css('visibility', 'hidden');
         document.getElementById("model-name").innerHTML = awsData.htmlheader + vector_text
         $("button.assistant").prop('disabled', true)
         $('[data-toggle="tooltip"]').tooltip();
@@ -685,43 +694,59 @@
         const imgArea = document.querySelector('.img-area');
 
         selectImage.addEventListener('click', function () {
+          inputFile.value = '';
           inputFile.click();
+          $('#image_guidance').hide();
         })
 
         removeImage.addEventListener('click', function () {
+          $('#image_guidance').show();
           const allImg = imgArea.querySelectorAll('img');
           allImg.forEach(item => item.remove());
-          base64Image = ''
+          base64Image = []
+          imgArea.dataset.img = ''
         })
-
 
 
         inputFile.addEventListener('change', function () {
-          const image = this.files[0]
-          if (image.size < 2000000) {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const allImg = imgArea.querySelectorAll('img');
-              allImg.forEach(item => item.remove());
-              const imgUrl = reader.result;
-              base64Image = imgUrl
-              const img = document.createElement('img');
-              img.src = imgUrl;
-              imgArea.appendChild(img);
-              imgArea.classList.add('active');
-              imgArea.dataset.img = image.name;
+          
+          if (this.files && this.files.length > 0) {
+            const allImg = imgArea.querySelectorAll('img');
+            allImg.forEach(item => item.remove());
+            for (var j=0; j<this.files.length; j++) {
+              const file = this.files[j];
+              if (file.size < 5000000) {
+                  const reader = new FileReader()
+                  
+                  reader.onload = () => {
+                          const imgUrl = reader.result;
+                          base64Image.push(imgUrl)
+                          const img = document.createElement('img');
+                          img.src = imgUrl;
+                          imgArea.appendChild(img);
+                          imgArea.classList.add('active');
+                          if (imgArea.dataset.img) {
+                            imgArea.dataset.img = imgArea.dataset.img + ', ' + file.name;
+                          } else {
+                            imgArea.dataset.img = file.name;
+                          }
+                          
+                  }
+                  reader.readAsDataURL(file);
+
+                } else {
+                  alertbuilder("File size should be less than 5MB." + file.name + ' was not added', false);
+                }
             }
-            reader.readAsDataURL(image);
-          } else {
-            alertbuilder("Image size should be less than 2MB", false);
-          }
-        })
+
+          }          
+        });
 
         // Image upload code end
       });
 
       var model_id = null;
-      var base64Image = '';
+      var base64Image = [];
       var ws = null;
       var chat_id = null;
       var awsData = {
@@ -744,10 +769,14 @@
           $('#main-bedrock-content').show();
 
           if (awsData.isRagEnabled == 'yes') {
-            $("#index-tab").click()
+            $('#index-tab').prop('disabled', false);
+            $('#index-tab').prop('title', 'Index documents in Amazon Opensearch serverless');
+            $("#index-div").css('visibility', 'visible');
+            $("#index-tab").click();
           } else {
-            $('#index-tab').hide();
-            $('#index-div').hide();
+            $('#index-tab').prop('disabled', true);
+            $('#index-tab[data-toggle="tooltip"]').tooltip()
+            $('#index-div').css('visibility', 'hidden');
             $("#query-tab").click()
 
 
@@ -902,6 +931,8 @@
         return /\s/g.test(s);
       }
 
+      
+      // Query with file content. Used for anthropic-claude-3 models
       function query(assistant_type) {
         $('#custom-spinner').css('visibility', 'visible');
         $('#index-button').css('visibility', 'hidden');
@@ -911,23 +942,69 @@
         document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + '\n' + assistant_type.toUpperCase() + ': \n'
 
         user_query = []
+        upload_workflow = false
         if (model_id.startsWith('anthropic.claude-3-')) {
-          
-          if (base64Image != '') {
-            user_query.push({'type': 'image', 'data': base64Image.split("base64,")[1]})
+          for (var i = 0; i < base64Image.length; i++) {
+            upload_workflow = true
+            b64_img = base64Image[i]
+            upload_to_s3(b64_img, function(result) {
+              if (result) {
+                alertbuilder('Uploaded file ' + i + ' to S3', true)
+                file_type= b64_img.substring("data:".length, b64_img.indexOf(";base64"))
+                if (file_type.includes('/')) {
+                  file_extension = file_type.split('/')[1]
+                } else {
+                  file_extension = file_type
+                }
+                if (b64_img.includes('image')) {
+                    user_query.push({ 'type': 'image', 'data': result['result']['file_id'], 'file_extension': file_extension, 'file_type': file_type })
+                } else {
+                    user_query.push({ 'type': 'other', 'data': result['result']['file_id'], 'file_extension': file_extension, 'file_type': file_type })
+                }
+              } else {
+                alertbuilder('File '+ i + ' wasnt successfully uploaded', false)
+              }
+              
+              
+            });
           }
-          
         }
 
-        query_str = " " + $('#query').val()
-        user_query.push({'type': 'text', 'data': query_str})   
-        user_query.sub
-        data = '{"query": "' + btoa(JSON.stringify(user_query)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
         
+        
+        if (upload_workflow) {
+          interval_retry_counter = 0
+          upload_checker_interval = setInterval(() => {
+          interval_retry_counter = interval_retry_counter + 1
+          if (user_query.length >= base64Image.length) {
+            generate_and_send_query(user_query, assistant_type, model_id)
+            clearInterval(upload_checker_interval)
+          } else if (interval_retry_counter > 60) {
+            alertbuilder('All images were not uploaded within '+ (60) +' secs', false)
+            // After 10 seconds of waiting clear out the interval
+            generate_and_send_query(user_query, assistant_type, model_id)
+            clearInterval(upload_checker_interval)
+          }
+          }, 1000)
+
+        } else {
+          generate_and_send_query(user_query, assistant_type, model_id)
+          user_query = []
+        }
+        
+      }
+
+      function generate_and_send_query(user_query, assistant_type, model_id) {
+        query_str = " " + $('#query').val()
+        user_query.push({ 'type': 'text', 'data': query_str })
+        data = '{"query": "' + btoa(JSON.stringify(user_query)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
+        send_over_websocket(data, 'query-response')
+      }
+
+      function send_over_websocket(data, dom_id) {
         if ("WebSocket" in window) {
           console.log("WebSocket is supported by your Browser!");
           if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-
             ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
             ws.onerror = function (event) {
               console.log(event);
@@ -937,7 +1014,7 @@
               $('#delete-button').css('visibility', 'visible');
               alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
             }
-
+          
           } else {
             ws.send(data);
           }
@@ -945,6 +1022,7 @@
           ws.onopen = function () {
             ws.send(data);
           }
+
         }
 
         ws.onmessage = function (evt) {
@@ -968,13 +1046,96 @@
             received_msg = JSON.stringify(response_json)
           }
           console.log("streaming message is received.. " + received_msg);
-          document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg
+          document.getElementById(dom_id).innerHTML = document.getElementById(dom_id).innerHTML + received_msg
 
         }
-
       }
 
+      // function query(assistant_type) {
+      //   $('#custom-spinner').css('visibility', 'visible');
+      //   $('#index-button').css('visibility', 'hidden');
+      //   $('#query-button').css('visibility', 'hidden');
+      //   $('#delete-button').css('visibility', 'hidden');
 
+      //   document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + '\n' + assistant_type.toUpperCase() + ': \n'
+
+      //   user_query = []
+      //   query_str = " " + $('#query').val()
+      //   user_query.push({ 'type': 'text', 'data': query_str })
+      //   user_query.sub
+      //   data = '{"query": "' + btoa(JSON.stringify(user_query)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
+
+
+
+      //   if ("WebSocket" in window) {
+      //     console.log("WebSocket is supported by your Browser!");
+      //     if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
+
+      //       ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
+      //       ws.onerror = function (event) {
+      //         console.log(event);
+      //         $('#custom-spinner').css('visibility', 'hidden');
+      //         $('#index-button').css('visibility', 'visible');
+      //         $('#query-button').css('visibility', 'visible');
+      //         $('#delete-button').css('visibility', 'visible');
+      //         alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
+      //       }
+
+      //     } else {
+      //       ws.send(data);
+      //     }
+
+      //     ws.onopen = function () {
+      //       ws.send(data);
+      //     }
+      //   }
+
+      //   ws.onmessage = function (evt) {
+      //     $('#custom-spinner').css('visibility', 'hidden');
+      //     $('#index-button').css('visibility', 'visible');
+      //     $('#query-button').css('visibility', 'visible');
+      //     $('#delete-button').css('visibility', 'visible');
+      //     var received_msg = '';
+      //     response_json = JSON.parse(atob(evt.data))
+      //     if ("text" in response_json) {
+      //       str_len = -1
+      //       try {
+      //         str_len = response_json['text'].trim().length
+      //       } catch (error) {
+      //         console.log('str_len error')
+      //       }
+      //       if (str_len != 0) {
+      //         received_msg = response_json['text']
+      //       }
+      //     } else {
+      //       received_msg = JSON.stringify(response_json)
+      //     }
+      //     console.log("streaming message is received.. " + received_msg);
+      //     document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg
+
+      //   }
+
+      // }
+
+
+
+      function upload_to_s3(file, callback) {
+        unique_id = crypto.randomUUID()
+        $.ajax({
+          type: "POST",
+          url: awsData.apiGatewayUrl + '/file_data',
+          contentType: "text/json",
+          dataType: 'json',
+          data: JSON.stringify({ "content": file, "id": unique_id }),
+          success: function (result) {
+            return callback(result);
+          },
+          error: function (err) {
+            return callback(null);
+          }
+        });
+
+      }
       // Chat functions 
 
       function showChatBox() {
