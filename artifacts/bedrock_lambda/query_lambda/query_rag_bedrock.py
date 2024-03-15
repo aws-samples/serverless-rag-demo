@@ -61,7 +61,7 @@ def query_data(query, behaviour, model_id, connect_id):
     global embed_model_id
     global bedrock_client
     prompt = DEFAULT_PROMPT
-    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'french', 'german', 'bengali', 'tamil']:
+    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'french', 'german', 'bengali', 'tamil', 'arabic']:
         prompt = f''' Output Rules :
                        {DEFAULT_PROMPT}
                        This rule is of highest priority. You will always reply in {behaviour.upper()} language only. Do not forget this line
