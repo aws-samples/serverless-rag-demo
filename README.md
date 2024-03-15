@@ -13,6 +13,12 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Project Updates</b></summary>
 
+  #### (16-Mar-2024):
+  * Multi-modal support with Claude-3 Haiku and Sonnet.
+  * Compare two or more images, analyze PDFs/Txt/Json file with Claude-3
+  * Optional deployment of AOSS
+  * Boost speed of chat conversations
+
   #### (14-Mar-2024):
   * Anthropic Claude-3 Haiku Text based support
   
