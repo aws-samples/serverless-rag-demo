@@ -89,7 +89,9 @@ class ApiGw_Stack(Stack):
             self.images_bucket = _s3.Bucket(self,
                                         id=env_params["s3_images_data"],
                                         bucket_name=bucket_name,
-                                        versioned=True)
+                                        auto_delete_objects=True,
+                                        removal_policy=_cdk.RemovalPolicy.DESTROY,
+                                        versioned=False)
 
             secure_key = _cdk.aws_apigateway.ApiKey(self, f"rag-api-key-{env_name}", api_key_name=secret_api_key, enabled=True,
                                                     value=secret_api_key,
