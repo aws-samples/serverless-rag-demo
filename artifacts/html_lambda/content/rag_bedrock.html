@@ -573,7 +573,7 @@
                 <div class="img-area" data-img="">
                   <div id="image_guidance">
                        <i class='bx bxs-cloud-upload icon'></i>
-                       <h3>Upload File png/jpg/txt/json</h3>
+                       <h3>Upload File png/jpg/txt/json/pdf</h3>
                        <p>Image size must be less than <span>2MB</span></p>
                   </div>
                 </div>
@@ -1027,14 +1027,20 @@
           }
 
         }
-
+        
         ws.onmessage = function (evt) {
           $('#custom-spinner').css('visibility', 'hidden');
           $('#index-button').css('visibility', 'visible');
           $('#query-button').css('visibility', 'visible');
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
-          response_json = JSON.parse(atob(evt.data))
+          response_json = {}
+          try {
+            response_json = JSON.parse(atob(evt.data)) 
+          }
+          catch(error) {
+            console.log(error)
+          }
           if ("text" in response_json) {
             str_len = -1
             try {
@@ -1053,74 +1059,6 @@
 
         }
       }
-
-      // function query(assistant_type) {
-      //   $('#custom-spinner').css('visibility', 'visible');
-      //   $('#index-button').css('visibility', 'hidden');
-      //   $('#query-button').css('visibility', 'hidden');
-      //   $('#delete-button').css('visibility', 'hidden');
-
-      //   document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + '\n' + assistant_type.toUpperCase() + ': \n'
-
-      //   user_query = []
-      //   query_str = " " + $('#query').val()
-      //   user_query.push({ 'type': 'text', 'data': query_str })
-      //   user_query.sub
-      //   data = '{"query": "' + btoa(JSON.stringify(user_query)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
-
-
-
-      //   if ("WebSocket" in window) {
-      //     console.log("WebSocket is supported by your Browser!");
-      //     if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-
-      //       ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
-      //       ws.onerror = function (event) {
-      //         console.log(event);
-      //         $('#custom-spinner').css('visibility', 'hidden');
-      //         $('#index-button').css('visibility', 'visible');
-      //         $('#query-button').css('visibility', 'visible');
-      //         $('#delete-button').css('visibility', 'visible');
-      //         alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
-      //       }
-
-      //     } else {
-      //       ws.send(data);
-      //     }
-
-      //     ws.onopen = function () {
-      //       ws.send(data);
-      //     }
-      //   }
-
-      //   ws.onmessage = function (evt) {
-      //     $('#custom-spinner').css('visibility', 'hidden');
-      //     $('#index-button').css('visibility', 'visible');
-      //     $('#query-button').css('visibility', 'visible');
-      //     $('#delete-button').css('visibility', 'visible');
-      //     var received_msg = '';
-      //     response_json = JSON.parse(atob(evt.data))
-      //     if ("text" in response_json) {
-      //       str_len = -1
-      //       try {
-      //         str_len = response_json['text'].trim().length
-      //       } catch (error) {
-      //         console.log('str_len error')
-      //       }
-      //       if (str_len != 0) {
-      //         received_msg = response_json['text']
-      //       }
-      //     } else {
-      //       received_msg = JSON.stringify(response_json)
-      //     }
-      //     console.log("streaming message is received.. " + received_msg);
-      //     document.getElementById('query-response').innerHTML = document.getElementById('query-response').innerHTML + received_msg
-
-      //   }
-
-      // }
-
-
 
       function upload_to_s3(file, callback) {
         unique_id = crypto.randomUUID()
@@ -1244,7 +1182,14 @@
           $('#query-button').css('visibility', 'visible');
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
-          response_json = JSON.parse(atob(evt.data))
+          response_json = {}
+          try {
+            response_json = JSON.parse(atob(evt.data)) 
+          }
+          catch(error) {
+            console.log(error)
+          }
+          
           if ("text" in response_json) {
             str_len = -1
             try {
@@ -1258,7 +1203,8 @@
                 end_of_response = true
               }
               else {
-                assitant_messages.push(received_msg)
+                ascii_string = specialToASCII(received_msg)
+                assitant_messages.push(ascii_string)
                 message_store = message_store + received_msg
               }
             }
@@ -1290,6 +1236,18 @@
 
       }
 
+      function specialToASCII(data_str) {
+          let res = '';
+          for(let i = 0; i < data_str.length; i++){
+            if(data_str[i].charCodeAt(0) < 128){
+               res += data_str[i];
+               continue;
+            };
+            res += '<special_char>' + data_str[i].charCodeAt(0) + '</special_char>';
+          };
+          return res;
+      };
+      
       function agentworkflow(div_id) {
         $('[id^=agent-]').hide()
         $('#' + div_id).show()

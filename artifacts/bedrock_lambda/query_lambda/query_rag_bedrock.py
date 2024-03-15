@@ -190,7 +190,7 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
         if 'chunk' in evt:
             sent_ack = False
             chunk = evt['chunk']['bytes']
-            chunk_json = json.loads(chunk.decode())
+            chunk_json = json.loads(chunk.decode("UTF-8"))
             print(f'Chunk JSON {json.loads(str(chunk, "UTF-8"))}' )
             if 'llama2' in model:
                 chunk_str = chunk_json['generation']
@@ -295,8 +295,8 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
                    Here is the user's question <question> {decoded_q_text} <question>
                 '''
         
-        output = f'''Think about your answer before you respond. 
-                    Put your response in <response></response> tags'''
+        output = f'''Think about your answer before you respond. '''
+                # Put your response in <response></response> tags'''
         
         prompt_template = f"""{prompt}
                               {context} 
