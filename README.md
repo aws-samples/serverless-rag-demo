@@ -68,6 +68,10 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Available Features</b></summary>
 
+  ##### Multi-Modal support with Claude-3 Models
+  
+  <img width="1421" alt="Screenshot 2024-03-16 at 8 30 11 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9f659803-482c-4044-8dec-04c20e2cc8ef">
+
 
   #### Multi-lingual Support
   
@@ -96,9 +100,6 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
  <summary><b>Bedrock RAG Demo</b></summary>
 
    #### Bedrock RAG Demo Video
-
-  ##### Multi-Modal support with Claude-3 Models
-    https://github.com/aws-samples/serverless-rag-demo/assets/25897220/29171805-d057-4fa6-afab-6fe661b3b3d2
 
   ##### Introducing Conversations with Opensearch Serverless
    https://github.com/aws-samples/serverless-rag-demo/assets/25897220/1a2302e1-a02d-4b77-8a82-978137b849e7
