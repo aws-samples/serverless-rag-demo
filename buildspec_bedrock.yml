@@ -11,9 +11,9 @@ phases:
   build:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
-      - git checkout bedrock-agents
       - ls
       - cd serverless-rag-demo
+      - git checkout bedrock-agents
       - echo Build a Opensearchpy lambda layer to be used by the Amazon Bedrock Querying lambda
       - mkdir python
       - python3 -m pip install opensearch-py -t python/
