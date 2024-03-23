@@ -275,6 +275,9 @@ def parse_response(model_id, response):
     print('parse_response_final_result' + result)
     return result
 
+def query_chat(query, model_id, connect_id):
+    print("not-implemented")
+
 def prepare_prompt_template(model_id, behaviour, prompt, context, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     #if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
@@ -415,7 +418,10 @@ def handler(event, context):
                 query = input_to_llm['query']
                 behaviour = input_to_llm['behaviour']
                 model_id = input_to_llm['model_id']
-                query_data(query, behaviour, model_id, connect_id)
+                if 'agent' not in behaviour:
+                    query_data(query, behaviour, model_id, connect_id)
+                else:
+                    query_chat(query, model_id, connect_id)
         elif routeKey == '$connect':
             if 'x-api-key' in event['queryStringParameters']:
                 headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }

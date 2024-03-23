@@ -67,6 +67,7 @@
       "opensearchpy_layer": "opensearchpy-layer",
       "aws4auth_layer": "aws4auth-layer",
       "langchainpy_layer_name": "langchainpy-layer",
+      "xmltodict_layer_name": "xmltodict-layer",
       "pandas_layer_name": "pandas-layer",
       "sagemaker_endpoint": "llama2-7b-endpoint",
       "llama2_7b_sagemaker_endpoint": "llama2-7b-endpoint",
@@ -76,7 +77,7 @@
       "falcon_40b_sagemaker_endpoint": "falcon-40b-endpoint",
       "falcon_180b_sagemaker_endpoint": "falcon-180b-endpoint",
       "sagemaker_role_name": "sagemaker_llm_role_dev",
-      "model_path": "/var/task/sentencetransformers/" 
+      "model_path": "/var/task/sentencetransformers/"
     },
     "qa": {
       "ecr_repository_name": "lambda_rag_repo_qa",
@@ -93,6 +94,7 @@
       "opensearchpy_layer": "opensearchpy-layer",
       "aws4auth_layer": "aws4auth-layer",
       "langchainpy_layer_name": "langchainpy-layer",
+      "xmltodict_layer_name": "xmltodict-layer",
       "pandas_layer_name": "pandas-layer",
       "sagemaker_endpoint": "llama2-7b-endpoint",
       "llama2_7b_sagemaker_endpoint": "llama2-7b-endpoint",
@@ -119,6 +121,7 @@
       "opensearchpy_layer": "opensearchpy-layer",
       "aws4auth_layer": "aws4auth-layer",
       "langchainpy_layer_name": "langchainpy-layer",
+      "xmltodict_layer_name": "xmltodict-layer",
       "pandas_layer_name": "pandas-layer",
       "sagemaker_endpoint": "llama2-7b-endpoint",
       "llama2_7b_sagemaker_endpoint": "llama2-7b-endpoint",

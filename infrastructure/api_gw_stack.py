@@ -149,6 +149,9 @@ class ApiGw_Stack(Stack):
             
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
+            
+            xmltodict_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'xmltodict-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["xmltodict_layer_name"]}:1')
                                                         
             
             print('--- Amazon Bedrock Deployment ---')
@@ -188,7 +191,7 @@ class ApiGw_Stack(Stack):
                                                 'S3_BUCKET_NAME': bucket_name
                                   },
                                   memory_size=2048,
-                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, xmltodict_layer]
                                 )
             
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
