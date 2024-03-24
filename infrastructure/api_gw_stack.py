@@ -195,7 +195,7 @@ class ApiGw_Stack(Stack):
                                                 'S3_BUCKET_NAME': bucket_name
                                   },
                                   memory_size=2048,
-                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, xmltodict_layer, langchainpy_layer, yfinance_layer]
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, xmltodict_layer, langchainpy_layer]
                                 )
             
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
