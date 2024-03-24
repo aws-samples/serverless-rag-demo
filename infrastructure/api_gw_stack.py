@@ -153,9 +153,6 @@ class ApiGw_Stack(Stack):
             xmltodict_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'xmltodict-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["xmltodict_layer_name"]}:1')
             
-            yfinance_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'yfinance-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["yfinance_layer_name"]}:1')
-            
                                                         
             
             print('--- Amazon Bedrock Deployment ---')

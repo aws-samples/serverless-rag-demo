@@ -38,10 +38,13 @@ phases:
       - aws lambda publish-layer-version --layer-name $langchainpy_layer_name --zip-file fileb://langchainpy.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
       - rm -rf python langchainpy.zip
       - python3 -m pip install xmltodict -t python/
-      - python3 -m pip install yfinance -t python/
       - zip -r xmltodict.zip python
       - aws lambda publish-layer-version --layer-name $xmltodict_layer_name --zip-file fileb://xmltodict.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
-      
+      - rm -rf python xmltodict.zip
+      - python3 -m pip install yfinance -t python/
+      - zip -r yfinance.zip python
+      - aws lambda publish-layer-version --layer-name $yfinance_layer_name --zip-file fileb://yfinance.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+
   post_build:
     commands:
       - echo Build completed on `date`
