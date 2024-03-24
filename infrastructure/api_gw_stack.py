@@ -152,6 +152,10 @@ class ApiGw_Stack(Stack):
             
             xmltodict_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'xmltodict-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["xmltodict_layer_name"]}:1')
+            
+            yfinance_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'yfinance-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["yfinance_layer_name"]}:1')
+            
                                                         
             
             print('--- Amazon Bedrock Deployment ---')
@@ -191,7 +195,7 @@ class ApiGw_Stack(Stack):
                                                 'S3_BUCKET_NAME': bucket_name
                                   },
                                   memory_size=2048,
-                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, xmltodict_layer]
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, xmltodict_layer, langchainpy_layer, yfinance_layer]
                                 )
             
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
