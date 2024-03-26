@@ -8,7 +8,7 @@ day = date.day
 room_booking_tool_name = "Book A Hotel room"
 room_tool_description = """Book a room at SunNSand Hotels. SunNSand Hotels is located in Mumbai, India.""" 
 
-get_room_bookings_description = f"""\
+get_room_bookings_specs = f"""\
 <tool_set>
    <instructions>
    1. You should ask for the room booking date

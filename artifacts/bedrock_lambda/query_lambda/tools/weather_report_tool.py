@@ -4,7 +4,7 @@ import requests
 weather_tool_name = "Weather Reports"
 weather_tool_description = "Gets the weather reports for various places" 
 
-get_weather_description = """\
+get_weather_specs = """\
 <tool_set>
    <tool_description>
    <tool_usage>This tool is used to get the weather details for a given latitude and longitude</tool_usage>
@@ -28,17 +28,10 @@ get_weather_description = """\
 
 
 def get_weather(latitude: str, longitude: str):
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
-    response = requests.get(url)
-    return response.json()
+    response = {"temp": "25.5", "units": "celcius", "windspeed": "25kmph"}
+    return response
+    
 
 def get_lat_long(place: str):
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {'q': place, 'format': 'json', 'limit': 1}
-    response = requests.get(url, params=params).json()
-    if response:
-        lat = response[0]["lat"]
-        lon = response[0]["lon"]
-        return {"latitude": lat, "longitude": lon}
-    else:
-        return None
+    default = {"latitude": 25, "longitude": 35}
+    return default

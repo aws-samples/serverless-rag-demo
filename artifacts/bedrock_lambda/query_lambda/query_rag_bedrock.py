@@ -12,6 +12,8 @@ import base64
 import datetime
 import csv
 
+from prompt_utils import get_system_prompt, single_agent_step
+
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = 'amazon.titan-embed-text-v1'
 LOG = logging.getLogger()
@@ -183,7 +185,6 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
     counter=0
     sent_ack = False
     for evt in response['body']:
-        print('---- evt ----')
         counter = counter + 1
         print(dir(evt))
         chunk_str = None
@@ -275,8 +276,119 @@ def parse_response(model_id, response):
     print('parse_response_final_result' + result)
     return result
 
-def query_chat(query, model_id, connect_id):
-    print("not-implemented")
+# Agent code start
+list_of_tools_specs = []
+tool_names = []
+tool_descriptions = []
+
+def query_agents(agent_type, user_input, connect_id):
+    format_prompt_invoke_function(agent_type, user_input, connect_id)
+    
+
+
+def format_prompt_invoke_function(agent_type, user_input, connect_id):
+    chat_history_list = json.loads(base64.b64decode(user_input))
+    if len(chat_history_list) > 0:
+        if 'role' in chat_history_list[0] and 'user' == chat_history_list[0]['role']:
+            for text_inputs in chat_history_list[0]['content']:
+                if text_inputs['type'] == 'text' and '<user-request>' not in text_inputs['text']:
+                    text_inputs['text'] =  f'What is the first step in order to solve this problem?  <user-request> {text_inputs["text"]} </user-request>' 
+                    break          
+    
+    print(f'Agent Chat history {chat_history_list}')
+
+    system_prompt = get_system_prompt(agent_type)
+                
+    prompt_template= {
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 10000,
+                        "system": system_prompt,
+                        "messages": chat_history_list
+                    }  
+    
+    prompt_flow = []
+    prompt_flow.extend(chat_history_list)
+    # Try to solve a user query in 5 steps
+    for i in range(5):
+        output = invoke_model(i, prompt_template, connect_id)
+        print(f'Step {i} output {output}')
+        done, human_prompt, assistant_prompt = single_agent_step(i, output)
+        prompt_flow.append({"role":"assistant", "content": assistant_prompt })
+        if human_prompt is not None:
+            prompt_flow.append({"role":"user", "content":  human_prompt })
+        # To be displayed in StackTrace
+        websocket_send(connect_id, prompt_flow)
+        
+        if not done:
+            print(f'{assistant_prompt}')
+        else:
+            print('Final answer from LLM:\n'+f'{assistant_prompt}')
+            return assistant_prompt
+            #break
+        
+        prompt_template= {
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 10000,
+                        "system": system_prompt,
+                        "messages": prompt_flow
+                    } 
+    
+
+def invoke_model(step_id, prompt, connect_id):
+    modelId = "anthropic.claude-3-sonnet-20240229-v1:0"
+    result = query_bedrock_claude3_model(step_id, modelId, prompt, connect_id)
+    return ''.join(result)
+
+
+def query_bedrock_claude3_model(step_id, model, prompt, connect_id):
+    cnk_str = []
+    response = bedrock_client.invoke_model_with_response_stream(
+        body=json.dumps(prompt),
+        modelId=model,
+        accept='application/json',
+        contentType='application/json'
+    )
+    counter=0
+    sent_ack = False
+    can_print = False
+    printed = False
+    for evt in response['body']:
+        counter = counter + 1
+        chunk_str = None
+        if 'chunk' in evt:
+            sent_ack = False
+            chunk = evt['chunk']['bytes']
+            chunk_json = json.loads(chunk.decode("UTF-8"))
+            
+            if chunk_json['type'] == 'content_block_delta' and chunk_json['delta']['type'] == 'text_delta':
+                text_val = chunk_json['delta']['text']
+                cnk_str.append(chunk_json['delta']['text'])
+                if f'<answer>' in text_val:
+                    can_print = True
+                if f'</answer>' in text_val:
+                    if not printed:
+                        websocket_send(connect_id, [{"role": "intermediate", "content": text_val}])
+                        printed = True
+                    can_print = False
+                                
+                if can_print:
+                    websocket_send(connect_id, [{ "role": "intermediate", "content": text_val}] )
+            if can_print and counter%100 == 0:
+                websocket_send(connect_id, [{ "role": "intermediate", "content": "ack-end-of-string" }] )
+                sent_ack = True
+        else:
+            websocket_send(connect_id, [{ "role": "intermediate", "content": evt }] )
+            break
+
+    if  not sent_ack and (can_print or printed):
+            sent_ack = True
+            websocket_send(connect_id, [{ "role": "intermediate", "content": "ack-end-of-string" }] )
+
+    return cnk_str
+
+
+# Agent code end
+
 
 def prepare_prompt_template(model_id, behaviour, prompt, context, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
@@ -417,11 +529,11 @@ def handler(event, context):
                 input_to_llm = json.loads(event['body'], strict=False)
                 query = input_to_llm['query']
                 behaviour = input_to_llm['behaviour']
-                model_id = input_to_llm['model_id']
                 if 'agent' not in behaviour:
+                    model_id = input_to_llm['model_id']
                     query_data(query, behaviour, model_id, connect_id)
                 else:
-                    query_chat(query, model_id, connect_id)
+                    query_agents(behaviour, query, connect_id)
         elif routeKey == '$connect':
             if 'x-api-key' in event['queryStringParameters']:
                 headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }

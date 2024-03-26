@@ -140,7 +140,6 @@ class ApiGw_Stack(Stack):
             boto3_bedrock_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'boto3-bedrock-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["boto3_bedrock_layer"]}:1')
             
-            
             opensearchpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'opensearchpy-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["opensearchpy_layer"]}:1')
             
@@ -150,11 +149,9 @@ class ApiGw_Stack(Stack):
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
             
-            xmltodict_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'xmltodict-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["xmltodict_layer_name"]}:1')
-            
-                                                        
-            
+            wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["wrangler_layer"]}:1')
+
             print('--- Amazon Bedrock Deployment ---')
 
             
@@ -191,8 +188,8 @@ class ApiGw_Stack(Stack):
                                                 'IS_RAG_ENABLED': is_opensearch,
                                                 'S3_BUCKET_NAME': bucket_name
                                   },
-                                  memory_size=2048,
-                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, xmltodict_layer, langchainpy_layer]
+                                  memory_size=4096,
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer, wrangler_layer]
                                 )
             
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',

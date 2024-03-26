@@ -28,7 +28,7 @@ phases:
       - rm -rf python boto3_bedrock.zip
       - echo Build aws4auth lambda layer
       - mkdir python
-      - python3 -m pip install requests-aws4auth -t python/
+      - python3 -m pip install requests-aws4auth xmltodict -t python/
       - zip -r aws4auth.zip python
       - aws lambda publish-layer-version --layer-name $aws4auth_layer_name --zip-file fileb://aws4auth.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
       - rm -rf python aws4auth.zip
@@ -37,13 +37,10 @@ phases:
       - zip -r langchainpy.zip python
       - aws lambda publish-layer-version --layer-name $langchainpy_layer_name --zip-file fileb://langchainpy.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
       - rm -rf python langchainpy.zip
-      - python3 -m pip install xmltodict -t python/
-      - zip -r xmltodict.zip python
-      - aws lambda publish-layer-version --layer-name $xmltodict_layer_name --zip-file fileb://xmltodict.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
-      - rm -rf python xmltodict.zip
-      - python3 -m pip install yfinance -t python/
-      - zip -r yfinance.zip python
-      - aws lambda publish-layer-version --layer-name $yfinance_layer_name --zip-file fileb://yfinance.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+      - mkdir python
+      - python3 -m pip install awswrangler -t python/
+      - zip -r awswrangler.zip python
+      - aws lambda publish-layer-version --layer-name $wrangler_layer_name --zip-file fileb://awswrangler.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
 
   post_build:
     commands:

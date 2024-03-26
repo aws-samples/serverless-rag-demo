@@ -1,11 +1,22 @@
-import yfinance as yf
 from datetime import datetime, timedelta
 from typing import Dict
+import subprocess
+import sys
+
+# pip install custom package to /tmp/ and add to path
+# subprocess.call('pip install yfinance -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+# sys.path.insert(1, '/tmp/')
+
+# # Install yfinance
+# subprocess.check_call([sys.executable, "-m", "pip", "install", "--target", "tmp", "yfinance"])
+# sys.path.append('/tmp')
+
+import subprocess as yf
 
 stock_tool_name = 'Stock Performance'
 stock_tool_description = "Gets the stock performance based on company symbol or ticker"
 
-get_stock_description = """\
+get_stock_specs = """\
 <tool_set>
     <tool_description>
     <tool_usage>This tool is used to get the company stock performance. It needs the company ticker (stock symbol) to provide a response</tool_usage>
@@ -20,7 +31,7 @@ get_stock_description = """\
 
 
 def get_stock_template(ticker: str):
-    
+    print("Called .............stock_template .............%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     todays_date = datetime.now()
     # Get the data for the past six months
     start_date = todays_date - timedelta(days=30)

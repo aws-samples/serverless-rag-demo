@@ -23,10 +23,9 @@ class BedrockLayerStack(NestedStack):
         boto3_bedrock_layer_name = config_details['boto3_bedrock_layer']
         opensearchpy_layer_name = config_details['opensearchpy_layer']
         langchainpy_layer_name = config_details['langchainpy_layer_name']
-        xmltodict_layer_name = config_details['xmltodict_layer_name']
-        yfinance_layer_name = config_details['yfinance_layer_name']
         aws4auth_layer_name = config_details['aws4auth_layer']
-        
+        wrangler_layer_name = config_details["wrangler_layer"]
+
         llm_model_id = 'random'
         try:
             llm_model_id = self.node.get_context("llm_model_id")
@@ -58,8 +57,7 @@ class BedrockLayerStack(NestedStack):
                 "opensearchpy_layer_name": _codebuild.BuildEnvironmentVariable(value = opensearchpy_layer_name),
                 "aws4auth_layer_name": _codebuild.BuildEnvironmentVariable(value = aws4auth_layer_name),
                 "langchainpy_layer_name":  _codebuild.BuildEnvironmentVariable(value = langchainpy_layer_name),
-                "xmltodict_layer_name": _codebuild.BuildEnvironmentVariable(value = xmltodict_layer_name),
-                "yfinance_layer_name": _codebuild.BuildEnvironmentVariable(value = yfinance_layer_name),
+                "wrangler_layer_name": _codebuild.BuildEnvironmentVariable(value = wrangler_layer_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = account_id),
                 "region": _codebuild.BuildEnvironmentVariable(value = region)
             })

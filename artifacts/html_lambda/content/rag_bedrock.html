@@ -362,8 +362,8 @@
           type="button" role="tab" aria-controls="Conversations" aria-selected="false">Conversations</button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="agents-tab" data-bs-toggle="tab" data-bs-target="#agents-div" type="button"
-          role="tab" aria-controls="Agents" aria-selected="false">Agents</button>
+        <button class="nav-link" id="weather-tab" data-bs-toggle="tab" data-bs-target="#weather-agents-div" type="button"
+          role="tab" aria-controls="Weather Agent" aria-selected="false">Weather Agent</button>
       </li>
     </ul>
     <div class="tab-content" id="myTabContent">
@@ -609,7 +609,7 @@
                   <div class="card-header d-flex justify-content-between align-items-center p-3">
                     <h5 class="mb-0">Chat</h5>
                     <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark"
-                      onclick="showChatBox()">Start a new chat session</button>
+                      onclick="reset_agent_box()">Start a new chat session</button>
                   </div>
                   <div id="conversations-box" class="card-body" data-mdb-perfect-scrollbar="true"
                     style="position: relative; height: 60vh; overflow-x: hidden; overflow-y: auto;">
@@ -655,6 +655,66 @@
         </section>
 
       </div>
+
+      <div class="tab-pane fade" id="weather-agents-div" role="tabpanel" aria-labelledby="weather-agents-tab"
+      style="margin-top:-5vh">
+      <!-- style="background-color: #eee;" -->
+      <section class="gradient-custom">
+        <div class="container py-5">
+
+          <div class="row d-flex justify-content-center">
+            <div class="col-md-12 col-lg-12 col-xl-12">
+
+              <div class="card" id="chat2">
+                <div class="card-header d-flex justify-content-between align-items-center p-3">
+                  <h5 class="mb-0">Chat</h5>
+                  <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark"
+                    onclick="reset_agent_box()">Start a new chat session</button>
+                </div>
+                <div id="weather-conversations-box" class="card-body" data-mdb-perfect-scrollbar="true"
+                  style="position: relative; height: 60vh; overflow-x: hidden; overflow-y: auto;">
+                  <!-- Assistant -->
+                  <div class="d-flex flex-row justify-content-start">
+                    <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
+                      alt="avatar 1" style="width: 45px; height: 100%;">
+                    <div>
+                      <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">
+                        Welcome to Weather reporter</p>
+                    </div>
+                  </div>
+
+                  <!-- <div class="divider d-flex align-items-center mb-4">
+                    <p class="text-center mx-3 mb-0" style="color: #a2aab7;">Today</p>
+                  </div> -->
+
+                  <!-- Human -->
+                  <!-- <div class="d-flex flex-row justify-content-end mb-4 pt-1">
+                <div>
+                  <p class="small p-2 me-3 mb-1 text-white rounded-3 bg-primary">Hello, how are you doing</p>
+                  <p class="small me-3 mb-3 rounded-3 text-muted d-flex justify-content-end">00:06</p>
+                </div>
+                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava4-bg.webp"
+                  alt="avatar 1" style="width: 45px; height: 100%;">
+              </div> -->
+
+                </div>
+                <div id="conversations-footer"
+                  class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                  <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp"
+                    alt="avatar 3" style="width: 40px; height: 100%;">
+                  <input type="text" class="form-control form-control-lg" id="weather-chat-text" placeholder="Type message">
+                  <button id="send-chat-button" type="button" class="btn btn-info"
+                    onclick="invokeAgent('weather-agent')">send</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </div>
 
 
       <div id="err"></div>
@@ -1095,6 +1155,20 @@
 
       }
 
+      function reset_agent_box() {
+        ws = null
+        chat_id = null
+        weather_prompt_flow = []
+        reset_chat_html = '<div class="d-flex flex-row justify-content-start">' +
+          '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"' +
+          ' alt="avatar 1" style="width: 45px; height: 100%;"> ' +
+          '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+          'Hello I am Claude V2' +
+          '</p></div></div>'
+
+        document.getElementById('weather-conversations-box').innerHTML = reset_chat_html
+      }
+
       function guidGenerator() {
         var S4 = function () {
           return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
@@ -1235,6 +1309,130 @@
         }
 
       }
+
+
+      weather_prompt_flow = []
+
+      function invokeAgent(agent_type) {
+        $('#send-chat-button').prop('disabled', true)
+        $('#custom-spinner').css('visibility', 'visible');
+        $('#index-button').css('visibility', 'hidden');
+        $('#query-button').css('visibility', 'hidden');
+        $('#delete-button').css('visibility', 'hidden');
+        var message_store = '';
+        var end_of_response = false;
+        chat_id = guidGenerator()
+
+        query_str = " " + $('#weather-chat-text').val()
+        human_prompt = {'type': 'text', 'text': query_str}
+
+        weather_prompt_flow.push({ 'role': 'user',  'content': [human_prompt] })
+
+        data = '{"query": "' + btoa(unescape(JSON.stringify(weather_prompt_flow))) + '",  "behaviour": "' + agent_type + '" ,"action": "bedrock"}'
+
+        request_html = '<div class="d-flex flex-row justify-content-start">' +
+          '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+          '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+          query_str +
+          '</p></div></div>' +
+          '<div class="divider d-flex align-items-center mb-4"></div>'
+        document.getElementById('weather-conversations-box').innerHTML = document.getElementById('weather-conversations-box').innerHTML + request_html
+
+        claude_wait_id = "claude-wait" + chat_id
+        claude_wait_html = '<div id="' + claude_wait_id + '" class="d-flex flex-row justify-content-start">' +
+          '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+          '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+          '...' +
+          '</p></div></div>' +
+          '<div class="divider d-flex align-items-center mb-4"></div>'
+        document.getElementById('weather-conversations-box').innerHTML = document.getElementById('weather-conversations-box').innerHTML + claude_wait_html
+
+
+        $(document).on('click', '#' + claude_wait_id, function () {
+          $(this).removeClass('d-flex');
+          $(this).hide();
+          $(this).css('visibility', 'hidden');
+        });
+
+        if ("WebSocket" in window) {
+          console.log("WebSocket is supported by your Browser!");
+          if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
+
+            ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
+            ws.onerror = function (event) {
+              weather_prompt_flow = [];
+              console.log(event);
+              $('#custom-spinner').css('visibility', 'hidden');
+              $('#send-chat-button').prop('disabled', false)
+              $('#index-button').css('visibility', 'visible');
+              $('#query-button').css('visibility', 'visible');
+              $('#delete-button').css('visibility', 'visible');
+              alertbuilder('Could not establish connection. Either Incorrect key or exceeded usage limits', false)
+            }
+
+          } else {
+            ws.send(data);
+          }
+
+          ws.onopen = function () {
+            ws.send(data);
+          }
+        }
+
+        ws.onmessage = function (evt) {
+          $('#custom-spinner').css('visibility', 'hidden');
+          $('#index-button').css('visibility', 'visible');
+          $('#query-button').css('visibility', 'visible');
+          $('#delete-button').css('visibility', 'visible');
+          var received_msg = '';
+          response_json = {}
+          try {
+            weather_prompt_flow = JSON.parse(atob(evt.data)) 
+
+          }
+          catch(error) {
+            weather_prompt_flow = []
+            response_json = JSON.parse(evt.data)
+          }
+          thought = ''
+          for (var i=0; i<weather_prompt_flow.length; i++) {
+            if('content' in weather_prompt_flow[i]) {
+              content_list = weather_prompt_flow[i]['content']
+              for (var j =0; j< content_list.length; j++) {
+                if ('text' in content_list[j]) {
+                  thought = thought + '<br>' + weather_prompt_flow[i]['role'] + ': ' + content_list[j]['text'] + '<br>'
+                } else {
+                  thought = thought + '<br>' + weather_prompt_flow[i]['role'] + ': ' + content_list[j] + '<br>'
+                }
+                
+              }
+              
+            }
+          }
+          end_of_response=true
+          console.log("streaming message is received.. " + thought);
+          if (end_of_response) {
+            response_html = '<div class="d-flex flex-row justify-content-start">' +
+              '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
+              '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+                thought +
+              '</p></div></div>' +
+              '<div class="divider d-flex align-items-center mb-4"></div>'
+
+            $("#" + claude_wait_id).trigger("click");
+            $('#send-chat-button').prop('disabled', false)
+            setTimeout(() => {
+              document.getElementById('weather-conversations-box').innerHTML = document.getElementById('weather-conversations-box').innerHTML + response_html
+            }, 2);
+            thought = ''
+            end_of_response = false
+          }
+
+
+        }
+
+      }
+
 
       function specialToASCII(data_str) {
           let res = '';
