@@ -10,8 +10,6 @@ else
     infra_env=$1
 fi  
 
-aws_acc_id=$(aws sts get-caller-identity --query "Account" --output text)
-
 if [ $infra_env != "dev" -a $infra_env != "qa" -a $infra_env != "sandbox" ]
 then
     echo "Environment name can only be dev or qa or sandbox. example 'sh creator.sh dev' "
@@ -288,22 +286,6 @@ then
         fi
     
     fi
-
-    query_function_name=$(jq '.context.'$infra_env'.bedrock_querying_function_name' cdk.json -r)
-    boto3_bedrock_layer=$(jq '.context.'$infra_env'.boto3_bedrock_layer' cdk.json -r)
-    opensearchpy_layer=$(jq '.context.'$infra_env'.opensearchpy_layer' cdk.json -r)
-    aws4auth_layer=$(jq '.context.'$infra_env'.aws4auth_layer' cdk.json -r)
-    langchainpy_layer_name=$(jq '.context.'$infra_env'.langchainpy_layer_name' cdk.json -r)
-    
-    printf "$Green Attach layers on function $query_function_name $NC"
-    layer_output = $(aws lambda update-function-configuration --function-name $query_function_name \
-        --layers arn:aws:lambda:$deployment_region:336392948345:layer:AWSDataWrangler-Python39:3 \
-                 arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$boto3_bedrock_layer:1 \
-                 arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$opensearchpy_layer:1 \
-                 arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$aws4auth_layer:1 \
-                 arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$langchainpy_layer_name:1 \
-                 --output text)
-    printf "Layers added : $layer_output"
 else
     echo "Exiting. Build did not succeed."
 fi

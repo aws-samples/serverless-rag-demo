@@ -148,7 +148,13 @@ class ApiGw_Stack(Stack):
             
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
+            
+            wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:336392948345:layer:AWSDataWrangler-Python39:3')
+            
             print('--- Amazon Bedrock Deployment ---')
+
+            
             
             bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
                                   function_name=env_params['bedrock_indexing_function_name'],
@@ -182,7 +188,20 @@ class ApiGw_Stack(Stack):
                                                 'IS_RAG_ENABLED': is_opensearch,
                                                 'S3_BUCKET_NAME': bucket_name
                                   },
-                                  memory_size=4096
+                                  memory_size=4096,
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
+                                )
+            
+            aws_wrangler_lambda_function = _lambda.Function(self, f'llm-bd-wrangler-{env_name}',
+                                  function_name=env_params['bedrock_wrangler_function_name'],
+                                  code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/wrangler_lambda/')),
+                                  runtime=_lambda.Runtime.PYTHON_3_9,
+                                  handler="aws_wrangler.handler",
+                                  role=custom_lambda_role,
+                                  timeout=_cdk.Duration.seconds(300),
+                                  description="AWS Wrangler read files in multiple formats",
+                                  memory_size=4096,
+                                  layers= [wrangler_layer]
                                 )
             
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
