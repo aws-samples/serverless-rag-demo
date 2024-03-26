@@ -10,7 +10,7 @@ else
     infra_env=$1
 fi  
 
-aws_acc_id = $(aws sts get-caller-identity --query "Account" --output text)
+aws_acc_id=$(aws sts get-caller-identity --query "Account" --output text)
 
 if [ $infra_env != "dev" -a $infra_env != "qa" -a $infra_env != "sandbox" ]
 then
