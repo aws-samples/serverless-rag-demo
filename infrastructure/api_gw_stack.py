@@ -176,7 +176,7 @@ class ApiGw_Stack(Stack):
             bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
                                   function_name=env_params['bedrock_querying_function_name'],
                                   code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/query_lambda/')),
-                                  runtime=_lambda.Runtime.PYTHON_3_9,
+                                  runtime=_lambda.Runtime.PYTHON_3_10,
                                   handler="query_rag_bedrock.handler",
                                   role=custom_lambda_role,
                                   timeout=_cdk.Duration.seconds(300),
