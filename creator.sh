@@ -294,14 +294,15 @@ then
     langchainpy_layer_name=$(jq '.context.'$infra_env'.langchainpy_layer_name' cdk.json -r)
     aws_acc_id = $(aws sts get-caller-identity --query "Account" --output text)
 
-    printf "$Green Attach AWS Managed wrangler layer on function $query_function_name $NC"
-    aws lambda update-function-configuration --function-name $query_function_name
+    printf "$Green Attach layers on function $query_function_name $NC"
+    layer_output = $(aws lambda update-function-configuration --function-name $query_function_name \
         --layers arn:aws:lambda:$deployment_region:336392948345:layer:AWSDataWrangler-Python39:3 \
                  arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$boto3_bedrock_layer:1 \
                  arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$opensearchpy_layer:1 \
                  arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$aws4auth_layer:1 \
                  arn:aws:lambda:$deployment_region:$aws_acc_id:layer:$langchainpy_layer_name:1 \
-                 --output text
+                 --output text)
+    printf "Layers added : $layer_output"
 else
     echo "Exiting. Build did not succeed."
 fi
