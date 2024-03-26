@@ -148,13 +148,7 @@ class ApiGw_Stack(Stack):
             
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
-            
-            wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:336392948345:layer:AWSDataWrangler-Python39:3')
-            
             print('--- Amazon Bedrock Deployment ---')
-
-            
             
             bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
                                   function_name=env_params['bedrock_indexing_function_name'],

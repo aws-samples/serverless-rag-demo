@@ -286,6 +286,10 @@ then
         fi
     
     fi
+
+    query_function_name=$(jq '.context.'$infra_env'.bedrock_querying_function_name' cdk.json -r)
+    printf "$Green Attach AWS Managed wrangler layer on function $query_function_name $NC"
+    aws lambda update-function-configuration --function-name $query_function_name --layers arn:aws:lambda:$deployment_region:336392948345:layer:AWSDataWrangler-Python39:3
 else
     echo "Exiting. Build did not succeed."
 fi
