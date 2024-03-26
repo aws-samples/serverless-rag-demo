@@ -221,8 +221,17 @@ class ApiGw_Stack(Stack):
                     "iam:ListUsers", "iam:ListRoles", "s3:*", "textract:*"],
                 resources=["*"],
             )
+
+            wrangler_policy = _iam.PolicyStatement(
+                actions=[
+                     "s3:*"],
+                resources=["*"],
+            )
+
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
+            aws_wrangler_lambda_function.add_to_role_policy(wrangler_policy)
+            
             bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
 
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
