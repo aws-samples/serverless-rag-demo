@@ -213,7 +213,7 @@ class ApiGw_Stack(Stack):
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
-                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll",
+                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll", "lambda:InvokeFunction",
                     "apigateway:GET", "apigateway:DELETE", "apigateway:PATCH", "apigateway:POST", "apigateway:PUT",
                     "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
                     "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
@@ -231,7 +231,7 @@ class ApiGw_Stack(Stack):
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
             aws_wrangler_lambda_function.add_to_role_policy(wrangler_policy)
-            
+
             bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
 
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
