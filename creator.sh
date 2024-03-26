@@ -10,6 +10,8 @@ else
     infra_env=$1
 fi  
 
+aws_acc_id = $(aws sts get-caller-identity --query "Account" --output text)
+
 if [ $infra_env != "dev" -a $infra_env != "qa" -a $infra_env != "sandbox" ]
 then
     echo "Environment name can only be dev or qa or sandbox. example 'sh creator.sh dev' "
@@ -292,8 +294,7 @@ then
     opensearchpy_layer=$(jq '.context.'$infra_env'.opensearchpy_layer' cdk.json -r)
     aws4auth_layer=$(jq '.context.'$infra_env'.aws4auth_layer' cdk.json -r)
     langchainpy_layer_name=$(jq '.context.'$infra_env'.langchainpy_layer_name' cdk.json -r)
-    aws_acc_id = $(aws sts get-caller-identity --query "Account" --output text)
-
+    
     printf "$Green Attach layers on function $query_function_name $NC"
     layer_output = $(aws lambda update-function-configuration --function-name $query_function_name \
         --layers arn:aws:lambda:$deployment_region:336392948345:layer:AWSDataWrangler-Python39:3 \
