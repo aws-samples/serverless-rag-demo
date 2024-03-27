@@ -13,6 +13,11 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Project Updates</b></summary>
 
+  #### (27-Mar-2024):
+  * Introducing Function calling support with Anthropic's Claude3
+  * Weather-Agent with two functions to find latitude longitude and the weather data of a particular place through function calls
+  * Hotel-Booking Agent to book a room(call functions) with prompt-engg on Claude3
+
   #### (16-Mar-2024):
   * Multi-modal support with Claude-3 Haiku and Sonnet.
   * Compare two or more images, analyze PDFs/Txt/Json file with Claude-3
