@@ -6,7 +6,6 @@ from aws_cdk import Stack, Tags
 from llms_with_serverless_rag.llms_with_serverless_rag_stack import LlmsWithServerlessRagStack
 from infrastructure.api_gw_stack import ApiGw_Stack
 from infrastructure.sagemaker_stack import SagemakerLLMStack
-from infrastructure.bedrock_agents_stack import BedrockAgentsStack
 
 app = cdk.App()
 
@@ -39,9 +38,7 @@ LlmsWithServerlessRagStack(app, f"LlmsWithServerlessRag{env_name}Stack", env=env
 
 api_gw_stack = ApiGw_Stack(app, f'ApiGwLlmsLambda{env_name}Stack')
 sagemaker_stack = SagemakerLLMStack(app, f'SagemakerLlm{env_name}Stack')
-bedrock_agents_stack = BedrockAgentsStack(app, f'bedrockAgents{env_name}Stack')
 tag_my_stack(api_gw_stack)
 tag_my_stack(sagemaker_stack)
-tag_my_stack(bedrock_agents_stack)
 app.synth()
 

@@ -12,6 +12,8 @@ import base64
 import datetime
 import csv
 
+from prompt_utils import get_system_prompt, agent_execution_step
+
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = 'amazon.titan-embed-text-v1'
 LOG = logging.getLogger()
@@ -25,8 +27,9 @@ wss_url = getenv("WSS_URL", "WEBSOCKET_URL_MISSING")
 rest_api_url = getenv("REST_ENDPOINT_URL", "REST_URL_MISSING")
 is_rag_enabled = getenv("IS_RAG_ENABLED", 'yes')
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
-
+WRANGLER_FUNCTION_NAME = getenv('WRANGLER_NAME', 'bedrock_wrangler_dev')
 websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=wss_url)
+lambda_client = boto3.client('lambda')
 
 credentials = boto3.Session().get_credentials()
 service = 'aoss'
@@ -183,7 +186,6 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
     counter=0
     sent_ack = False
     for evt in response['body']:
-        print('---- evt ----')
         counter = counter + 1
         print(dir(evt))
         chunk_str = None
@@ -274,6 +276,98 @@ def parse_response(model_id, response):
         result = str(response)
     print('parse_response_final_result' + result)
     return result
+
+# Agent code start
+list_of_tools_specs = []
+tool_names = []
+tool_descriptions = []
+
+def query_agents(agent_type, user_input, connect_id):
+    format_prompt_invoke_function(agent_type, user_input, connect_id)
+    
+
+
+def format_prompt_invoke_function(agent_type, user_input, connect_id):
+    chat_history_list = json.loads(base64.b64decode(user_input))
+    if len(chat_history_list) > 0:
+        if 'role' in chat_history_list[0] and 'user' == chat_history_list[0]['role']:
+            for text_inputs in chat_history_list[0]['content']:
+                if text_inputs['type'] == 'text' and '<user-request>' not in text_inputs['text']:
+                    text_inputs['text'] =  f'What is the first step in order to solve this problem?  <user-request> {text_inputs["text"]} </user-request>' 
+                    break          
+    
+    print(f'Agent Chat history {chat_history_list}')
+
+    system_prompt = get_system_prompt(agent_type)
+                
+    prompt_template= {
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 10000,
+                        "system": system_prompt,
+                        "messages": chat_history_list
+                    }  
+    
+    prompt_flow = []
+    prompt_flow.extend(chat_history_list)
+
+    # Try to solve a user query in 5 steps
+    for i in range(5):
+        output = invoke_model(i, prompt_template, connect_id)
+        print(f'Step {i} output {output}')
+        done, human_prompt, assistant_prompt = agent_execution_step(i, output)
+        prompt_flow.append({"role":"assistant", "content": assistant_prompt })
+        if human_prompt is not None:
+            prompt_flow.append({"role":"user", "content":  human_prompt })
+        # To be displayed in StackTrace
+        websocket_send(connect_id, {"prompt_flow": prompt_flow, "done": done})
+        
+        if not done:
+            print(f'{assistant_prompt}')
+        else:
+            print('Final answer from LLM:\n'+f'{assistant_prompt}')
+            return assistant_prompt
+            #break
+        
+        prompt_template= {
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 10000,
+                        "system": system_prompt,
+                        "messages": prompt_flow
+                    } 
+    
+
+def invoke_model(step_id, prompt, connect_id):
+    modelId = "anthropic.claude-3-sonnet-20240229-v1:0"
+    result = query_bedrock_claude3_model(step_id, modelId, prompt, connect_id)
+    return ''.join(result)
+
+
+def query_bedrock_claude3_model(step_id, model, prompt, connect_id):
+    '''
+       StepId and ConnectId can be used to stream data over the  socket
+    '''
+    cnk_str = []
+    response = bedrock_client.invoke_model_with_response_stream(
+        body=json.dumps(prompt),
+        modelId=model,
+        accept='application/json',
+        contentType='application/json'
+    )
+    for evt in response['body']:
+        if 'chunk' in evt:
+            chunk = evt['chunk']['bytes']
+            chunk_json = json.loads(chunk.decode("UTF-8"))
+            
+            if chunk_json['type'] == 'content_block_delta' and chunk_json['delta']['type'] == 'text_delta':
+                cnk_str.append(chunk_json['delta']['text'])
+        else:
+            cnk_str.append(evt)
+            break
+    return cnk_str
+
+
+# Agent code end
+
 
 def prepare_prompt_template(model_id, behaviour, prompt, context, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
@@ -414,8 +508,11 @@ def handler(event, context):
                 input_to_llm = json.loads(event['body'], strict=False)
                 query = input_to_llm['query']
                 behaviour = input_to_llm['behaviour']
-                model_id = input_to_llm['model_id']
-                query_data(query, behaviour, model_id, connect_id)
+                if 'agent' not in behaviour:
+                    model_id = input_to_llm['model_id']
+                    query_data(query, behaviour, model_id, connect_id)
+                else:
+                    query_agents(behaviour, query, connect_id)
         elif routeKey == '$connect':
             if 'x-api-key' in event['queryStringParameters']:
                 headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }
@@ -517,7 +614,16 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
         elif user_query_type['type'] == 'other':
             if 'data' in user_query_type and 'file_extension' in user_query_type:
                 s3_key = f"bedrock/data/{user_query_type['data']}.{user_query_type['file_extension']}"
-                text_data_from_file = get_contents(user_query_type['file_extension'], get_file_from_s3(s3_bucket_name, s3_key))
+                text_data_from_file = ''
+                if user_query_type['file_extension'] in ['xls', 'xlsx', 'vnd.openxmlformats-officedocument.spreadsheetml.sheet']:
+                    invoke_response =   lambda_client.invoke(FunctionName=WRANGLER_FUNCTION_NAME,
+                                           InvocationType='RequestResponse',
+                                           Payload=json.dumps({'s3_prefix':f"s3://{s3_bucket_name}/{s3_key}"})
+                                        )
+                    print(f'invoke_response --- {invoke_response}')
+                    text_data_from_file = invoke_response['Payload'].read()
+                else:
+                    text_data_from_file = get_contents(user_query_type['file_extension'], get_file_from_s3(s3_bucket_name, s3_key))
                 prompt_content.append({ "type": "text", "text": f"""This is additional data {text_data_from_file}. Provide useful insights"""})
                 
 
@@ -536,6 +642,7 @@ def get_contents(file_extension, file_bytes):
         
         else: 
             #file_extension in ['sql', 'txt', 'json', 'csv']:
+            #if file_extension in ['csv', 'xls', 'xlsx']:
             content = file_bytes.decode()
     except Exception as e:
         print(f'Exception reading contents from file {e}')

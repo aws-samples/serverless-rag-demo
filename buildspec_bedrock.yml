@@ -27,7 +27,7 @@ phases:
       - rm -rf python boto3_bedrock.zip
       - echo Build aws4auth lambda layer
       - mkdir python
-      - python3 -m pip install requests-aws4auth -t python/
+      - python3 -m pip install requests-aws4auth xmltodict -t python/
       - zip -r aws4auth.zip python
       - aws lambda publish-layer-version --layer-name $aws4auth_layer_name --zip-file fileb://aws4auth.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
       - rm -rf python aws4auth.zip

@@ -140,7 +140,6 @@ class ApiGw_Stack(Stack):
             boto3_bedrock_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'boto3-bedrock-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["boto3_bedrock_layer"]}:1')
             
-            
             opensearchpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'opensearchpy-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["opensearchpy_layer"]}:1')
             
@@ -149,7 +148,9 @@ class ApiGw_Stack(Stack):
             
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
-                                                        
+            
+            wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}',
+                                                       f'arn:aws:lambda:{region}:336392948345:layer:AWSDataWrangler-Python39:3')
             
             print('--- Amazon Bedrock Deployment ---')
 
@@ -185,10 +186,23 @@ class ApiGw_Stack(Stack):
                                                 'REGION': region,
                                                 'REST_ENDPOINT_URL': rest_endpoint_url,
                                                 'IS_RAG_ENABLED': is_opensearch,
-                                                'S3_BUCKET_NAME': bucket_name
+                                                'S3_BUCKET_NAME': bucket_name,
+                                                'WRANGLER_NAME': env_params['bedrock_wrangler_function_name']
                                   },
-                                  memory_size=2048,
-                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer]
+                                  memory_size=4096,
+                                  layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
+                                )
+            
+            aws_wrangler_lambda_function = _lambda.Function(self, f'llm-bd-wrangler-{env_name}',
+                                  function_name=env_params['bedrock_wrangler_function_name'],
+                                  code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/wrangler_lambda/')),
+                                  runtime=_lambda.Runtime.PYTHON_3_9,
+                                  handler="aws_wrangler.handler",
+                                  role=custom_lambda_role,
+                                  timeout=_cdk.Duration.seconds(300),
+                                  description="AWS Wrangler read files in multiple formats",
+                                  memory_size=4096,
+                                  layers= [wrangler_layer]
                                 )
             
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
@@ -200,7 +214,7 @@ class ApiGw_Stack(Stack):
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
                 actions=[
-                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll",
+                    "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll", "lambda:InvokeFunction",
                     "apigateway:GET", "apigateway:DELETE", "apigateway:PATCH", "apigateway:POST", "apigateway:PUT",
                     "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
                     "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
@@ -208,8 +222,17 @@ class ApiGw_Stack(Stack):
                     "iam:ListUsers", "iam:ListRoles", "s3:*", "textract:*"],
                 resources=["*"],
             )
+
+            wrangler_policy = _iam.PolicyStatement(
+                actions=[
+                     "s3:*"],
+                resources=["*"],
+            )
+
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
+            aws_wrangler_lambda_function.add_to_role_policy(wrangler_policy)
+
             bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
 
             bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(

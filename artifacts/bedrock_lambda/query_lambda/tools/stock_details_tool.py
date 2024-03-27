@@ -1,17 +1,41 @@
-import yfinance as yf
-import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Dict
+import subprocess
+import sys
+
+# pip install custom package to /tmp/ and add to path
+# subprocess.call('pip install yfinance -t /tmp/ --no-cache-dir'.split(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+# sys.path.insert(1, '/tmp/')
+
+# # Install yfinance
+# subprocess.check_call([sys.executable, "-m", "pip", "install", "--target", "tmp", "yfinance"])
+# sys.path.append('/tmp')
+
+import subprocess as yf
+
+stock_tool_name = 'Stock Performance'
+stock_tool_description = "Gets the stock performance based on company symbol or ticker"
+
+get_stock_specs = """\
+<tool_set>
+    <tool_description>
+    <tool_usage>This tool is used to get the company stock performance. It needs the company ticker (stock symbol) to provide a response</tool_usage>
+    <tool_name>get_stock_template</tool_name>
+    <parameters>
+    <name>ticker</name>
+    </parameters>
+    </tool_description>
+<tool_set>
+"""
 
 
-ticker = 'NVDA'
 
 def get_stock_template(ticker: str):
-    
-
-
+    print("Called .............stock_template .............%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    todays_date = datetime.now()
     # Get the data for the past six months
-    start_date = pd.Timestamp.today() - pd.Timedelta(days=90)
-    end_date = pd.Timestamp.today()
+    start_date = todays_date - timedelta(days=30)
+    end_date = todays_date
     
     # Download the stock data
     stock_data = yf.download(ticker, start=start_date, end=end_date)
@@ -75,7 +99,6 @@ def get_stock_template(ticker: str):
                                 {stock_data.to_string()}
                                 </stock_price>
     '''
-
     return stock_analysis_template
 
 
