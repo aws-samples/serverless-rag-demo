@@ -33,7 +33,7 @@ Use these Instructions:
     <function_call></function_call> : This tag is used to call a function
     <answer></answer> : This tag is used to wrap the final answer
     <question></question> : This tag is used to ask a question to the user, its also used to make recommendations to the user.
-    <unanswered></unanswered> : This tag is used to mark the question unanswerable
+    <unanswered></unanswered> : If you cannot answer the question with the available set of tools place it in <unanswered></unanswered> tags
 
 <step_0>
 <function_call>
