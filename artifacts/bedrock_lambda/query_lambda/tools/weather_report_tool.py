@@ -1,4 +1,13 @@
 import requests
+import subprocess
+import sys
+import json
+
+subprocess.check_call([sys.executable, "-m", "pip", "install", "geopy", "--target", "/tmp"])
+sys.path.append('/tmp')
+from geopy.geocoders import Nominatim
+
+geo_locator = Nominatim(user_agent="sample-weather-agent")
 
 
 weather_tool_name = "Weather Reports"
@@ -28,10 +37,16 @@ get_weather_specs = """\
 
 
 def get_weather(latitude: str, longitude: str):
-    response = {"temp": "25.5", "units": "celcius", "windspeed": "25kmph"}
-    return response
-    
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current_weather=true"
+    response = requests.get(url)
+    return response.json()
 
 def get_lat_long(place: str):
-    default = {"latitude": 25, "longitude": 35}
-    return default
+    location = geo_locator.geocode(place)
+    if location:
+        lat = location.latitude
+        lon = location.longitude
+        return {"latitude": lat, "longitude": lon}
+    
+    return {"latitude": 25, "longitude": 30}
+    
