@@ -365,6 +365,10 @@
         <button class="nav-link" id="weather-tab" data-bs-toggle="tab" data-bs-target="#weather-agents-div" type="button"
           role="tab" aria-controls="Weather Agent" aria-selected="false">Weather Agent</button>
       </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="hotel-tab" data-bs-toggle="tab" data-bs-target="#hotel-agents-div" type="button"
+          role="tab" aria-controls="Hotel Agent" aria-selected="false">Hotel Agent</button>
+      </li>
     </ul>
     <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade show active" id="index-div" role="tabpanel" aria-labelledby="index-tab">
@@ -569,7 +573,7 @@
             <div id="image_viewer_container">
 
               <div class="image_viewer">
-                <input type="file" id="file" accept=".png, .jpg, .txt, .json, .csv, .pdf" hidden multiple>
+                <input type="file" id="file" accept=".png, .jpg, .txt, .json, .csv, .pdf, .xls, .xlsx" hidden multiple>
                 <div class="img-area" data-img="">
                   <div id="image_guidance">
                        <i class='bx bxs-cloud-upload icon'></i>
@@ -609,7 +613,7 @@
                   <div class="card-header d-flex justify-content-between align-items-center p-3">
                     <h5 class="mb-0">Chat</h5>
                     <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark"
-                      onclick="reset_agent_box()">Start a new chat session</button>
+                      onclick="showChatBox()">Start a new chat session</button>
                   </div>
                   <div id="conversations-box" class="card-body" data-mdb-perfect-scrollbar="true"
                     style="position: relative; height: 60vh; overflow-x: hidden; overflow-y: auto;">
@@ -669,7 +673,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center p-3">
                   <h5 class="mb-0">Chat</h5>
                   <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark"
-                    onclick="reset_agent_box()">Start a new chat session</button>
+                    onclick="reset_agent_box('weather')">Start a new chat session</button>
                 </div>
                 <div id="weather-conversations-box" class="card-body" data-mdb-perfect-scrollbar="true"
                   style="position: relative; height: 60vh; overflow-x: hidden; overflow-y: auto;">
@@ -683,20 +687,6 @@
                     </div>
                   </div>
 
-                  <!-- <div class="divider d-flex align-items-center mb-4">
-                    <p class="text-center mx-3 mb-0" style="color: #a2aab7;">Today</p>
-                  </div> -->
-
-                  <!-- Human -->
-                  <!-- <div class="d-flex flex-row justify-content-end mb-4 pt-1">
-                <div>
-                  <p class="small p-2 me-3 mb-1 text-white rounded-3 bg-primary">Hello, how are you doing</p>
-                  <p class="small me-3 mb-3 rounded-3 text-muted d-flex justify-content-end">00:06</p>
-                </div>
-                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava4-bg.webp"
-                  alt="avatar 1" style="width: 45px; height: 100%;">
-              </div> -->
-
                 </div>
                 <div id="conversations-footer"
                   class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
@@ -704,7 +694,7 @@
                     alt="avatar 3" style="width: 40px; height: 100%;">
                   <input type="text" class="form-control form-control-lg" id="weather-chat-text" placeholder="Type message">
                   <button id="send-chat-button" type="button" class="btn btn-info"
-                    onclick="invokeAgent('weather-agent')">send</button>
+                    onclick="invokeAgent('weather')">send</button>
                 </div>
               </div>
 
@@ -715,6 +705,52 @@
       </section>
 
     </div>
+
+    <div class="tab-pane fade" id="hotel-agents-div" role="tabpanel" aria-labelledby="hotel-agents-tab"
+    style="margin-top:-5vh">
+    <!-- style="background-color: #eee;" -->
+    <section class="gradient-custom">
+      <div class="container py-5">
+
+        <div class="row d-flex justify-content-center">
+          <div class="col-md-12 col-lg-12 col-xl-12">
+
+            <div class="card" id="chat2">
+              <div class="card-header d-flex justify-content-between align-items-center p-3">
+                <h5 class="mb-0">Chat</h5>
+                <button type="button" class="btn btn-primary btn-sm" data-mdb-ripple-color="dark"
+                  onclick="reset_agent_box('hotel')">Start a new chat session</button>
+              </div>
+              <div id="hotel-conversations-box" class="card-body" data-mdb-perfect-scrollbar="true"
+                style="position: relative; height: 60vh; overflow-x: hidden; overflow-y: auto;">
+                <!-- Assistant -->
+                <div class="d-flex flex-row justify-content-start">
+                  <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"
+                    alt="avatar 1" style="width: 45px; height: 100%;">
+                  <div>
+                    <p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">
+                      Welcome to SunNSands room booking portal</p>
+                  </div>
+                </div>
+
+              </div>
+              <div id="conversations-footer"
+                class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
+                <img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp"
+                  alt="avatar 3" style="width: 40px; height: 100%;">
+                <input type="text" class="form-control form-control-lg" id="hotel-chat-text" placeholder="Type message">
+                <button id="send-chat-button" type="button" class="btn btn-info"
+                  onclick="invokeAgent('hotel')">send</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
 
 
       <div id="err"></div>
@@ -1155,18 +1191,24 @@
 
       }
 
-      function reset_agent_box() {
+      function reset_agent_box(agent_type) {
         ws = null
         chat_id = null
-        weather_prompt_flow = []
+        agent_prompt_flow = []
+        text_val = ''
+        if (agent_type == 'weather') {
+          text_val='Welcome to Weather reporter'
+        }else {
+          text_val = 'Welcome to SunNSands room booking portal?'
+        }
         reset_chat_html = '<div class="d-flex flex-row justify-content-start">' +
           '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp"' +
           ' alt="avatar 1" style="width: 45px; height: 100%;"> ' +
           '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
-          'Hello I am Claude V2' +
+            text_val +
           '</p></div></div>'
 
-        document.getElementById('weather-conversations-box').innerHTML = reset_chat_html
+        document.getElementById(agent_type + '-conversations-box').innerHTML = reset_chat_html
       }
 
       function guidGenerator() {
@@ -1311,7 +1353,7 @@
       }
 
 
-      weather_prompt_flow = []
+      agent_prompt_flow = []
 
       function invokeAgent(agent_type) {
         $('#send-chat-button').prop('disabled', true)
@@ -1322,30 +1364,33 @@
         var message_store = '';
         var end_of_response = false;
         chat_id = guidGenerator()
-
-        query_str = " " + $('#weather-chat-text').val()
+        var bg_color = "#cfa6cd"
+        var inner_bg_color = "#e9dae8"
+        query_str = " " + $('#' +agent_type +  '-chat-text').val()  
+        
         human_prompt = {'type': 'text', 'text': query_str}
 
-        weather_prompt_flow.push({ 'role': 'user',  'content': [human_prompt] })
+        agent_prompt_flow.push({ 'role': 'user',  'content': [human_prompt] })
 
-        data = '{"query": "' + btoa(unescape(JSON.stringify(weather_prompt_flow))) + '",  "behaviour": "' + agent_type + '" ,"action": "bedrock"}'
+        data = '{"query": "' + btoa(unescape(JSON.stringify(agent_prompt_flow))) + '",  "behaviour": "' + agent_type+'-agent' + '" ,"action": "bedrock"}'
 
-        request_html = '<div class="d-flex flex-row justify-content-start">' +
+        request_html ='<div class="d-flex flex-row justify-content-start">' +
           '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava6-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
           '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
           query_str +
           '</p></div></div>' +
           '<div class="divider d-flex align-items-center mb-4"></div>'
-        document.getElementById('weather-conversations-box').innerHTML = document.getElementById('weather-conversations-box').innerHTML + request_html
+        document.getElementById(agent_type + '-conversations-box').innerHTML = document.getElementById(agent_type + '-conversations-box').innerHTML + request_html
 
         claude_wait_id = "claude-wait" + chat_id
         claude_wait_html = '<div id="' + claude_wait_id + '" class="d-flex flex-row justify-content-start">' +
           '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
-          '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
-          '...' +
+          '<div style="background-color:'+ bg_color +';" >'
+          '<p class="small p-2 ms-3 mb-1 rounded-3" style="background-color:' + inner_bg_color + ';">' +
+          '... Thinking ...' +
           '</p></div></div>' +
           '<div class="divider d-flex align-items-center mb-4"></div>'
-        document.getElementById('weather-conversations-box').innerHTML = document.getElementById('weather-conversations-box').innerHTML + claude_wait_html
+        document.getElementById(agent_type + '-conversations-box').innerHTML = document.getElementById(agent_type + '-conversations-box').innerHTML + claude_wait_html
 
 
         $(document).on('click', '#' + claude_wait_id, function () {
@@ -1360,7 +1405,7 @@
 
             ws = new WebSocket(awsData.websocketUrl + '?x-api-key=' + awsData['apiKey']);
             ws.onerror = function (event) {
-              weather_prompt_flow = [];
+              agent_prompt_flow = [];
               console.log(event);
               $('#custom-spinner').css('visibility', 'hidden');
               $('#send-chat-button').prop('disabled', false)
@@ -1385,54 +1430,86 @@
           $('#query-button').css('visibility', 'visible');
           $('#delete-button').css('visibility', 'visible');
           var received_msg = '';
+          var thought = ''
           response_json = {}
+          is_done = false
+          bg_color = "#cfa6cd"
+          inner_bg_color = "#e9dae8"
           try {
-            weather_prompt_flow = JSON.parse(atob(evt.data)) 
-
-          }
-          catch(error) {
-            weather_prompt_flow = []
-            response_json = JSON.parse(evt.data)
-          }
-          thought = ''
-          for (var i=0; i<weather_prompt_flow.length; i++) {
-            if('content' in weather_prompt_flow[i]) {
-              content_list = weather_prompt_flow[i]['content']
-              for (var j =0; j< content_list.length; j++) {
-                if ('text' in content_list[j]) {
-                  thought = thought + '<br>' + weather_prompt_flow[i]['role'] + ': ' + content_list[j]['text'] + '<br>'
-                } else {
-                  thought = thought + '<br>' + weather_prompt_flow[i]['role'] + ': ' + content_list[j] + '<br>'
+            response_details = JSON.parse(atob(evt.data)) 
+            if ('prompt_flow' in response_details) {
+              is_done = Boolean(response_details['done'])
+              if (!is_done) {
+                agent_prompt_flow = response_details['prompt_flow']
+                for (var i=0; i<agent_prompt_flow.length; i++) {
+                    if('content' in agent_prompt_flow[i]) {
+                        content_list = agent_prompt_flow[i]['content']
+                        for (var j =0; j< content_list.length; j++) {
+                            if ('text' in content_list[j]) {
+                              thought = thought + '<br>' + capitalizeFirstLetter(agent_prompt_flow[i]['role']) + ': ' + content_list[j]['text']
+                            } else {
+                              thought = thought + '<br>' + capitalizeFirstLetter(agent_prompt_flow[i]['role'])+ ': ' + content_list[j]
+                            }
+                        }
+                    }
                 }
-                
+              } else {
+                agent_prompt_flow = response_details['prompt_flow']
+                if(agent_prompt_flow.length > 0) {
+                  last_element = agent_prompt_flow[agent_prompt_flow.length-1]
+                  if ('content' in last_element) {
+                    content_list = last_element['content']
+                    for (var j =0; j< content_list.length; j++) {
+                      if ('text' in content_list[j]) {
+                        thought = thought + '<br>' + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]['text']
+                      } else {
+                        thought = thought + '<br>' + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]
+                      }
+                    }
+                  }
+                }
               }
-              
             }
+        } catch(error) {
+          agent_prompt_flow = []
+            // response_json = JSON.parse(evt.data)
+            thought = evt.data
           }
-          end_of_response=true
+          
+          
           console.log("streaming message is received.. " + thought);
-          if (end_of_response) {
-            response_html = '<div class="d-flex flex-row justify-content-start">' +
+          
+          if (is_done) {
+              bg_color = "#a0cf5d"
+              inner_bg_color = "#dcf1bd"
+          } else {
+            thought = '<b>Thought:</b><br>' + thought
+          }
+          response_html = '<div class="d-flex flex-row justify-content-start", style="background-color:'+ bg_color +' ;border-radius: 15px;">' +
               '<img src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-chat/ava3-bg.webp" alt="avatar 1" style="width: 45px; height: 100%;">' +
-              '<div><p class="small p-2 ms-3 mb-1 rounded-3" style="background-color: #f5f6f7;">' +
+              '<div style="background-color:'+ inner_bg_color +';" >' + 
+              '<p class="small p-2 ms-3 mb-1 rounded-3">' +
                 thought +
               '</p></div></div>' +
               '<div class="divider d-flex align-items-center mb-4"></div>'
 
-            $("#" + claude_wait_id).trigger("click");
-            $('#send-chat-button').prop('disabled', false)
-            setTimeout(() => {
-              document.getElementById('weather-conversations-box').innerHTML = document.getElementById('weather-conversations-box').innerHTML + response_html
-            }, 2);
-            thought = ''
-            end_of_response = false
-          }
+          $("#" + claude_wait_id).trigger("click");
+          $('#send-chat-button').prop('disabled', false)
+          setTimeout(() => {
+              document.getElementById(agent_type + '-conversations-box').innerHTML = document.getElementById(agent_type + '-conversations-box').innerHTML + response_html
+          }, 2);
+          thought = ''
+          end_of_response = false
+          
 
 
         }
 
       }
 
+      function capitalizeFirstLetter(val) {
+         return val.charAt(0).toUpperCase() + val.slice(1);
+      }
 
       function specialToASCII(data_str) {
           let res = '';

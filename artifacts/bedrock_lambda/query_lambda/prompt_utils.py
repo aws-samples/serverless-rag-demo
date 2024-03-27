@@ -8,7 +8,7 @@ import boto3
 # Import tools
 from tools.weather_report_tool import get_weather_specs, get_lat_long, get_weather, weather_tool_name, weather_tool_description
 from tools.stock_details_tool import get_stock_specs, get_stock_template, stock_tool_name, stock_tool_description
-from tools.room_booking_tool import get_room_types, check_room_availability_by_date, check_room_availability_by_room_type, get_room_bookings_specs, room_booking_tool_name, room_tool_description
+from tools.room_booking_tool import get_room_types, check_room_availability_by_date, check_room_availability_by_room_type, book_room, get_room_bookings_specs, room_booking_tool_name, room_tool_description
 
 # An Agent with Multiple Tool sets
 # A tool-set is a combination of tools to complete a task
@@ -28,10 +28,11 @@ Use these Instructions:
 5. Remember not to unnecessarily add the <answer> tags while listing down steps to solve the problem. Use the <answer> tags only when you have an answer
 6. If none of the tools at your disposable can answer the question, then wrap your response within <unanswered></unanswered> tags.
 7. The tools will help you solve the following queries: {tools_description}
-8. Here are the tag responsibilities.
+8. Any recommendations from tools should be placed in <question></question> tags
+9. Here are the tag responsibilities.
     <function_call></function_call> : This tag is used to call a function
     <answer></answer> : This tag is used to wrap the final answer
-    <question></question> : This tag is used to ask a question to the user
+    <question></question> : This tag is used to ask a question to the user, its also used to make recommendations to the user.
     <unanswered></unanswered> : This tag is used to mark the question unanswerable
 
 <step_0>
@@ -158,7 +159,7 @@ def call_function(tool_name, parameters):
     return output
 
 
-def single_agent_step(step_id, output):
+def agent_execution_step(step_id, output):
     assistant_prompt = []
     human_prompt = []
     step = output
@@ -196,16 +197,22 @@ def single_agent_step(step_id, output):
         function_xml = function_xml.split('</function_call>')[0]
         function_dict = xmltodict.parse(function_xml)
         func_name = function_dict['invoke']['tool_name']
-        parameters = function_dict['invoke']['parameters']
+        parameters={}
+        if 'parameters' in function_dict['invoke']:
+            parameters = function_dict['invoke']['parameters']
 
-        #print(f"single_agent_step:: func_name={func_name}::params={parameters}::function_dict={function_dict}::")
+        #print(f"agent_execution_step:: func_name={func_name}::params={parameters}::function_dict={function_dict}::")
         # call the function which was parsed
-        func_response = call_function(func_name, parameters)
+        func_response = None
+        try:
+            func_response = call_function(func_name, parameters)
+        except Exception as e:
+            func_response = f"Exception {e} occured when executing function {func_name}. "
 
         # create the next human input
         func_response_str = f'\n\n Ok we have executed step {step_id}. Here is the result from your function call on tool {func_name} \n\n'
         func_response_str = func_response_str + f'<function_result>\n{func_response}\n</function_result>'
-        func_response_str = func_response_str + '\n\nIf you know the answer, say it. If not, what is the next step?\n\n'
+        func_response_str = func_response_str + '\n\n If you know the answer, say it. If not, what is the next step?\n\n'
         assistant_prompt.append({"type":"text", "text": f' Please call this tool {func_name} to execute step {step_id}: {step}' })
         human_prompt.append({ "type": "text", "text": f"""
                                                         {func_response_str}

@@ -186,7 +186,8 @@ class ApiGw_Stack(Stack):
                                                 'REGION': region,
                                                 'REST_ENDPOINT_URL': rest_endpoint_url,
                                                 'IS_RAG_ENABLED': is_opensearch,
-                                                'S3_BUCKET_NAME': bucket_name
+                                                'S3_BUCKET_NAME': bucket_name,
+                                                'WRANGLER_NAME': env_params['bedrock_wrangler_function_name']
                                   },
                                   memory_size=4096,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
