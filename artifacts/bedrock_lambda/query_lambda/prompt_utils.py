@@ -217,6 +217,10 @@ def agent_execution_step(step_id, output):
         human_prompt.append({ "type": "text", "text": f"""
                                                         {func_response_str}
                                                     """})
+    else:
+        # When the model disobeys are initial plan
+        assistant_prompt({"type": "text", "text": output})
+        done = True
     
         
     return done, human_prompt, assistant_prompt

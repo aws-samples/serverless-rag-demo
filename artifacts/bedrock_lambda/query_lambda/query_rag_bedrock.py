@@ -11,6 +11,7 @@ import logging
 import base64
 import datetime
 import csv
+import re
 
 from prompt_utils import get_system_prompt, agent_execution_step
 
@@ -295,7 +296,9 @@ def format_prompt_invoke_function(agent_type, user_input, connect_id):
                 if text_inputs['type'] == 'text' and '<user-request>' not in text_inputs['text']:
                     text_inputs['text'] =  f'What is the first step in order to solve this problem?  <user-request> {text_inputs["text"]} </user-request>' 
                     break          
-    
+                if '<special_char>' in text_inputs['text']:
+                    text_inputs['text'] = re.sub('<special_char>.*</special_char>', '', text_inputs['text'])
+
     print(f'Agent Chat history {chat_history_list}')
 
     system_prompt = get_system_prompt(agent_type)
