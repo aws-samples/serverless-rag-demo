@@ -148,9 +148,10 @@ class ApiGw_Stack(Stack):
             
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
-            
+
+            # See: https://aws-sdk-pandas.readthedocs.io/en/2.16.1/layers.html
             wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:336392948345:layer:AWSDataWrangler-Python39:3')
+                                                       f'arn:aws:lambda:{region}:336392948345:layer:AWSDataWrangler-Python39:9')
             
             print('--- Amazon Bedrock Deployment ---')
 
