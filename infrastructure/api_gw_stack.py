@@ -191,7 +191,7 @@ class ApiGw_Stack(Stack):
                                                 'IS_RAG_ENABLED': is_opensearch,
                                                 'S3_BUCKET_NAME': bucket_name,
                                                 'WRANGLER_NAME': env_params['bedrock_wrangler_function_name'],
-                                                'IS_WRANGLER_ENABLED': True if wrangler_layer is not None else False
+                                                'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no'
                                   },
                                   memory_size=4096,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
@@ -221,6 +221,7 @@ class ApiGw_Stack(Stack):
                                         name=f'Bedrock-streaming-{env_name}',
                                         route_selection_expression='$request.body.action'
                                         )
+            
             print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
