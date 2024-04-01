@@ -13,6 +13,7 @@ import datetime
 import csv
 import re
 
+
 from prompt_utils import get_system_prompt, agent_execution_step
 
 bedrock_client = boto3.client('bedrock-runtime')
@@ -28,6 +29,7 @@ wss_url = getenv("WSS_URL", "WEBSOCKET_URL_MISSING")
 rest_api_url = getenv("REST_ENDPOINT_URL", "REST_URL_MISSING")
 is_rag_enabled = getenv("IS_RAG_ENABLED", 'yes')
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
+is_wrangler_enabled = getenv("IS_WRANGLER_ENABLED", "no")
 WRANGLER_FUNCTION_NAME = getenv('WRANGLER_NAME', 'bedrock_wrangler_dev')
 websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=wss_url)
 lambda_client = boto3.client('lambda')
@@ -618,7 +620,7 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
             if 'data' in user_query_type and 'file_extension' in user_query_type:
                 s3_key = f"bedrock/data/{user_query_type['data']}.{user_query_type['file_extension']}"
                 text_data_from_file = ''
-                if user_query_type['file_extension'] in ['xls', 'xlsx', 'vnd.openxmlformats-officedocument.spreadsheetml.sheet']:
+                if is_wrangler_enabled == 'yes' and user_query_type['file_extension'] in ['xls', 'xlsx', 'vnd.openxmlformats-officedocument.spreadsheetml.sheet']:
                     invoke_response =   lambda_client.invoke(FunctionName=WRANGLER_FUNCTION_NAME,
                                            InvocationType='RequestResponse',
                                            Payload=json.dumps({'s3_prefix':f"s3://{s3_bucket_name}/{s3_key}"})
