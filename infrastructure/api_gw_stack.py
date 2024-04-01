@@ -149,8 +149,11 @@ class ApiGw_Stack(Stack):
             langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                        f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
             
-            wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:336392948345:layer:AWSDataWrangler-Python39:3')
+            wrangler_regions = self.node.try_get_context("wrangler_regions")
+            wrangler_layer = None
+            if region in wrangler_regions:
+                wrangler_arn = wrangler_regions[region]
+                wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}', wrangler_arn)
             
             print('--- Amazon Bedrock Deployment ---')
 
@@ -187,13 +190,15 @@ class ApiGw_Stack(Stack):
                                                 'REST_ENDPOINT_URL': rest_endpoint_url,
                                                 'IS_RAG_ENABLED': is_opensearch,
                                                 'S3_BUCKET_NAME': bucket_name,
-                                                'WRANGLER_NAME': env_params['bedrock_wrangler_function_name']
+                                                'WRANGLER_NAME': env_params['bedrock_wrangler_function_name'],
+                                                'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no'
                                   },
                                   memory_size=4096,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
                                 )
             
-            aws_wrangler_lambda_function = _lambda.Function(self, f'llm-bd-wrangler-{env_name}',
+            if wrangler_layer is not None:
+                aws_wrangler_lambda_function = _lambda.Function(self, f'llm-bd-wrangler-{env_name}',
                                   function_name=env_params['bedrock_wrangler_function_name'],
                                   code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/wrangler_lambda/')),
                                   runtime=_lambda.Runtime.PYTHON_3_9,
@@ -204,12 +209,19 @@ class ApiGw_Stack(Stack):
                                   memory_size=4096,
                                   layers= [wrangler_layer]
                                 )
+                wrangler_policy = _iam.PolicyStatement(
+                    actions=[
+                     "s3:*"],
+                    resources=["*"],
+                )
+                aws_wrangler_lambda_function.add_to_role_policy(wrangler_policy)
             
             websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
                                         protocol_type='WEBSOCKET',
                                         name=f'Bedrock-streaming-{env_name}',
                                         route_selection_expression='$request.body.action'
                                         )
+            
             print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
             wss_url = websocket_api.attr_api_endpoint
             bedrock_oss_policy = _iam.PolicyStatement(
@@ -223,15 +235,9 @@ class ApiGw_Stack(Stack):
                 resources=["*"],
             )
 
-            wrangler_policy = _iam.PolicyStatement(
-                actions=[
-                     "s3:*"],
-                resources=["*"],
-            )
-
             bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
             bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
-            aws_wrangler_lambda_function.add_to_role_policy(wrangler_policy)
+            
 
             bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
 
