@@ -371,6 +371,7 @@ class ApiGw_Stack(Stack):
 
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
+        index_files_api = rag_llm_api.add_resource("index-file")
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
         file_data_api = rag_llm_api.add_resource("file_data")
         connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
@@ -432,6 +433,13 @@ class ApiGw_Stack(Stack):
                 method_responses=method_responses,
             )
 
+            index_files_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="index a file",
+                method_responses=method_responses,
+            )
+
             index_docs_api.add_method(
                 "DELETE",
                 lambda_integration,
@@ -449,6 +457,7 @@ class ApiGw_Stack(Stack):
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)
+        self.add_cors_options(index_files_api)
 
     def add_cors_options(self, apiResource: _cdk.aws_apigateway.IResource):
         apiResource.add_method(

@@ -8,6 +8,7 @@ import logging
 import boto3
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import base64
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -142,7 +143,46 @@ def delete_index(event):
 def connect_tracker(event):
     return success_response('Successfully connection')
 
+def extract_file_extension(base64_encoded_file):
+    if base64_encoded_file.find(';') > -1:
+        extension = base64_encoded_file.split(';')[0]
+        return extension[extension.find('/') + 1:]
+    # default to PNG if we are not able to extract extension or string is not bas64 encoded
+    return 'png'
 
+def index_file_in_aoss(event):
+    payload = json.loads(event['body'])
+    file_encoded_data = payload['content']
+    file_extension = extract_file_extension(file_encoded_data)
+    file_encoded_data = file_encoded_data[file_encoded_data.find(",") + 1:] 
+    print(f'File-Extension  {file_extension}')
+    file_content = base64.b64decode(file_encoded_data)
+    print(f'File-Bytes data {file_content}')
+    content = get_contents(file_extension, file_content)
+    print(f'Content from Textract {content}')
+    event['body'] = {"text": content}
+    return index_documents(event)
+
+
+def get_contents(file_extension: str, file_bytes):
+    content = ' '
+    try:
+        if file_extension.lower() in ['pdf', 'png', 'jpg', 'jpeg']:
+            textract_client = boto3.client('textract')
+            response = textract_client.detect_document_text(Document={'Bytes': file_bytes})
+            for block in response['Blocks']:
+                if block['BlockType'] == 'LINE':
+                    content = content + ' ' + block['Text']
+        else: 
+            content = file_bytes.decode()
+    except Exception as e:
+        print(f'Exception reading contents from file {e}')
+    print(f'file-content {content}')
+    return content
+
+
+
+    pass
 def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
 
@@ -150,7 +190,9 @@ def handler(event, context):
         'POST/rag/index-sample-data': lambda x: index_sample_data(x),
         'POST/rag/index-documents': lambda x: index_documents(x),
         'DELETE/rag/index-documents': lambda x: delete_index(x),
-        'GET/rag/connect-tracker': lambda x: connect_tracker(x)
+        'GET/rag/connect-tracker': lambda x: connect_tracker(x),
+        'POST/rag/index-file': lambda x: index_file_in_aoss(x)
+        
     }
     
     http_method = event['httpMethod'] if 'httpMethod' in event else ''
