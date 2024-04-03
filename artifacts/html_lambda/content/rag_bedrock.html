@@ -377,84 +377,80 @@
           Index your documents here. Initial indexing requests could timeout due to time take by Amazon OSS to warm up.
         </div>
         <div style="padding-bottom: 10px;"></div>
-        <table>
-          <tbody>
-            <tr>
-              <th class="text-dark p-2">
-                <h4>Index Documents</h4>
-              </th>
-              <th style="padding-left: 100px;"></th>
-              <th class="text-dark p-2">
-                <h4>Try sample data</h4>
-              </th>
-            </tr>
-            <tr>
-              <td>
-                <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-                  <textarea placeholder="Add text here for indexing. Limit to 5000 characters" id="index_txt"
-                    name="request" rows="10" cols="60"></textarea>
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8">
+              <h4>Index Documents</h4>
+            </div>
+            <div class="col">
+              <h4>Try indexing sample data</h4>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col">
+              <!-- Image viewer component -->
+              <div id="image_viewer_container">
+
+                <div class="image_viewer">
+                  <input type="file" id="index-file" accept=".txt, .json, .csv, .pdf" hidden multiple>
+                  <div class="file-img-area" data-img="">
+                    <div id="file_guidance">
+                      <i class='bx bxs-cloud-upload icon'></i>
+                      <h3>Upload File pdf/json/csv/txt</h3>
+                      <p>File size must be less than <span>100MB</span></p>
+                    </div>
+                  </div>
+                  <div class="row"></div>
+                  <div class="row">
+                    <div class="col">
+                      <button class="select-file btn-primary btn-sm">Select File</button>
+                    </div>
+                    <div class="col">
+                      <button class="remove-file btn-warning btn-sm">Remove File</button>
+                    </div>
+                  </div>
+
+
                 </div>
-              </td>
-              <td style="padding-left: 0px;"></td>
-              <td>
-                <table style="margin-top:-5vh">
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-movie" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-isro" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1,
-                        Chandrayan-3)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-health" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('health')">Index a brand new disease (FrostFlu)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-finance" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('amazon_earnings')">Index Amazon Earnings Report
-                        (Quarterly Results)</button>
-                    </td>
-                  </tr>
 
-                </table>
+              </div>
+              <!-- Image viewer component ends -->
+            </div>
 
-              </td>
-            </tr>
-            <tr>
+            <div class="col">
+              <div class="row">
+                <button id="sample-movie" type="button" class="btn btn-warning"
+                  onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
+              </div>
+              <div class="row" style="padding-top: 15px;"></div>
+              <div class="row">
+                <button id="sample-isro" type="button" class="btn btn-warning"
+                  onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1,
+                  Chandrayan-3)</button>
+              </div>
+              <div class="row" style="padding-top: 15px;"></div>
+              <div class="row">
+                <button id="sample-finance" type="button" class="btn btn-warning"
+                  onclick="javascript:indexSampleDocument('amazon_earnings')">Index Amazon Earnings Report (Quarterly
+                  Results)</button>
+              </div>
+            </div>
 
-            </tr>
+          </div>
+          <div class="row">
+            <div class="col">
+              <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index
+                Documents</button>
+            </div>
+            <div class="col">
+              <button id="delete-button" type="button" class="btn btn-danger"
+                onclick="javascript:reset()">Reset</button>
+            </div>
+          </div>
 
+        </div>
 
-          </tbody>
-        </table>
-        <table>
-          <tbody>
-            <tr>
-              <td style="padding-left: 20px;">
-                <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index
-                  Documents</button>
-              </td>
-              <td style="padding-left: 20px;">
-                <button id="delete-button" type="button" class="btn btn-danger"
-                  onclick="javascript:reset()">Reset</button>
-              </td>
-              <td style="padding-left: 20px;">
-
-              </td>
-
-            </tr>
-
-          </tbody>
-        </table>
 
         <div class="d-flex justify-content-center" id="index-spinner">
           <div class="spinner-border" role="status">
@@ -792,61 +788,118 @@
         const inputFile = document.querySelector('#file');
         const imgArea = document.querySelector('.img-area');
 
-        selectImage.addEventListener('click', function () {
-          inputFile.value = '';
-          inputFile.click();
-          $('#image_guidance').hide();
+        const selectFile = document.querySelector('.select-file');
+        const removeFile = document.querySelector('.remove-file');
+        const inputIndexFile = document.querySelector('#index-file');
+        const fileImgArea = document.querySelector('.file-img-area');
+
+        selectFile.addEventListener('click', function () {
+          inputIndexFile.value = '';
+          inputIndexFile.click();
+          $('#file_guidance').hide();
         })
 
-        removeImage.addEventListener('click', function () {
-          $('#image_guidance').show();
-          const allImg = imgArea.querySelectorAll('object');
+        removeFile.addEventListener('click', function () {
+          $('#file_guidance').show();
+          const allImg = fileImgArea.querySelectorAll('object');
           allImg.forEach(item => item.remove());
-          base64Image = []
+          base64File = []
           imgArea.dataset.img = ''
         })
 
-
-        inputFile.addEventListener('change', function () {
+        inputIndexFile.addEventListener('change', function () {
 
           if (this.files && this.files.length > 0) {
-            const allImg = imgArea.querySelectorAll('object');
+            const allImg = fileImgArea.querySelectorAll('object');
             allImg.forEach(item => item.remove());
             for (var j = 0; j < this.files.length; j++) {
               const file = this.files[j];
-              if (file.size < 5000000) {
+              if (file.size < 100000000) {
                 const reader = new FileReader()
 
                 reader.onload = () => {
                   const imgUrl = reader.result;
-                  base64Image.push(imgUrl)
+                  base64File.push(imgUrl)
                   const img = document.createElement('object');
                   //img.src = imgUrl;
                   img.data = imgUrl;
-                  imgArea.appendChild(img);
-                  imgArea.classList.add('active');
-                  if (imgArea.dataset.img) {
-                    imgArea.dataset.img = imgArea.dataset.img + ', ' + file.name;
+                  fileImgArea.appendChild(img);
+                  fileImgArea.classList.add('active');
+                  if (fileImgArea.dataset.img) {
+                    fileImgArea.dataset.img = fileImgArea.dataset.img + ', ' + file.name;
                   } else {
-                    imgArea.dataset.img = file.name;
+                    fileImgArea.dataset.img = file.name;
                   }
 
                 }
                 reader.readAsDataURL(file);
 
               } else {
-                alertbuilder("File size should be less than 5MB." + file.name + ' was not added', false);
+                alertbuilder("File size should be less than 100MB." + file.name + ' was not added', false);
               }
             }
 
           }
         });
 
+
+      // On Query Tab
+      selectImage.addEventListener('click', function () {
+        inputFile.value = '';
+        inputFile.click();
+        $('#image_guidance').hide();
+      })
+
+      removeImage.addEventListener('click', function () {
+        $('#image_guidance').show();
+        const allImg = imgArea.querySelectorAll('object');
+        allImg.forEach(item => item.remove());
+        base64Image = []
+        imgArea.dataset.img = ''
+      })
+
+
+      inputFile.addEventListener('change', function () {
+
+        if (this.files && this.files.length > 0) {
+          const allImg = imgArea.querySelectorAll('object');
+          allImg.forEach(item => item.remove());
+          for (var j = 0; j < this.files.length; j++) {
+            const file = this.files[j];
+            if (file.size < 5000000) {
+              const reader = new FileReader()
+
+              reader.onload = () => {
+                const imgUrl = reader.result;
+                base64Image.push(imgUrl)
+                const img = document.createElement('object');
+                //img.src = imgUrl;
+                img.data = imgUrl;
+                imgArea.appendChild(img);
+                imgArea.classList.add('active');
+                if (imgArea.dataset.img) {
+                  imgArea.dataset.img = imgArea.dataset.img + ', ' + file.name;
+                } else {
+                  imgArea.dataset.img = file.name;
+                }
+
+              }
+              reader.readAsDataURL(file);
+
+            } else {
+              alertbuilder("File size should be less than 5MB." + file.name + ' was not added', false);
+            }
+          }
+
+        }
         // Image upload code end
+      });
+        
       });
 
       var model_id = null;
       var base64Image = [];
+      var base64File = [];
       var ws = null;
       var chat_id = null;
       var awsData = {
@@ -893,12 +946,16 @@
         $('#query-button').css('visibility', 'hidden');
         $('#delete-button').css('visibility', 'hidden');
         //Retrieve list of dashboards that the user can access from QuickSight.
-        $.ajax({
+        for(var j=0; j<base64File.length; j++) {
+          
+          content = base64File[j]
+
+          $.ajax({
           type: "POST",
-          url: awsData.apiGatewayUrl + '/index-documents',
+          url: awsData.apiGatewayUrl + '/index-files',
           contentType: "text/json",
           dataType: 'json',
-          data: JSON.stringify({ "text": $('#index_txt').val() }),
+          data: JSON.stringify({ "content": content }),
           success: function (result) {
             $('#index-spinner').css('visibility', 'hidden');
             $('#index-button').css('visibility', 'visible');
@@ -917,6 +974,9 @@
             alertbuilder(err.responseText.replaceAll('"', ''), false)
           }
         });
+
+        }
+        
       }
 
       function clear_response() {
@@ -1442,7 +1502,7 @@
             if ('prompt_flow' in response_details) {
               is_done = Boolean(response_details['done'])
               if (!is_done) {
-                agent_prompt_flow=[]
+                agent_prompt_flow = []
                 for (var k = 0; k < response_details['prompt_flow'].length; k++) {
                   var prompt_content_list = response_details['prompt_flow'][k]['content']
                   content = []
@@ -1477,14 +1537,14 @@
                     content = []
                     for (var j = 0; j < content_list.length; j++) {
                       if ('text' in content_list[j]) {
-                        content.push({"type": "text", "text": specialToASCII(content_list[j]['text'])})
+                        content.push({ "type": "text", "text": specialToASCII(content_list[j]['text']) })
                         thought = thought + '<br>' + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]['text']
                       } else {
                         content.push(content_list[j])
                         thought = thought + '<br>' + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]
                       }
                     }
-                    agent_prompt_flow.push({"role": last_element['role'], "content": content})
+                    agent_prompt_flow.push({ "role": last_element['role'], "content": content })
                   }
                 }
               }

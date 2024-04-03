@@ -191,7 +191,7 @@ def handler(event, context):
         'POST/rag/index-documents': lambda x: index_documents(x),
         'DELETE/rag/index-documents': lambda x: delete_index(x),
         'GET/rag/connect-tracker': lambda x: connect_tracker(x),
-        'POST/rag/index-file': lambda x: index_file_in_aoss(x)
+        'POST/rag/index-files': lambda x: index_file_in_aoss(x)
         
     }
     

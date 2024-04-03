@@ -371,7 +371,7 @@ class ApiGw_Stack(Stack):
 
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
-        index_files_api = rag_llm_api.add_resource("index-file")
+        index_files_api = rag_llm_api.add_resource("index-files")
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
         file_data_api = rag_llm_api.add_resource("file_data")
         connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
