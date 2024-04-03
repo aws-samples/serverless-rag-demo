@@ -220,7 +220,7 @@ def isJobCompleted(jobId):
     response = textract_client.get_document_text_detection(JobId=jobId)
     status = response["JobStatus"]
     print("Job status: {}".format(status))
-    return False if status == "INPROGRESS" else True
+    return False if status == "IN_PROGRESS" else True
     
 
 def isJobComplete(jobId):

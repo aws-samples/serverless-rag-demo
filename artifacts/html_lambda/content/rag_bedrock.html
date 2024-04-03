@@ -978,21 +978,30 @@
             $('#index-button').css('visibility', 'visible');
             $('#query-button').css('visibility', 'visible');
             $('#delete-button').css('visibility', 'visible');
-            if ('jobId' in result['result']) {
+            if (typeof result['result'] != 'string' && 'jobId' in result['result']) {
               alertbuilder('Indexing request sent:' + result['result']['jobId'], true) 
               interval_retry_counter = 0
               indexing_checker = setInterval(() => {
               interval_retry_counter = interval_retry_counter + 1
                  get_job_status(result['result']['jobId'], function(result) {
-                  if (result['result']['status'] == 'SUCCEEDED') {
-                    clearInterval(indexing_checker)
+                  if (result['statusCode']=='200' && result['result'] == true) {
                     alertbuilder('Document Indexed Successfully', true)
+                    clearInterval(indexing_checker)
                   }
-                 })
-                 if (interval_retry_counter > 4) {
-                  clearInterval(indexing_checker)
-                  alertbuilder('Document Not Indexed', false)
+                  else if (result['statusCode']=='200' && result['result'] != true) {
+                    alertbuilder('Document Indexing In-progress', true)
+                    clearInterval(indexing_checker)
+                  }  
+                  else if (result['statusCode']=='400'){
+                    alertbuilder('Document Not Indexed', false)
+                    clearInterval(indexing_checker)
+                  }
+                  if (interval_retry_counter > 5) {
+                    alertbuilder('Document Not Indexed', false)
+                    clearInterval(indexing_checker)
                  }
+                 });
+                 
               }, 3000)
 
             } else {
@@ -1030,7 +1039,7 @@
             console.log('Error on making API gateway call to index documents ..');
             console.log(err.responseText);
             console.log(err)
-            alertbuilder(err.responseText.replaceAll('"', ''), false)
+            return callback(result)
           }
         });
 
