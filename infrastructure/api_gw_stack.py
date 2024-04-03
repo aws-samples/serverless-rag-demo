@@ -400,6 +400,14 @@ class ApiGw_Stack(Stack):
                 api_key_required=True
             )
 
+            index_files_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="Index a file",
+                api_key_required=True,
+                method_responses=method_responses,
+            )
+
             file_data_api.add_method(
                 "POST",
                 bedrock_query_lambda_integration,
@@ -430,13 +438,6 @@ class ApiGw_Stack(Stack):
                 "POST",
                 lambda_integration,
                 operation_name="index document",
-                method_responses=method_responses,
-            )
-
-            index_files_api.add_method(
-                "POST",
-                lambda_integration,
-                operation_name="index a file",
                 method_responses=method_responses,
             )
 
