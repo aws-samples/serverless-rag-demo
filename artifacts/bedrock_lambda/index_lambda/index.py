@@ -10,6 +10,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import base64
 from datetime import datetime
+import time
+import threading
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -19,7 +21,6 @@ endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT", "https://admin:P@@search-opsearc
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
-
 credentials = boto3.Session().get_credentials()
 
 service = 'aoss'
@@ -28,6 +29,7 @@ awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
                    region, service, session_token=credentials.token)
 
 bedrock_client = boto3.client('bedrock-runtime')
+textract_client = boto3.client('textract')
 
 ops_client = OpenSearch(
         hosts=[{'host': endpoint, 'port': 443}],
@@ -153,6 +155,16 @@ def extract_file_extension(base64_encoded_file):
     # default to PNG if we are not able to extract extension or string is not bas64 encoded
     return 'png'
 
+def get_job_status(event):
+    query_params = {}
+    
+    if 'queryStringParameters' in event:
+        query_params = event['queryStringParameters']
+    if all(key in query_params for key in (['jobId'])):
+        return success_response(isJobCompleted(query_params['jobId']))
+    else:
+        return failure_response('jobId is missing')
+    
 def index_file_in_aoss(event):
     payload = json.loads(event['body'])
     file_encoded_data = payload['content']
@@ -160,25 +172,100 @@ def index_file_in_aoss(event):
     file_encoded_data = file_encoded_data[file_encoded_data.find(",") + 1:] 
     print(f'File-Extension  {file_extension}')
     file_content = base64.b64decode(file_encoded_data)
-    s3_client = boto3.client('s3')
-    now = datetime.now()
-    date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
-    s3_key = f"index/data/{date_time}.{file_extension}"
-    s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
-    
-    content = get_contents(file_extension, file_content, s3_key)
-    print(f'Content from Textract {content}')
+
+    if file_extension.lower() == 'pdf':
+        s3_client = boto3.client('s3')
+        now = datetime.now()
+        date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
+        s3_key = f"index/data/{date_time}.{file_extension}"
+        s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
+        job_id = start_pdf_text_detection_job(s3_key)
+        t1 = threading.Thread(target=async_indexing(file_extension, event, job_id))
+        return success_response({'jobId': job_id})
+        
+    else:
+        content = get_contents(file_extension, file_content, None)
+        event['body'] = json.dumps({"text": content})
+        return index_documents(event)
+
+def async_indexing(file_extension, event, job_id):
+    content = get_contents(file_extension, None, None, job_id)
     event['body'] = json.dumps({"text": content})
+    print('Asynchronous Indexing of data')
     return index_documents(event)
 
 
-def get_contents(file_extension: str, file_bytes=None, s3_key=None):
+def getJobResults(jobId):
+
+    pages = []
+    response = textract_client.get_document_text_detection(JobId=jobId)
+    
+    pages.append(response)
+    print("Resultset page recieved: {}".format(len(pages)))
+    nextToken = None
+    if('NextToken' in response):
+        nextToken = response['NextToken']
+
+    while(nextToken):
+        response = textract_client.get_document_text_detection(JobId=jobId, NextToken=nextToken)
+
+        pages.append(response)
+        print("Resultset page recieved: {}".format(len(pages)))
+        nextToken = None
+        if('NextToken' in response):
+            nextToken = response['NextToken']
+    return pages
+
+def isJobCompleted(jobId):
+    response = textract_client.get_document_text_detection(JobId=jobId)
+    status = response["JobStatus"]
+    print("Job status: {}".format(status))
+    return False if status == "INPROGRESS" else True
+    
+
+def isJobComplete(jobId):
+    response = textract_client.get_document_text_detection(JobId=jobId)
+    status = response["JobStatus"]
+    print("Job status: {}".format(status))
+
+    while(status == "IN_PROGRESS"):
+        time.sleep(3)
+        response = textract_client.get_document_text_detection(JobId=jobId)
+        status = response["JobStatus"]
+        print("Job status: {}".format(status))
+
+    return status
+
+def startJob(s3BucketName, objectName):
+    response = None
+    response = textract_client.start_document_text_detection(
+    DocumentLocation={
+        'S3Object': {
+            'Bucket': s3BucketName,
+            'Name': objectName
+        }
+    })
+
+    return response["JobId"]
+
+def start_pdf_text_detection_job(s3_key):
+    jobId = startJob(s3_bucket_name, s3_key)
+    print("Started job with id: {}".format(jobId))
+    return jobId
+
+def get_contents(file_extension: str, file_bytes=None, s3_key=None, jobId=None):
     content = ' '
     try:
-        if file_extension.lower() in ['pdf', 'png', 'jpg', 'jpeg']:
-            textract_client = boto3.client('textract')
-            #response = textract_client.detect_document_text(Document={'Bytes': file_bytes})
-            response = textract_client.detect_document_text(Document={"S3Object": { "Bucket": s3_bucket_name,"Name": s3_key}})
+        if file_extension.lower() in ['pdf']:
+            if(isJobComplete(jobId)):
+                response = getJobResults(jobId)
+                # Print detected text
+                for resultPage in response:
+                    for item in resultPage["Blocks"]:
+                        if item["BlockType"] == "LINE":
+                            content = content + ' ' + item["Text"]
+        elif file_extension.lower() in ['png', 'jpg', 'jpeg']:
+            response = textract_client.detect_document_text(Document={'Bytes': file_bytes})
             for block in response['Blocks']:
                 if block['BlockType'] == 'LINE':
                     content = content + ' ' + block['Text']
@@ -186,7 +273,7 @@ def get_contents(file_extension: str, file_bytes=None, s3_key=None):
             content = file_bytes.decode()
     except Exception as e:
         print(f'Exception reading contents from file {e}')
-    print(f'file-content {content}')
+    # print(f'file-content {content}')
     return content
 
 
@@ -200,7 +287,8 @@ def handler(event, context):
         'POST/rag/index-documents': lambda x: index_documents(x),
         'DELETE/rag/index-documents': lambda x: delete_index(x),
         'GET/rag/connect-tracker': lambda x: connect_tracker(x),
-        'POST/rag/index-files': lambda x: index_file_in_aoss(x)
+        'POST/rag/index-files': lambda x: index_file_in_aoss(x),
+        'GET/rag/get-job-status': lambda x: get_job_status(x)
         
     }
     

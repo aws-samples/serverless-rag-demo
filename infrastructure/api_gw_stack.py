@@ -373,6 +373,7 @@ class ApiGw_Stack(Stack):
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
         index_files_api = rag_llm_api.add_resource("index-files")
+        get_job_status_api = rag_llm_api.add_resource("get-job-status")
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
         file_data_api = rag_llm_api.add_resource("file_data")
         connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
@@ -409,6 +410,14 @@ class ApiGw_Stack(Stack):
                 method_responses=method_responses,
             )
 
+            get_job_status_api.add_method(
+                "GET",
+                lambda_integration,
+                operation_name="Get Job Status",
+                api_key_required=True,
+                method_responses=method_responses,
+            )
+
             file_data_api.add_method(
                 "POST",
                 bedrock_query_lambda_integration,
@@ -426,6 +435,7 @@ class ApiGw_Stack(Stack):
                 api_key_required=True
             )
             self.add_cors_options(connect_tracker_api)
+            self.add_cors_options(get_job_status_api)
 
         else:
             query_api.add_method(

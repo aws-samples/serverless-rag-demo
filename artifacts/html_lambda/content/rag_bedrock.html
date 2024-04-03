@@ -978,7 +978,26 @@
             $('#index-button').css('visibility', 'visible');
             $('#query-button').css('visibility', 'visible');
             $('#delete-button').css('visibility', 'visible');
-            alertbuilder(result['result'], true)
+            if ('jobId' in result['result']) {
+              alertbuilder('Indexing request sent:' + result['result']['jobId'], true) 
+              interval_retry_counter = 0
+              indexing_checker = setInterval(() => {
+              interval_retry_counter = interval_retry_counter + 1
+                 get_job_status(result['result']['jobId'], function(result) {
+                  if (result['result']['status'] == 'SUCCEEDED') {
+                    clearInterval(indexing_checker)
+                    alertbuilder('Document Indexed Successfully', true)
+                  }
+                 })
+                 if (interval_retry_counter > 4) {
+                  clearInterval(indexing_checker)
+                  alertbuilder('Document Not Indexed', false)
+                 }
+              }, 3000)
+
+            } else {
+              alertbuilder(result['result'], true)
+            } 
           },
           error: function (err) {
             $('#index-spinner').css('visibility', 'hidden');
@@ -995,6 +1014,28 @@
         }
         
       }
+      
+      function get_job_status(jobId, callback) {
+
+        $.ajax({
+          type: "GET",
+          url: awsData.apiGatewayUrl + '/get-job-status',
+          contentType: "text/json",
+          dataType: 'json',
+          data: { "jobId": jobId },
+          success: function (result) {
+            return callback(result)
+          },
+          error: function (err) {
+            console.log('Error on making API gateway call to index documents ..');
+            console.log(err.responseText);
+            console.log(err)
+            alertbuilder(err.responseText.replaceAll('"', ''), false)
+          }
+        });
+
+      }
+
 
       function clear_response() {
         // document.getElementById('query-response').innerHTML = '';
