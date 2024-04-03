@@ -210,6 +210,7 @@
       }
 
       .file-img-area {
+        height: 42vh;
         position: relative;
         background: #c8effb;
         /* margin-bottom: 30px; */
@@ -221,25 +222,25 @@
         flex-direction: column;
       }
 
-      .file-img-area,.img-area .icon {
+      .file-img-area .icon,.img-area .icon {
         font-size: 100px;
       }
 
-      .file-img-area,.img-area h3 {
+      .file-img-area h3,.img-area h3 {
         font-size: 20px;
         font-weight: 500;
         margin-bottom: 6px;
       }
 
-      .file-img-area,.img-area p {
+      .file-img-area p,.img-area p {
         color: #999;
       }
 
-      .file-img-area,.img-area p span {
-        font-weight: 600;
+      .file-img-area p span,.img-area p span {
+        font-weight: 200;
       }
 
-      .file-img-area,.img-area object {
+      .file-img-area object,.img-area object {
         position: relative;
         top: 0;
         left: 0;
@@ -247,19 +248,22 @@
         height: 100%;
         object-fit: cover;
         object-position: center;
+        width: 100%;
+        height: 100%;
         z-index: 100;
       }
 
       .file-img-area::before,.img-area::before {
-        /* content: attr(data-img); */
+        content: attr(data-img);
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         /* background: rgba(0, 0, 0, .5); */
-        color: #fff;
-        font-weight: 500;
+        color: #232523;
+        font-size: 30px;
+        font-weight: 600;
         text-align: center;
         display: flex;
         justify-content: center;
@@ -395,34 +399,34 @@
         <div class="container">
           <div class="row">
             <div class="col-lg-8">
-              <h4>Index Documents</h4>
+              <h4>Index Custom Documents</h4>
             </div>
             <div class="col">
-              <h4>Try indexing sample data</h4>
+              <h4>Index Sample Data</h4>
             </div>
           </div>
 
           <div class="row">
-            <div class="col">
+            <div class="col-lg-6">
               <!-- Image viewer component -->
-              <div id="file_viewer_container">
+              <div id="file_viewer_container" style="height:52vh;">
 
-                <div class="image_viewer">
+                <div class="image_viewer" style="height: 50vh;">
                   <input type="file" id="index-file" accept=".txt, .json, .csv, .pdf" hidden multiple>
                   <div class="file-img-area" data-img="">
                     <div id="file_guidance">
                       <i class='bx bxs-cloud-upload icon'></i>
                       <h3>Upload File pdf/json/csv/txt</h3>
-                      <p>File size must be less than <span>100MB</span></p>
+                      <p>File size must be less than <span>10MB</span></p>
                     </div>
                   </div>
                   <div class="row"></div>
                   <div class="row">
-                    <div class="col">
-                      <button class="select-file btn-primary btn-sm">Select File</button>
+                    <div class="col-md-4">
+                      <button class="select-file btn-secondary btn-sm">Select File</button>
                     </div>
-                    <div class="col">
-                      <button class="remove-file btn-warning btn-sm">Remove File</button>
+                    <div class="col-md-4">
+                      <button class="remove-file btn-close btn-sm">Remove File</button>
                     </div>
                   </div>
 
@@ -432,21 +436,21 @@
               </div>
               <!-- Image viewer component ends -->
             </div>
-
-            <div class="col">
+            <div class="col-lg-2"></div>
+            <div class="col-lg-4">
               <div class="row">
-                <button id="sample-movie" type="button" class="btn btn-warning"
+                <button id="sample-movie" type="button" class="btn-sm btn-warning"
                   onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
               </div>
               <div class="row" style="padding-top: 15px;"></div>
               <div class="row">
-                <button id="sample-isro" type="button" class="btn btn-warning"
+                <button id="sample-isro" type="button" class="btn-sm btn-warning"
                   onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1,
                   Chandrayan-3)</button>
               </div>
               <div class="row" style="padding-top: 15px;"></div>
               <div class="row">
-                <button id="sample-finance" type="button" class="btn btn-warning"
+                <button id="sample-finance" type="button" class="btn-sm btn-warning"
                   onclick="javascript:indexSampleDocument('amazon_earnings')">Index Amazon Earnings Report (Quarterly
                   Results)</button>
               </div>
@@ -811,6 +815,8 @@
         const fileImgArea = document.querySelector('.file-img-area');
 
         selectFile.addEventListener('click', function () {
+          base64File = []
+          fileImgArea.dataset.img = ''
           inputIndexFile.value = '';
           inputIndexFile.click();
           $('#file_guidance').hide();
@@ -821,7 +827,7 @@
           const allImg = fileImgArea.querySelectorAll('object');
           allImg.forEach(item => item.remove());
           base64File = []
-          imgArea.dataset.img = ''
+          fileImgArea.dataset.img = ''
         })
 
         inputIndexFile.addEventListener('change', function () {
@@ -831,7 +837,7 @@
             allImg.forEach(item => item.remove());
             for (var j = 0; j < this.files.length; j++) {
               const file = this.files[j];
-              if (file.size < 100000000) {
+              if (file.size < 10000000) {
                 const reader = new FileReader()
 
                 reader.onload = () => {
@@ -852,7 +858,7 @@
                 reader.readAsDataURL(file);
 
               } else {
-                alertbuilder("File size should be less than 100MB." + file.name + ' was not added', false);
+                alertbuilder("File size should be less than 10MB." + file.name + ' was not added', false);
               }
             }
 
@@ -863,6 +869,8 @@
       // On Query Tab
       selectImage.addEventListener('click', function () {
         inputFile.value = '';
+        base64Image = []
+        imgArea.dataset.img = ''
         inputFile.click();
         $('#image_guidance').hide();
       })
