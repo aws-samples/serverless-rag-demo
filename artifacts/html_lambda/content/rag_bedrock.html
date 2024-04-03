@@ -209,25 +209,37 @@
         flex-direction: column;
       }
 
-      .img-area .icon {
+      .file-img-area {
+        position: relative;
+        background: #c8effb;
+        /* margin-bottom: 30px; */
+        border-radius: 15px;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      .file-img-area,.img-area .icon {
         font-size: 100px;
       }
 
-      .img-area h3 {
+      .file-img-area,.img-area h3 {
         font-size: 20px;
         font-weight: 500;
         margin-bottom: 6px;
       }
 
-      .img-area p {
+      .file-img-area,.img-area p {
         color: #999;
       }
 
-      .img-area p span {
+      .file-img-area,.img-area p span {
         font-weight: 600;
       }
 
-      .img-area object {
+      .file-img-area,.img-area object {
         position: relative;
         top: 0;
         left: 0;
@@ -238,7 +250,7 @@
         z-index: 100;
       }
 
-      .img-area::before {
+      .file-img-area::before,.img-area::before {
         /* content: attr(data-img); */
         position: absolute;
         top: 0;
@@ -261,8 +273,11 @@
       .img-area.active:hover::before {
         opacity: 50;
       }
+      .file-img-area.active:hover::before {
+        opacity: 50;
+      }
 
-      .select-image {
+      .select-file,.select-image {
         display: block;
         width: 100%;
         padding: 5px 0;
@@ -274,7 +289,7 @@
         cursor: pointer;
       }
 
-      .remove-image {
+      .remove-file,.remove-image {
         display: block;
         width: 100%;
         padding: 5px 0;
@@ -288,7 +303,7 @@
 
     }
 
-
+  
     .conversations .mask-custom {
       background: rgba(24, 24, 16, .2) !important;
       border-radius: 2em;
@@ -390,7 +405,7 @@
           <div class="row">
             <div class="col">
               <!-- Image viewer component -->
-              <div id="image_viewer_container">
+              <div id="file_viewer_container">
 
                 <div class="image_viewer">
                   <input type="file" id="index-file" accept=".txt, .json, .csv, .pdf" hidden multiple>
@@ -447,6 +462,8 @@
               <button id="delete-button" type="button" class="btn btn-danger"
                 onclick="javascript:reset()">Reset</button>
             </div>
+            <div class="col-sm-1"></div>
+            <div class="col-sm-1"></div>
           </div>
 
         </div>

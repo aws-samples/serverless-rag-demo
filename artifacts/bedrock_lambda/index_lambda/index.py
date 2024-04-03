@@ -9,6 +9,7 @@ import boto3
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import base64
+from datetime import datetime
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -17,6 +18,8 @@ LOG.setLevel(logging.INFO)
 endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT", "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
+s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
+
 credentials = boto3.Session().get_credentials()
 
 service = 'aoss'
@@ -157,19 +160,25 @@ def index_file_in_aoss(event):
     file_encoded_data = file_encoded_data[file_encoded_data.find(",") + 1:] 
     print(f'File-Extension  {file_extension}')
     file_content = base64.b64decode(file_encoded_data)
-    print(f'File-Bytes data {file_content}')
-    content = get_contents(file_extension, file_content)
+    s3_client = boto3.client('s3')
+    now = datetime.now()
+    date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
+    s3_key = f"index/data/{date_time}.{file_extension}"
+    s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
+    
+    content = get_contents(file_extension, file_content, s3_key)
     print(f'Content from Textract {content}')
-    event['body'] = {"text": content}
+    event['body'] = json.dumps({"text": content})
     return index_documents(event)
 
 
-def get_contents(file_extension: str, file_bytes):
+def get_contents(file_extension: str, file_bytes=None, s3_key=None):
     content = ' '
     try:
         if file_extension.lower() in ['pdf', 'png', 'jpg', 'jpeg']:
             textract_client = boto3.client('textract')
-            response = textract_client.detect_document_text(Document={'Bytes': file_bytes})
+            #response = textract_client.detect_document_text(Document={'Bytes': file_bytes})
+            response = textract_client.detect_document_text(Document={"S3Object": { "Bucket": s3_bucket_name,"Name": s3_key}})
             for block in response['Blocks']:
                 if block['BlockType'] == 'LINE':
                     content = content + ' ' + block['Text']

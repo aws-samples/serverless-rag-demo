@@ -169,7 +169,8 @@ class ApiGw_Stack(Stack):
                                   description="Create embeddings in Amazon Bedrock",
                                   environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
                                                 'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
-                                                'REGION': region
+                                                'REGION': region,
+                                                'S3_BUCKET_NAME': bucket_name
                                   },
                                   memory_size=4096,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
