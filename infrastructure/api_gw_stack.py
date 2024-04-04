@@ -84,19 +84,6 @@ class ApiGw_Stack(Stack):
 
         if 'Amazon Bedrock' in llm_model_id:
 
-            # Lets create an S3 bucket to store Images and also an API call
-                    # create s3 bucket to store ocr related objects
-            self.images_bucket = _s3.Bucket(self,
-                                        id=env_params["s3_images_data"],
-                                        bucket_name=bucket_name,
-                                        auto_delete_objects=True,
-                                        removal_policy=_cdk.RemovalPolicy.DESTROY,
-                                        cors= [_s3.CorsRule(allowed_headers=["*"],
-                                                            allowed_origins=["*"],
-                                                            allowed_methods=[_s3.HttpMethods.GET, _s3.HttpMethods.POST],
-                                                            id="serverless-rag-demo-cors-rule")],
-                                        versioned=False)
-
             secure_key = _cdk.aws_apigateway.ApiKey(self, f"rag-api-key-{env_name}", api_key_name=secret_api_key, enabled=True,
                                                     value=secret_api_key,
                                                     description="Secure access to API's")
@@ -113,6 +100,20 @@ class ApiGw_Stack(Stack):
         rag_llm_api = rag_llm_root_api.root.add_resource(parent_path)
         rest_endpoint_url = f'https://{rag_llm_root_api.rest_api_id}.execute-api.{region}.amazonaws.com/{env_name}/{parent_path}/'
         print(rest_endpoint_url)
+        
+        # Lets create an S3 bucket to store Images and also an API call
+                    # create s3 bucket to store ocr related objects
+        self.images_bucket = _s3.Bucket(self,
+                                        id=env_params["s3_images_data"],
+                                        bucket_name=bucket_name,
+                                        auto_delete_objects=True,
+                                        removal_policy=_cdk.RemovalPolicy.DESTROY,
+                                        cors= [_s3.CorsRule(allowed_headers=["*"],
+                                                            allowed_origins=[rest_endpoint_url],
+                                                            allowed_methods=[_s3.HttpMethods.GET, _s3.HttpMethods.POST],
+                                                            id="serverless-rag-demo-cors-rule")],
+                                        versioned=False)
+        
         method_responses = [
             # Successful response from the integration
             {
