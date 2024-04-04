@@ -148,6 +148,30 @@ def delete_index(event):
 def connect_tracker(event):
     return success_response('Successfully connection')
 
+
+def create_presigned_post(event):
+    # Generate a presigned S3 POST URL
+    query_params = {}
+    if 'queryStringParameters' in event:
+        query_params = event['queryStringParameters']
+    
+    if 'file_extension' in query_params:
+        extension = query_params['file_extension']
+        s3_client = boto3.client('s3')
+        now = datetime.now()
+        date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
+        s3_key = f"index/data/{date_time}.{extension}"
+        response = s3_client.generate_presigned_post(s3_bucket_name,
+                                                     s3_key,
+                                                     Fields=None,
+                                                     Conditions=None,
+                                                     ExpiresIn=3600)
+        # The response contains the presigned URL and required fields
+        return success_response(response)
+    else:
+        return failure_response('Missing file_extension field cannot generate signed url')
+
+
 def extract_file_extension(base64_encoded_file):
     if base64_encoded_file.find(';') > -1:
         extension = base64_encoded_file.split(';')[0]
@@ -167,26 +191,26 @@ def get_job_status(event):
     
 def index_file_in_aoss(event):
     payload = json.loads(event['body'])
-    file_encoded_data = payload['content']
-    file_extension = extract_file_extension(file_encoded_data)
-    file_encoded_data = file_encoded_data[file_encoded_data.find(",") + 1:] 
-    print(f'File-Extension  {file_extension}')
-    file_content = base64.b64decode(file_encoded_data)
-
-    if file_extension.lower() == 'pdf':
-        s3_client = boto3.client('s3')
-        now = datetime.now()
-        date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
-        s3_key = f"index/data/{date_time}.{file_extension}"
-        s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
-        job_id = start_pdf_text_detection_job(s3_key)
-        t1 = threading.Thread(target=async_indexing(file_extension, event, job_id))
-        return success_response({'jobId': job_id})
-        
+    s3_key = payload['s3_key']
+    if '.' in s3_key:
+        file_extension = s3_key[s3_key.rindex('.')+1:]
+        if file_extension.lower() in ['pdf']:
+            job_id = start_pdf_text_detection_job(s3_key)
+            t1 = threading.Thread(target=async_indexing(file_extension, event, job_id))
+            return success_response({'jobId': job_id})
     else:
-        content = get_contents(file_extension, file_content, None)
+        content = get_contents(file_extension, get_file_from_s3(s3_key), None)
         event['body'] = json.dumps({"text": content})
         return index_documents(event)
+
+
+def get_file_from_s3(s3_key):
+    s3 = boto3.resource('s3')
+    obj = s3.Object(s3_bucket_name, s3_key)
+    file_bytes = obj.get()['Body'].read()
+    print(f'returns S3 encoded object from key {s3_bucket_name}/{s3_key}')
+    return file_bytes
+
 
 def async_indexing(file_extension, event, job_id):
     content = get_contents(file_extension, None, None, job_id)
@@ -288,6 +312,7 @@ def handler(event, context):
         'DELETE/rag/index-documents': lambda x: delete_index(x),
         'GET/rag/connect-tracker': lambda x: connect_tracker(x),
         'POST/rag/index-files': lambda x: index_file_in_aoss(x),
+        'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
         'GET/rag/get-job-status': lambda x: get_job_status(x)
         
     }

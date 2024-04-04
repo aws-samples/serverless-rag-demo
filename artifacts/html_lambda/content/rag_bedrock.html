@@ -459,7 +459,7 @@
           </div>
           <div class="row">
             <div class="col">
-              <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index
+              <button id="index-button" type="button" class="btn btn-info" onclick="javascript:get_to_s3_presigned()">Index
                 Documents</button>
             </div>
             <div class="col">
@@ -964,30 +964,101 @@
         }
       }
 
-      function indexDocuments() {
+      function build_url(result) {
+        url = result['result']['url']+'?'
+        if ('fields' in result) {
+          for(var key in result['fields']) {
+            url = url+key+'='+result['fields'][key]+ '&'
+          }
+        }
+        return url
+      }
+
+      function get_to_s3_presigned() {
+
+        for (var i = 0; i<base64File.length; i++) {
+          file_extension = ''
+          content = base64File[i]
+          file_type = content.substring("data:".length, content.indexOf(";base64"))
+          if (file_type.includes('/')) {
+              file_extension = file_type.split('/')[1]
+          } else {
+              file_extension = file_type
+          }
+
+          $.ajax({
+          type: "GET",
+          url: awsData.apiGatewayUrl + '/get-presigned-url',
+          contentType: "text/json",
+          dataType: 'json',
+          data: {"file_extension": file_extension},
+          success: function (result) {
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
+            if ('url' in result['result']) {
+              alertbuilder('Uploading to S3', true) 
+              upload_url = build_url(result['result'])
+              $.ajax({
+                type: "POST",
+                url: upload_url,
+                contentType: "text/json",
+                dataType: 'json',
+                data: JSON.stringify(result['result']['fields']),
+                success: function (result) {
+                  alertbuilder('Uploaded file '+ i +' to S3', true)
+                  indexDocuments(result['result']['fields']['key']), i
+                },
+                error: function(err) {
+                  alertbuilder(err.responseText.replaceAll('"', ''), false) 
+                  alertbuilder('Document Not Indexed', false) 
+                }
+              });
+
+
+            } else {
+              alertbuilder('Document Not Indexed, Could not upload document', true)
+            } 
+          },
+          error: function (err) {
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
+            console.log('Error on making API gateway call to index documents ..');
+            console.log(err.responseText);
+            console.log(err)
+            alertbuilder(err.responseText.replaceAll('"', ''), false)
+          }
+        });
+          
+        }
+
+        
+
+      }
+
+      function indexDocuments(s3_key, i) {
 
         $('#index-spinner').css('visibility', 'visible');
         $('#index-button').css('visibility', 'hidden');
         $('#query-button').css('visibility', 'hidden');
         $('#delete-button').css('visibility', 'hidden');
         //Retrieve list of dashboards that the user can access from QuickSight.
-        for(var j=0; j<base64File.length; j++) {
-          
-          content = base64File[j]
-
-          $.ajax({
+        $.ajax({
           type: "POST",
           url: awsData.apiGatewayUrl + '/index-files',
           contentType: "text/json",
           dataType: 'json',
-          data: JSON.stringify({ "content": content }),
+          data: JSON.stringify({ "s3_key": s3_key }),
           success: function (result) {
             $('#index-spinner').css('visibility', 'hidden');
             $('#index-button').css('visibility', 'visible');
             $('#query-button').css('visibility', 'visible');
             $('#delete-button').css('visibility', 'visible');
             if (typeof result['result'] != 'string' && 'jobId' in result['result']) {
-              alertbuilder('Indexing request sent:' + result['result']['jobId'], true) 
+              alertbuilder('Indexing request for file '+ i +' sent:' + result['result']['jobId'], true) 
               interval_retry_counter = 0
               indexing_checker = setInterval(() => {
               interval_retry_counter = interval_retry_counter + 1
@@ -1027,9 +1098,6 @@
             alertbuilder(err.responseText.replaceAll('"', ''), false)
           }
         });
-
-        }
-        
       }
       
       function get_job_status(jobId, callback) {
