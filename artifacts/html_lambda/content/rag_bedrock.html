@@ -965,7 +965,8 @@
       }
 
       function build_url(result) {
-        url = result['result']['url']+'?'
+        url = result['url']
+        url = url.substring(0, url.length - 1) + '?';
         if ('fields' in result) {
           for(var key in result['fields']) {
             url = url+key+'='+result['fields'][key]+ '&'

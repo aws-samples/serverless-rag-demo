@@ -91,6 +91,10 @@ class ApiGw_Stack(Stack):
                                         bucket_name=bucket_name,
                                         auto_delete_objects=True,
                                         removal_policy=_cdk.RemovalPolicy.DESTROY,
+                                        cors= [_s3.CorsRule(allowed_headers=["*"],
+                                                            allowed_origins=["*"],
+                                                            allowed_methods=[_s3.HttpMethods.GET, _s3.HttpMethods.POST],
+                                                            id="serverless-rag-demo-cors-rule")],
                                         versioned=False)
 
             secure_key = _cdk.aws_apigateway.ApiKey(self, f"rag-api-key-{env_name}", api_key_name=secret_api_key, enabled=True,
