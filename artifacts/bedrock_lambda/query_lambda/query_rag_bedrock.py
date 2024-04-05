@@ -62,7 +62,7 @@ if is_rag_enabled == 'yes':
 bedrock_client = boto3.client('bedrock-runtime')
 
 
-def query_data(query, behaviour, model_id, connect_id):
+def query_data(query, behaviour, model_id, query_vectordb, connect_id):
     global DEFAULT_PROMPT
     global embed_model_id
     global bedrock_client
@@ -117,11 +117,10 @@ def query_data(query, behaviour, model_id, connect_id):
     context = ''
     user_query = ''
 
-    if is_rag_enabled == 'yes' and query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact', 'chat']:
+    if is_rag_enabled == 'yes' and query_vectordb == 'yes' and query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact', 'chat']:
         try:
 
             user_query, img_ids =extract_query_image_values(query)
-
                  
             # Get the query embedding from amazon-titan-embed model
             response = bedrock_client.invoke_model(
@@ -514,8 +513,9 @@ def handler(event, context):
                 query = input_to_llm['query']
                 behaviour = input_to_llm['behaviour']
                 if 'agent' not in behaviour:
+                    query_vectordb = input_to_llm['query_vectordb']
                     model_id = input_to_llm['model_id']
-                    query_data(query, behaviour, model_id, connect_id)
+                    query_data(query, behaviour, model_id, query_vectordb, connect_id)
                 else:
                     query_agents(behaviour, query, connect_id)
         elif routeKey == '$connect':
