@@ -13,6 +13,11 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Project Updates</b></summary>
 
+  #### (05-Apr-2024):
+  * You can now index PDFs/Json/CSV/txt files into AOSS.
+  * You can now **optionally** augment your prompts with knowledge from in AOSS
+  * Lambda size reduced to 3GB so newer AWS accounts can deploy this stack
+  
   #### (27-Mar-2024):
   * Introducing Function calling support with Anthropic's Claude3
   * Weather-Agent with two functions to find latitude longitude and the weather data of a particular place through function calls
