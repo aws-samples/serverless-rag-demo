@@ -393,7 +393,7 @@
       <div class="tab-pane fade show active" id="index-div" role="tabpanel" aria-labelledby="index-tab">
         <div style="padding-bottom: 10px;"></div>
         <div class="alert alert-primary" role="alert">
-          Index your documents here. Initial indexing requests could timeout due to time take by Amazon OSS to warm up.
+          Index your documents here. The refresh interval for indexes is approximately 60 seconds
         </div>
         <div style="padding-bottom: 10px;"></div>
         <div class="container">
@@ -520,6 +520,13 @@
                   </div>
                 </div>
 
+              </div>
+            </div>
+            <div class="row">
+              <div class="col"></div>
+              <div class="col">
+                <input type="checkbox" id="q_vectordb" name="q_vectordb" checked value="kbase">
+                <label for="q_vectordb">Query Knowledge Base</label>
               </div>
             </div>
             <div class="row" style="padding-left: 20px;">
@@ -1356,7 +1363,11 @@
       function generate_and_send_query(user_query, assistant_type, model_id) {
         query_str = " " + $('#query').val()
         user_query.push({ 'type': 'text', 'data': query_str })
-        data = '{"query": "' + btoa(JSON.stringify(user_query)) + '",  "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
+        query_vector_db = 'no'
+        if ($('#q_vectordb').is(":checked")){
+          query_vector_db = 'yes'
+        }
+        data = '{"query": "' + btoa(JSON.stringify(user_query)) + '", "query_vectordb": "' + query_vector_db + '", "behaviour": "' + assistant_type + '", "model_id": "' + model_id + '" ,"action": "bedrock"}'
         send_over_websocket(data, 'query-response')
       }
 
