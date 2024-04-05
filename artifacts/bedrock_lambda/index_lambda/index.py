@@ -161,11 +161,13 @@ def create_presigned_post(event):
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
         s3_key = f"index/data/{date_time}.{extension}"
-        response = s3_client.generate_presigned_post(s3_bucket_name,
-                                                     s3_key,
-                                                     Fields=None,
-                                                     Conditions=None,
-                                                     ExpiresIn=3600)
+        response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
+                                              Key=s3_key,
+                                              Fields=None,
+                                              Conditions=[]
+                                          )
+
+
         # The response contains the presigned URL and required fields
         return success_response(response)
     else:
@@ -189,18 +191,20 @@ def get_job_status(event):
     else:
         return failure_response('jobId is missing')
     
-def index_file_in_aoss(event):
+def detect_text_index(event):
     payload = json.loads(event['body'])
     s3_key = payload['s3_key']
     if '.' in s3_key:
         file_extension = s3_key[s3_key.rindex('.')+1:]
         if file_extension.lower() in ['pdf']:
             job_id = start_pdf_text_detection_job(s3_key)
-            t1 = threading.Thread(target=async_indexing(file_extension, event, job_id))
+            # t1 = threading.Thread(target=async_indexing(file_extension, event, job_id))
             return success_response({'jobId': job_id})
     else:
         content = get_contents(file_extension, get_file_from_s3(s3_key), None)
         event['body'] = json.dumps({"text": content})
+        # Directly index as the content is readable through normal decoding
+        # TODO Integrate wrangler for xls files
         return index_documents(event)
 
 
@@ -212,12 +216,24 @@ def get_file_from_s3(s3_key):
     return file_bytes
 
 
-def async_indexing(file_extension, event, job_id):
-    content = get_contents(file_extension, None, None, job_id)
+def index_file_in_aoss(event):
+    '''
+    This function is called for PDF files which passed through Textract
+    Once the PDF job is complete we retrieve the contents based on JobID
+    and initiate the indexing
+    '''
+    payload = json.loads(event['body'])
+    jobId = payload['jobId']
+    content = get_contents('pdf', None, None, jobId)
     event['body'] = json.dumps({"text": content})
     print('Asynchronous Indexing of data')
     return index_documents(event)
 
+# def async_indexing(file_extension, event, job_id):
+#     content = get_contents(file_extension, None, None, job_id)
+#     event['body'] = json.dumps({"text": content})
+#     print('Asynchronous Indexing of data')
+#     return index_documents(event)
 
 def getJobResults(jobId):
 
@@ -311,6 +327,7 @@ def handler(event, context):
         'POST/rag/index-documents': lambda x: index_documents(x),
         'DELETE/rag/index-documents': lambda x: delete_index(x),
         'GET/rag/connect-tracker': lambda x: connect_tracker(x),
+        'POST/rag/detect-text': lambda x: detect_text_index(x),
         'POST/rag/index-files': lambda x: index_file_in_aoss(x),
         'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
         'GET/rag/get-job-status': lambda x: get_job_status(x)

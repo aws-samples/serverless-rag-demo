@@ -377,6 +377,7 @@ class ApiGw_Stack(Stack):
 
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
+        detect_text_api = rag_llm_api.add_resource("detect-text")
         index_files_api = rag_llm_api.add_resource("index-files")
         get_job_status_api = rag_llm_api.add_resource("get-job-status")
         get_presigned_url_api = rag_llm_api.add_resource("get-presigned-url")
@@ -407,6 +408,14 @@ class ApiGw_Stack(Stack):
                 operation_name="index sample document",
                 method_responses=method_responses,
                 api_key_required=True
+            )
+
+            detect_text_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="Detect Text or Index a file",
+                api_key_required=True,
+                method_responses=method_responses,
             )
 
             index_files_api.add_method(
@@ -452,6 +461,7 @@ class ApiGw_Stack(Stack):
             self.add_cors_options(connect_tracker_api)
             self.add_cors_options(get_job_status_api)
             self.add_cors_options(get_presigned_url_api)
+            self.add_cors_options(index_files_api)
         else:
             query_api.add_method(
                 "GET",
@@ -484,7 +494,7 @@ class ApiGw_Stack(Stack):
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)
-        self.add_cors_options(index_files_api)
+        self.add_cors_options(detect_text_api)
 
     def add_cors_options(self, apiResource: _cdk.aws_apigateway.IResource):
         apiResource.add_method(
