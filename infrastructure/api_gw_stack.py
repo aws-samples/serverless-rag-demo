@@ -84,15 +84,6 @@ class ApiGw_Stack(Stack):
 
         if 'Amazon Bedrock' in llm_model_id:
 
-            # Lets create an S3 bucket to store Images and also an API call
-                    # create s3 bucket to store ocr related objects
-            self.images_bucket = _s3.Bucket(self,
-                                        id=env_params["s3_images_data"],
-                                        bucket_name=bucket_name,
-                                        auto_delete_objects=True,
-                                        removal_policy=_cdk.RemovalPolicy.DESTROY,
-                                        versioned=False)
-
             secure_key = _cdk.aws_apigateway.ApiKey(self, f"rag-api-key-{env_name}", api_key_name=secret_api_key, enabled=True,
                                                     value=secret_api_key,
                                                     description="Secure access to API's")
@@ -109,6 +100,20 @@ class ApiGw_Stack(Stack):
         rag_llm_api = rag_llm_root_api.root.add_resource(parent_path)
         rest_endpoint_url = f'https://{rag_llm_root_api.rest_api_id}.execute-api.{region}.amazonaws.com/{env_name}/{parent_path}/'
         print(rest_endpoint_url)
+        
+        # Lets create an S3 bucket to store Images and also an API call
+                    # create s3 bucket to store ocr related objects
+        self.images_bucket = _s3.Bucket(self,
+                                        id=env_params["s3_images_data"],
+                                        bucket_name=bucket_name,
+                                        auto_delete_objects=True,
+                                        removal_policy=_cdk.RemovalPolicy.DESTROY,
+                                        cors= [_s3.CorsRule(allowed_headers=["*"],
+                                                            allowed_origins=[rest_endpoint_url],
+                                                            allowed_methods=[_s3.HttpMethods.GET, _s3.HttpMethods.POST],
+                                                            id="serverless-rag-demo-cors-rule")],
+                                        versioned=False)
+        
         method_responses = [
             # Successful response from the integration
             {
@@ -169,9 +174,10 @@ class ApiGw_Stack(Stack):
                                   description="Create embeddings in Amazon Bedrock",
                                   environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
                                                 'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
-                                                'REGION': region
+                                                'REGION': region,
+                                                'S3_BUCKET_NAME': bucket_name
                                   },
-                                  memory_size=4096,
+                                  memory_size=3000,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
             
             lambda_function = bedrock_indexing_lambda_function
@@ -193,7 +199,7 @@ class ApiGw_Stack(Stack):
                                                 'WRANGLER_NAME': env_params['bedrock_wrangler_function_name'],
                                                 'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no'
                                   },
-                                  memory_size=4096,
+                                  memory_size=3000,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
                                 )
             
@@ -206,7 +212,7 @@ class ApiGw_Stack(Stack):
                                   role=custom_lambda_role,
                                   timeout=_cdk.Duration.seconds(300),
                                   description="AWS Wrangler read files in multiple formats",
-                                  memory_size=4096,
+                                  memory_size=3000,
                                   layers= [wrangler_layer]
                                 )
                 wrangler_policy = _iam.PolicyStatement(
@@ -371,6 +377,11 @@ class ApiGw_Stack(Stack):
 
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
+        detect_text_api = rag_llm_api.add_resource("detect-text")
+        index_files_api = rag_llm_api.add_resource("index-files")
+        get_job_status_api = rag_llm_api.add_resource("get-job-status")
+        get_presigned_url_api = rag_llm_api.add_resource("get-presigned-url")
+        
         index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
         file_data_api = rag_llm_api.add_resource("file_data")
         connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
@@ -399,6 +410,38 @@ class ApiGw_Stack(Stack):
                 api_key_required=True
             )
 
+            detect_text_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="Detect Text or Index a file",
+                api_key_required=True,
+                method_responses=method_responses,
+            )
+
+            index_files_api.add_method(
+                "POST",
+                lambda_integration,
+                operation_name="Index a file",
+                api_key_required=True,
+                method_responses=method_responses,
+            )
+
+            get_job_status_api.add_method(
+                "GET",
+                lambda_integration,
+                operation_name="Get Job Status",
+                api_key_required=True,
+                method_responses=method_responses,
+            )
+
+            get_presigned_url_api.add_method(
+                "GET",
+                lambda_integration,
+                operation_name="Get Presigned Post URL",
+                api_key_required=True,
+                method_responses=method_responses,
+            )
+
             file_data_api.add_method(
                 "POST",
                 bedrock_query_lambda_integration,
@@ -416,7 +459,10 @@ class ApiGw_Stack(Stack):
                 api_key_required=True
             )
             self.add_cors_options(connect_tracker_api)
-
+            self.add_cors_options(get_job_status_api)
+            self.add_cors_options(get_presigned_url_api)
+            self.add_cors_options(index_files_api)
+            self.add_cors_options(detect_text_api)
         else:
             query_api.add_method(
                 "GET",
@@ -449,6 +495,7 @@ class ApiGw_Stack(Stack):
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)
+        
 
     def add_cors_options(self, apiResource: _cdk.aws_apigateway.IResource):
         apiResource.add_method(

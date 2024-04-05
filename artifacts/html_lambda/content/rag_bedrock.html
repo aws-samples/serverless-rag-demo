@@ -209,25 +209,38 @@
         flex-direction: column;
       }
 
-      .img-area .icon {
+      .file-img-area {
+        height: 42vh;
+        position: relative;
+        background: #c8effb;
+        /* margin-bottom: 30px; */
+        border-radius: 15px;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+      }
+
+      .file-img-area .icon,.img-area .icon {
         font-size: 100px;
       }
 
-      .img-area h3 {
+      .file-img-area h3,.img-area h3 {
         font-size: 20px;
         font-weight: 500;
         margin-bottom: 6px;
       }
 
-      .img-area p {
+      .file-img-area p,.img-area p {
         color: #999;
       }
 
-      .img-area p span {
-        font-weight: 600;
+      .file-img-area p span,.img-area p span {
+        font-weight: 200;
       }
 
-      .img-area object {
+      .file-img-area object,.img-area object {
         position: relative;
         top: 0;
         left: 0;
@@ -235,19 +248,22 @@
         height: 100%;
         object-fit: cover;
         object-position: center;
+        width: 100%;
+        height: 100%;
         z-index: 100;
       }
 
-      .img-area::before {
-        /* content: attr(data-img); */
+      .file-img-area::before,.img-area::before {
+        content: attr(data-img);
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         /* background: rgba(0, 0, 0, .5); */
-        color: #fff;
-        font-weight: 500;
+        color: #232523;
+        font-size: 30px;
+        font-weight: 600;
         text-align: center;
         display: flex;
         justify-content: center;
@@ -261,8 +277,11 @@
       .img-area.active:hover::before {
         opacity: 50;
       }
+      .file-img-area.active:hover::before {
+        opacity: 50;
+      }
 
-      .select-image {
+      .select-file,.select-image {
         display: block;
         width: 100%;
         padding: 5px 0;
@@ -274,7 +293,7 @@
         cursor: pointer;
       }
 
-      .remove-image {
+      .remove-file,.remove-image {
         display: block;
         width: 100%;
         padding: 5px 0;
@@ -288,7 +307,7 @@
 
     }
 
-
+  
     .conversations .mask-custom {
       background: rgba(24, 24, 16, .2) !important;
       border-radius: 2em;
@@ -377,84 +396,82 @@
           Index your documents here. Initial indexing requests could timeout due to time take by Amazon OSS to warm up.
         </div>
         <div style="padding-bottom: 10px;"></div>
-        <table>
-          <tbody>
-            <tr>
-              <th class="text-dark p-2">
-                <h4>Index Documents</h4>
-              </th>
-              <th style="padding-left: 100px;"></th>
-              <th class="text-dark p-2">
-                <h4>Try sample data</h4>
-              </th>
-            </tr>
-            <tr>
-              <td>
-                <div class="card-footer text-muted d-flex justify-content-start align-items-center p-3">
-                  <textarea placeholder="Add text here for indexing. Limit to 5000 characters" id="index_txt"
-                    name="request" rows="10" cols="60"></textarea>
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8">
+              <h4>Index Custom Documents</h4>
+            </div>
+            <div class="col">
+              <h4>Index Sample Data</h4>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-lg-6">
+              <!-- Image viewer component -->
+              <div id="file_viewer_container" style="height:52vh;">
+
+                <div class="image_viewer" style="height: 50vh;">
+                  <input type="file" id="index-file" accept=".txt, .json, .csv, .pdf" hidden multiple>
+                  <div class="file-img-area" data-img="">
+                    <div id="file_guidance">
+                      <i class='bx bxs-cloud-upload icon'></i>
+                      <h3>Upload File pdf/json/csv/txt</h3>
+                      <p>File size must be less than <span>10MB</span></p>
+                    </div>
+                  </div>
+                  <div class="row"></div>
+                  <div class="row">
+                    <div class="col-md-4">
+                      <button class="select-file btn-secondary btn-sm">Select File</button>
+                    </div>
+                    <div class="col-md-4">
+                      <button class="remove-file btn-close btn-sm">Remove File</button>
+                    </div>
+                  </div>
+
+
                 </div>
-              </td>
-              <td style="padding-left: 0px;"></td>
-              <td>
-                <table style="margin-top:-5vh">
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-movie" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-isro" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1,
-                        Chandrayan-3)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-health" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('health')">Index a brand new disease (FrostFlu)</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding-bottom: 10px;">
-                      <button id="sample-finance" type="button" class="btn btn-warning"
-                        onclick="javascript:indexSampleDocument('amazon_earnings')">Index Amazon Earnings Report
-                        (Quarterly Results)</button>
-                    </td>
-                  </tr>
 
-                </table>
+              </div>
+              <!-- Image viewer component ends -->
+            </div>
+            <div class="col-lg-2"></div>
+            <div class="col-lg-4">
+              <div class="row">
+                <button id="sample-movie" type="button" class="btn-sm btn-warning"
+                  onclick="javascript:indexSampleDocument('movie')">Index a new movie (Enigma's Pursuit)</button>
+              </div>
+              <div class="row" style="padding-top: 15px;"></div>
+              <div class="row">
+                <button id="sample-isro" type="button" class="btn-sm btn-warning"
+                  onclick="javascript:indexSampleDocument('isro')">Index ISRO missions (Aditya-L1,
+                  Chandrayan-3)</button>
+              </div>
+              <div class="row" style="padding-top: 15px;"></div>
+              <div class="row">
+                <button id="sample-finance" type="button" class="btn-sm btn-warning"
+                  onclick="javascript:indexSampleDocument('amazon_earnings')">Index Amazon Earnings Report (Quarterly
+                  Results)</button>
+              </div>
+            </div>
 
-              </td>
-            </tr>
-            <tr>
+          </div>
+          <div class="row">
+            <div class="col">
+              <button id="index-button" type="button" class="btn btn-info" onclick="javascript:get_to_s3_presigned()">Index
+                Documents</button>
+            </div>
+            <div class="col">
+              <button id="delete-button" type="button" class="btn btn-danger"
+                onclick="javascript:reset()">Reset</button>
+            </div>
+            <div class="col-sm-1"></div>
+            <div class="col-sm-1"></div>
+          </div>
 
-            </tr>
+        </div>
 
-
-          </tbody>
-        </table>
-        <table>
-          <tbody>
-            <tr>
-              <td style="padding-left: 20px;">
-                <button id="index-button" type="button" class="btn btn-info" onclick="javascript:indexDocuments()">Index
-                  Documents</button>
-              </td>
-              <td style="padding-left: 20px;">
-                <button id="delete-button" type="button" class="btn btn-danger"
-                  onclick="javascript:reset()">Reset</button>
-              </td>
-              <td style="padding-left: 20px;">
-
-              </td>
-
-            </tr>
-
-          </tbody>
-        </table>
 
         <div class="d-flex justify-content-center" id="index-spinner">
           <div class="spinner-border" role="status">
@@ -792,61 +809,122 @@
         const inputFile = document.querySelector('#file');
         const imgArea = document.querySelector('.img-area');
 
-        selectImage.addEventListener('click', function () {
-          inputFile.value = '';
-          inputFile.click();
-          $('#image_guidance').hide();
+        const selectFile = document.querySelector('.select-file');
+        const removeFile = document.querySelector('.remove-file');
+        const inputIndexFile = document.querySelector('#index-file');
+        const fileImgArea = document.querySelector('.file-img-area');
+
+        selectFile.addEventListener('click', function () {
+          base64File = []
+          fileImgArea.dataset.img = ''
+          inputIndexFile.value = '';
+          inputIndexFile.click();
+          $('#file_guidance').hide();
         })
 
-        removeImage.addEventListener('click', function () {
-          $('#image_guidance').show();
-          const allImg = imgArea.querySelectorAll('object');
+        removeFile.addEventListener('click', function () {
+          $('#file_guidance').show();
+          const allImg = fileImgArea.querySelectorAll('object');
           allImg.forEach(item => item.remove());
-          base64Image = []
-          imgArea.dataset.img = ''
+          base64File = []
+          fileImgArea.dataset.img = ''
         })
 
-
-        inputFile.addEventListener('change', function () {
+        inputIndexFile.addEventListener('change', function () {
 
           if (this.files && this.files.length > 0) {
-            const allImg = imgArea.querySelectorAll('object');
+            const allImg = fileImgArea.querySelectorAll('object');
             allImg.forEach(item => item.remove());
             for (var j = 0; j < this.files.length; j++) {
               const file = this.files[j];
-              if (file.size < 5000000) {
+              if (file.size < 10000000) {
                 const reader = new FileReader()
 
                 reader.onload = () => {
                   const imgUrl = reader.result;
-                  base64Image.push(imgUrl)
+                  base64File.push(imgUrl)
                   const img = document.createElement('object');
                   //img.src = imgUrl;
                   img.data = imgUrl;
-                  imgArea.appendChild(img);
-                  imgArea.classList.add('active');
-                  if (imgArea.dataset.img) {
-                    imgArea.dataset.img = imgArea.dataset.img + ', ' + file.name;
+                  fileImgArea.appendChild(img);
+                  fileImgArea.classList.add('active');
+                  if (fileImgArea.dataset.img) {
+                    fileImgArea.dataset.img = fileImgArea.dataset.img + ', ' + file.name;
                   } else {
-                    imgArea.dataset.img = file.name;
+                    fileImgArea.dataset.img = file.name;
                   }
 
                 }
                 reader.readAsDataURL(file);
 
               } else {
-                alertbuilder("File size should be less than 5MB." + file.name + ' was not added', false);
+                alertbuilder("File size should be less than 10MB." + file.name + ' was not added', false);
               }
             }
 
           }
         });
 
+
+      // On Query Tab
+      selectImage.addEventListener('click', function () {
+        inputFile.value = '';
+        base64Image = []
+        imgArea.dataset.img = ''
+        inputFile.click();
+        $('#image_guidance').hide();
+      })
+
+      removeImage.addEventListener('click', function () {
+        $('#image_guidance').show();
+        const allImg = imgArea.querySelectorAll('object');
+        allImg.forEach(item => item.remove());
+        base64Image = []
+        imgArea.dataset.img = ''
+      })
+
+
+      inputFile.addEventListener('change', function () {
+
+        if (this.files && this.files.length > 0) {
+          const allImg = imgArea.querySelectorAll('object');
+          allImg.forEach(item => item.remove());
+          for (var j = 0; j < this.files.length; j++) {
+            const file = this.files[j];
+            if (file.size < 5000000) {
+              const reader = new FileReader()
+
+              reader.onload = () => {
+                const imgUrl = reader.result;
+                base64Image.push(imgUrl)
+                const img = document.createElement('object');
+                //img.src = imgUrl;
+                img.data = imgUrl;
+                imgArea.appendChild(img);
+                imgArea.classList.add('active');
+                if (imgArea.dataset.img) {
+                  imgArea.dataset.img = imgArea.dataset.img + ', ' + file.name;
+                } else {
+                  imgArea.dataset.img = file.name;
+                }
+
+              }
+              reader.readAsDataURL(file);
+
+            } else {
+              alertbuilder("File size should be less than 5MB." + file.name + ' was not added', false);
+            }
+          }
+
+        }
         // Image upload code end
+      });
+        
       });
 
       var model_id = null;
       var base64Image = [];
+      var base64File = [];
       var ws = null;
       var chat_id = null;
       var awsData = {
@@ -886,25 +964,88 @@
         }
       }
 
-      function indexDocuments() {
+      function build_url(result) {
+        url = result['url']
+        url = url.substring(0, url.length - 1) + '?';
+        file_data = {}
+        if ('fields' in result) {
+          for(var key in result['fields']) {
+            url = url + key + '=' + result['fields'][key] + '&'
+          }
+        }
+        return url
+      }
 
-        $('#index-spinner').css('visibility', 'visible');
-        $('#index-button').css('visibility', 'hidden');
-        $('#query-button').css('visibility', 'hidden');
-        $('#delete-button').css('visibility', 'hidden');
-        //Retrieve list of dashboards that the user can access from QuickSight.
-        $.ajax({
-          type: "POST",
-          url: awsData.apiGatewayUrl + '/index-documents',
+      function build_form_data(result, formdata) {
+        if ('fields' in result) {
+          for(var key in result['fields']) {
+            formdata.append(key, result['fields'][key])
+          }
+        }
+        return formdata
+      }
+
+      function base64ToArrayBuffer(base64) {
+        var binaryString = atob(base64);
+        var bytes = new Uint8Array(binaryString.length);
+        for (var i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        // return bytes.buffer;
+        return new File([bytes], 'sample')
+      }
+
+      function get_to_s3_presigned() {
+
+        for (var i=0; i< base64File.length; i++) {
+          file_extension = ''
+          content = base64File[i]
+          file_type = content.substring("data:".length, content.indexOf(";base64"))
+          if (file_type.includes('/')) {
+              file_extension = file_type.split('/')[1]
+          } else {
+              file_extension = file_type
+          }
+
+          $('#index-spinner').css('visibility', 'visible');
+          $('#index-button').css('visibility', 'hidden');
+          $('#delete-button').css('visibility', 'hidden');
+          
+          $.ajax({
+          type: "GET",
+          url: awsData.apiGatewayUrl + '/get-presigned-url',
           contentType: "text/json",
           dataType: 'json',
-          data: JSON.stringify({ "text": $('#index_txt').val() }),
+          data: {"file_extension": file_extension},
+          contentType: "application/json",
           success: function (result) {
-            $('#index-spinner').css('visibility', 'hidden');
-            $('#index-button').css('visibility', 'visible');
-            $('#query-button').css('visibility', 'visible');
-            $('#delete-button').css('visibility', 'visible');
-            alertbuilder(result['result'], true)
+            alertbuilder('Uploading to S3', true) 
+            var formData = new FormData();
+            formData = build_form_data(result['result'], formData)
+            content = content.replace(/^data:.+;base64,/, "")
+            // content = atob(content)
+            bytes = base64ToArrayBuffer(content)
+            formData.append('file', bytes);
+            $.ajax({
+                type: "POST",
+                url: result['result']['url'],
+                data: formData,
+                processData: false,
+                contentType: false,
+                contentEncoding: 'base64',
+                success: function (res) {
+                  alertbuilder('Uploaded file '+ i +' to S3', true)
+                  indexDocuments(result['result']['fields']['key'], i)
+                },
+                error: function(err) {
+                  $('#index-spinner').css('visibility', 'hidden');
+                  $('#index-button').css('visibility', 'visible');
+                  $('#query-button').css('visibility', 'visible');
+                  $('#delete-button').css('visibility', 'visible');
+                  alertbuilder('Document Not Indexed', false) 
+                  console.log(err)
+                }
+              });
           },
           error: function (err) {
             $('#index-spinner').css('visibility', 'hidden');
@@ -917,7 +1058,124 @@
             alertbuilder(err.responseText.replaceAll('"', ''), false)
           }
         });
+          
+        }
+
+        
+
       }
+
+      function indexDocuments(s3_key, i) {
+
+        $('#index-spinner').css('visibility', 'visible');
+        $('#index-button').css('visibility', 'hidden');
+        $('#delete-button').css('visibility', 'hidden');
+        //Retrieve list of dashboards that the user can access from QuickSight.
+        $.ajax({
+          type: "POST",
+          url: awsData.apiGatewayUrl + '/detect-text',
+          contentType: "text/json",
+          dataType: 'json',
+          data: JSON.stringify({ "s3_key": s3_key }),
+          success: function (result) {
+            if (typeof result['result'] != 'string' && 'jobId' in result['result']) {
+              alertbuilder('Indexing request for file '+ i +' sent:' + result['result']['jobId'], true) 
+              interval_retry_counter = 0
+              job_id = result['result']['jobId']
+              indexing_checker = setInterval(() => {
+              interval_retry_counter = interval_retry_counter + 1
+                 get_job_status(job_id, function(result) {
+                  if (result['statusCode']=='200' && result['result'] == true) {
+                    $.ajax({
+                      type: "POST",
+                      url: awsData.apiGatewayUrl + '/index-files',
+                      contentType: "text/json",
+                      dataType: "json",
+                      data: JSON.stringify({"jobId": job_id}),
+                      success: function(res) {
+                        $('#index-spinner').css('visibility', 'hidden');
+                        $('#index-button').css('visibility', 'visible');
+                        $('#query-button').css('visibility', 'visible');
+                        $('#delete-button').css('visibility', 'visible');
+                        alertbuilder('Document Indexed Successfully', true)
+                        clearInterval(indexing_checker)
+                      },
+                      error: function(err) {
+                        $('#index-spinner').css('visibility', 'hidden');
+                        $('#index-button').css('visibility', 'visible');
+                        $('#query-button').css('visibility', 'visible');
+                        $('#delete-button').css('visibility', 'visible');
+                        alertbuilder("Document Not Indexed", false)
+                        clearInterval(indexing_checker)
+                        // alertbuilder(err.responseText.replaceAll('"', ''), false)
+                      }
+                    });
+                  }
+                  else if (result['statusCode']=='200' && result['result'] != true) {
+                    alertbuilder('Document Indexing In-progress', true)
+                  }  
+                  else if (result['statusCode']=='400'){
+                    $('#index-spinner').css('visibility', 'hidden');
+                    $('#index-button').css('visibility', 'visible');
+                    $('#query-button').css('visibility', 'visible');
+                    $('#delete-button').css('visibility', 'visible');
+
+                    alertbuilder('Document Not Indexed', false)
+                    clearInterval(indexing_checker)
+                  }
+                  if (interval_retry_counter > 30) {
+                    $('#index-spinner').css('visibility', 'hidden');
+                    $('#index-button').css('visibility', 'visible');
+                    $('#query-button').css('visibility', 'visible');
+                    $('#delete-button').css('visibility', 'visible');
+                        
+                    alertbuilder('Indexing status IN_Progress after 1 minute of waiting', false)
+                    clearInterval(indexing_checker)
+                 }
+                 });
+                 
+              }, 5000)
+
+            } else {
+              $('#index-spinner').css('visibility', 'hidden');
+              $('#index-button').css('visibility', 'visible');
+              $('#query-button').css('visibility', 'visible');
+              $('#delete-button').css('visibility', 'visible');
+              alertbuilder(result['result'], true)
+            } 
+          },
+          error: function (err) {
+            $('#index-spinner').css('visibility', 'hidden');
+            $('#index-button').css('visibility', 'visible');
+            $('#query-button').css('visibility', 'visible');
+            $('#delete-button').css('visibility', 'visible');
+            alertbuilder('Document Not Indexed', false)
+            console.log(err)
+          }
+        });
+      }
+      
+      function get_job_status(jobId, callback) {
+
+        $.ajax({
+          type: "GET",
+          url: awsData.apiGatewayUrl + '/get-job-status',
+          contentType: "text/json",
+          dataType: 'json',
+          data: { "jobId": jobId },
+          success: function (result) {
+            return callback(result)
+          },
+          error: function (err) {
+            console.log('Error on making API gateway call to index documents ..');
+            console.log(err.responseText);
+            console.log(err)
+            return callback(result)
+          }
+        });
+
+      }
+
 
       function clear_response() {
         // document.getElementById('query-response').innerHTML = '';
@@ -1361,7 +1619,6 @@
         $('#send-chat-button').prop('disabled', true)
         $('#custom-spinner').css('visibility', 'visible');
         $('#index-button').css('visibility', 'hidden');
-        $('#query-button').css('visibility', 'hidden');
         $('#delete-button').css('visibility', 'hidden');
         var message_store = '';
         var end_of_response = false;
@@ -1442,7 +1699,7 @@
             if ('prompt_flow' in response_details) {
               is_done = Boolean(response_details['done'])
               if (!is_done) {
-                agent_prompt_flow=[]
+                agent_prompt_flow = []
                 for (var k = 0; k < response_details['prompt_flow'].length; k++) {
                   var prompt_content_list = response_details['prompt_flow'][k]['content']
                   content = []
@@ -1477,14 +1734,14 @@
                     content = []
                     for (var j = 0; j < content_list.length; j++) {
                       if ('text' in content_list[j]) {
-                        content.push({"type": "text", "text": specialToASCII(content_list[j]['text'])})
+                        content.push({ "type": "text", "text": specialToASCII(content_list[j]['text']) })
                         thought = thought + '<br>' + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]['text']
                       } else {
                         content.push(content_list[j])
                         thought = thought + '<br>' + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]
                       }
                     }
-                    agent_prompt_flow.push({"role": last_element['role'], "content": content})
+                    agent_prompt_flow.push({ "role": last_element['role'], "content": content })
                   }
                 }
               }
