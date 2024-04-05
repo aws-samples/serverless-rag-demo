@@ -177,7 +177,7 @@ class ApiGw_Stack(Stack):
                                                 'REGION': region,
                                                 'S3_BUCKET_NAME': bucket_name
                                   },
-                                  memory_size=4096,
+                                  memory_size=3000,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
             
             lambda_function = bedrock_indexing_lambda_function
@@ -199,7 +199,7 @@ class ApiGw_Stack(Stack):
                                                 'WRANGLER_NAME': env_params['bedrock_wrangler_function_name'],
                                                 'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no'
                                   },
-                                  memory_size=4096,
+                                  memory_size=3000,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
                                 )
             
@@ -212,7 +212,7 @@ class ApiGw_Stack(Stack):
                                   role=custom_lambda_role,
                                   timeout=_cdk.Duration.seconds(300),
                                   description="AWS Wrangler read files in multiple formats",
-                                  memory_size=4096,
+                                  memory_size=3000,
                                   layers= [wrangler_layer]
                                 )
                 wrangler_policy = _iam.PolicyStatement(

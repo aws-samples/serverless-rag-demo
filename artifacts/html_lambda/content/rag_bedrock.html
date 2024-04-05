@@ -1007,6 +1007,10 @@
               file_extension = file_type
           }
 
+          $('#index-spinner').css('visibility', 'visible');
+          $('#index-button').css('visibility', 'hidden');
+          $('#delete-button').css('visibility', 'hidden');
+          
           $.ajax({
           type: "GET",
           url: awsData.apiGatewayUrl + '/get-presigned-url',
@@ -1015,10 +1019,6 @@
           data: {"file_extension": file_extension},
           contentType: "application/json",
           success: function (result) {
-            $('#index-spinner').css('visibility', 'hidden');
-            $('#index-button').css('visibility', 'visible');
-            $('#query-button').css('visibility', 'visible');
-            $('#delete-button').css('visibility', 'visible');
             alertbuilder('Uploading to S3', true) 
             var formData = new FormData();
             formData = build_form_data(result['result'], formData)
@@ -1038,8 +1038,12 @@
                   indexDocuments(result['result']['fields']['key'], i)
                 },
                 error: function(err) {
-                  alertbuilder(err.responseText.replaceAll('"', ''), false) 
+                  $('#index-spinner').css('visibility', 'hidden');
+                  $('#index-button').css('visibility', 'visible');
+                  $('#query-button').css('visibility', 'visible');
+                  $('#delete-button').css('visibility', 'visible');
                   alertbuilder('Document Not Indexed', false) 
+                  console.log(err)
                 }
               });
           },
@@ -1065,7 +1069,6 @@
 
         $('#index-spinner').css('visibility', 'visible');
         $('#index-button').css('visibility', 'hidden');
-        $('#query-button').css('visibility', 'hidden');
         $('#delete-button').css('visibility', 'hidden');
         //Retrieve list of dashboards that the user can access from QuickSight.
         $.ajax({
@@ -1075,28 +1078,33 @@
           dataType: 'json',
           data: JSON.stringify({ "s3_key": s3_key }),
           success: function (result) {
-            $('#index-spinner').css('visibility', 'hidden');
-            $('#index-button').css('visibility', 'visible');
-            $('#query-button').css('visibility', 'visible');
-            $('#delete-button').css('visibility', 'visible');
             if (typeof result['result'] != 'string' && 'jobId' in result['result']) {
               alertbuilder('Indexing request for file '+ i +' sent:' + result['result']['jobId'], true) 
               interval_retry_counter = 0
+              job_id = result['result']['jobId']
               indexing_checker = setInterval(() => {
               interval_retry_counter = interval_retry_counter + 1
-                 get_job_status(result['result']['jobId'], function(result) {
+                 get_job_status(job_id, function(result) {
                   if (result['statusCode']=='200' && result['result'] == true) {
                     $.ajax({
                       type: "POST",
                       url: awsData.apiGatewayUrl + '/index-files',
                       contentType: "text/json",
                       dataType: "json",
-                      data: JSON.stringify({"jobId": result['result']['jobId']}),
+                      data: JSON.stringify({"jobId": job_id}),
                       success: function(res) {
+                        $('#index-spinner').css('visibility', 'hidden');
+                        $('#index-button').css('visibility', 'visible');
+                        $('#query-button').css('visibility', 'visible');
+                        $('#delete-button').css('visibility', 'visible');
                         alertbuilder('Document Indexed Successfully', true)
                         clearInterval(indexing_checker)
                       },
                       error: function(err) {
+                        $('#index-spinner').css('visibility', 'hidden');
+                        $('#index-button').css('visibility', 'visible');
+                        $('#query-button').css('visibility', 'visible');
+                        $('#delete-button').css('visibility', 'visible');
                         alertbuilder("Document Not Indexed", false)
                         clearInterval(indexing_checker)
                         // alertbuilder(err.responseText.replaceAll('"', ''), false)
@@ -1107,18 +1115,32 @@
                     alertbuilder('Document Indexing In-progress', true)
                   }  
                   else if (result['statusCode']=='400'){
+                    $('#index-spinner').css('visibility', 'hidden');
+                    $('#index-button').css('visibility', 'visible');
+                    $('#query-button').css('visibility', 'visible');
+                    $('#delete-button').css('visibility', 'visible');
+
                     alertbuilder('Document Not Indexed', false)
                     clearInterval(indexing_checker)
                   }
-                  if (interval_retry_counter > 5) {
-                    alertbuilder('Document Not Indexed', false)
+                  if (interval_retry_counter > 30) {
+                    $('#index-spinner').css('visibility', 'hidden');
+                    $('#index-button').css('visibility', 'visible');
+                    $('#query-button').css('visibility', 'visible');
+                    $('#delete-button').css('visibility', 'visible');
+                        
+                    alertbuilder('Indexing status IN_Progress after 1 minute of waiting', false)
                     clearInterval(indexing_checker)
                  }
                  });
                  
-              }, 3000)
+              }, 5000)
 
             } else {
+              $('#index-spinner').css('visibility', 'hidden');
+              $('#index-button').css('visibility', 'visible');
+              $('#query-button').css('visibility', 'visible');
+              $('#delete-button').css('visibility', 'visible');
               alertbuilder(result['result'], true)
             } 
           },
@@ -1127,10 +1149,8 @@
             $('#index-button').css('visibility', 'visible');
             $('#query-button').css('visibility', 'visible');
             $('#delete-button').css('visibility', 'visible');
-            console.log('Error on making API gateway call to index documents ..');
-            console.log(err.responseText);
+            alertbuilder('Document Not Indexed', false)
             console.log(err)
-            alertbuilder(err.responseText.replaceAll('"', ''), false)
           }
         });
       }
@@ -1599,7 +1619,6 @@
         $('#send-chat-button').prop('disabled', true)
         $('#custom-spinner').css('visibility', 'visible');
         $('#index-button').css('visibility', 'hidden');
-        $('#query-button').css('visibility', 'hidden');
         $('#delete-button').css('visibility', 'hidden');
         var message_store = '';
         var end_of_response = false;
