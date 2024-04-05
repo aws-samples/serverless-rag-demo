@@ -194,9 +194,11 @@ def get_job_status(event):
 def detect_text_index(event):
     payload = json.loads(event['body'])
     s3_key = payload['s3_key']
+    file_extension = 'txt'
     if '.' in s3_key:
         file_extension = s3_key[s3_key.rindex('.')+1:]
-        if file_extension.lower() in ['pdf']:
+    
+    if file_extension.lower() in ['pdf']:
             job_id = start_pdf_text_detection_job(s3_key)
             # t1 = threading.Thread(target=async_indexing(file_extension, event, job_id))
             return success_response({'jobId': job_id})
