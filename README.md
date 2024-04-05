@@ -169,7 +169,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
  #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin role, you may skip this step) 
 
 1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Roles“ tab under ”Access Management” and Click on “Create Role”
-<img width="950" alt="Screenshot 2024-04-05 at 5 29 09 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/e199fd79-5e39-4e93-9165-846be76b009a">
+<img width="1389" alt="Screenshot 2024-04-05 at 5 52 42 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/f02c2096-98d8-4601-b5d3-d36da7ecff4b">
 
 2. Select AWS Account and click “Next“
 <img width="1241" alt="role-iam" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0b0aeb95-cbf5-43eb-83e0-87b73f232496">
@@ -196,40 +196,41 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
-<img width="1423" alt="Screenshot 2024-04-05 at 5 48 41 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/ca950dc0-2800-4752-97e5-c42378177221">
+1. Switch to Admin role. Search for Cloudshell service on the AWS Console and follow the steps below to clone the github repository
+   <img width="1423" alt="Screenshot 2024-04-05 at 5 48 41 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/ca950dc0-2800-4752-97e5-c42378177221">
 
 
-1. Git Clone the serverless-rag-demo repository from aws-samples
+2. Git Clone the serverless-rag-demo repository from aws-samples
    ```
     git clone https://github.com/aws-samples/serverless-rag-demo.git
    ```
 
-2. Go to the directory where we have the downloaded files.
+3. Go to the directory where we have the downloaded files.
    ```
      cd serverless-rag-demo
    ```
 
-3. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Look at Prerequisites to deploy to the correct reqion.
+4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Look at Prerequisites to deploy to the correct reqion.
    ```
      sh creator.sh
    ```
    
-4. Select the LLM you want to deploy (sh creator.sh) . Select **Option 1** for Amazon Bedrock service.
+5. Select the LLM you want to deploy (sh creator.sh) . Select **Option 1** for Amazon Bedrock service.
 
-5. When selecting **Amazon Bedrock** (Option 1), you should specify an API Key. The key should be atleast 20 characters long.
+6. When selecting **Amazon Bedrock** (Option 1), you should specify an API Key. The key should be atleast 20 characters long.
 
    <img width="1088" alt="Screenshot 2023-10-23 at 10 48 01 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/dfc7ba5c-48df-4ea6-83ed-31c35e4a1098">
 
-6. Press **Enter** to proceed with deployment of the stack or **ctrl+c** to exit
+7. Press **Enter** to proceed with deployment of the stack or **ctrl+c** to exit
 
    <img width="1086" alt="Screenshot 2023-10-23 at 10 49 04 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/b74105bb-b817-4c47-8c41-1b72f7fa27b3">
 
-7. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
+8. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
 rag-llm-api-{env_name}. Get the invoke URL for the API
 
    <img width="1407" alt="ApiGw1" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/623344df-adf0-41b0-a90f-16b8cec62f25">
 
-8. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
+9. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
    * _Do not forget to append_ **"rag"** _at the end of the API-GW url_
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
