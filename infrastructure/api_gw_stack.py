@@ -462,6 +462,7 @@ class ApiGw_Stack(Stack):
             self.add_cors_options(get_job_status_api)
             self.add_cors_options(get_presigned_url_api)
             self.add_cors_options(index_files_api)
+            self.add_cors_options(detect_text_api)
         else:
             query_api.add_method(
                 "GET",
@@ -494,7 +495,7 @@ class ApiGw_Stack(Stack):
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)
-        self.add_cors_options(detect_text_api)
+        
 
     def add_cors_options(self, apiResource: _cdk.aws_apigateway.IResource):
         apiResource.add_method(
