@@ -168,33 +168,26 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
  #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin user/role, you may skip this step) 
 
-1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Users“ tab under ”Access Management” and Click on “Create User”
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.40.44%20PM.png)
+1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Roles“ tab under ”Access Management” and Click on “Create Role”
+<img width="950" alt="Screenshot 2024-04-05 at 5 29 09 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/e199fd79-5e39-4e93-9165-846be76b009a">
 
-2. Give a name to the IAM user and click “Next“
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.41.48%20PM.png)
+2. Select AWS Account and click “Next“
+<img width="1241" alt="role-iam" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0b0aeb95-cbf5-43eb-83e0-87b73f232496">
 
-3. Now Click on Attach Policies directly and Choose "AdminsitratorAccess" and click "Next" 
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.42.44%20PM.png)
+3. Under permissions select Administrator access
+<img width="1232" alt="Screenshot 2024-04-05 at 5 31 30 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/3e2cc7e7-fa6d-4447-9ea9-3061e8c64422">
 
-4. Now review the details and click on "Create User"
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.43.24%20PM.png)
+4. Give the role a name and create the role
+   <img width="1187" alt="Screenshot 2024-04-05 at 5 33 45 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/00af1a5f-7904-4218-b289-8d45a729c5f8">
 
-5. Now we need to create credentials for this IAM. Go to "Users" tab again and you will see your new user listed over there. Now click on the username.
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.44.14%20PM.png)
+5. You can now assume this role and proceed to deploy the stack. Click on Switch-Role
+<img width="1423" alt="assune-role" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/15f311a6-3f1b-4518-b90c-ce7eb42aa384">
 
-6. Go to Security Credentials Tab and under "Access Keys" click on "Create Access key"
-<img width="1377" alt="LLMAdminSecurityCredentials2" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/36bdf80f-8b0e-43a4-ad0f-a3233ce753cb">
 
-7. In the window that appears choose the first option "Command line Interface" and click the checkbox at the bottom and click Next
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.24%20PM.png)
+6. Switch role
+<img width="1423" alt="Screenshot 2024-04-05 at 5 42 06 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/4c4221ed-32b1-4c44-828b-191daad3bbce">
 
-8.Now the Tag is optional and you can leave this empty and click on Create Access Key
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.34%20PM.png)
-
-9. Now click on Download .csv file to download the credentials and click on "Done". Now lets proceed to section 2
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.49%20PM.png)
-
+7. Proceed to cloudshell step
 </details>
 
 
@@ -203,45 +196,40 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
-1. Search for **AWS Cloudshell**. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell.
-   **Optional if you have assumed an Administrator role.**
-   ```
-      aws configure
-   ```
+<img width="1423" alt="Screenshot 2024-04-05 at 5 48 41 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/ca950dc0-2800-4752-97e5-c42378177221">
 
-<img width="1118" alt="LLMAdminConfigureCloudShell" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/58175b14-259d-4d7d-b3e4-bb75fb48e998">
 
-2. Git Clone the serverless-rag-demo repository from aws-samples
+1. Git Clone the serverless-rag-demo repository from aws-samples
    ```
     git clone https://github.com/aws-samples/serverless-rag-demo.git
    ```
 
-3. Go to the directory where we have the downloaded files.
+2. Go to the directory where we have the downloaded files.
    ```
      cd serverless-rag-demo
    ```
 
-4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Look at Prerequisites to deploy to the correct reqion.
+3. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Look at Prerequisites to deploy to the correct reqion.
    ```
      sh creator.sh
    ```
    
-5. Select the LLM you want to deploy (sh creator.sh) . Select **Option 1** for Amazon Bedrock service.
+4. Select the LLM you want to deploy (sh creator.sh) . Select **Option 1** for Amazon Bedrock service.
 
-6. When selecting **Amazon Bedrock** (Option 1), you should specify an API Key. The key should be atleast 20 characters long.
+5. When selecting **Amazon Bedrock** (Option 1), you should specify an API Key. The key should be atleast 20 characters long.
 
    <img width="1088" alt="Screenshot 2023-10-23 at 10 48 01 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/dfc7ba5c-48df-4ea6-83ed-31c35e4a1098">
 
-7. Press **Enter** to proceed with deployment of the stack or **ctrl+c** to exit
+6. Press **Enter** to proceed with deployment of the stack or **ctrl+c** to exit
 
    <img width="1086" alt="Screenshot 2023-10-23 at 10 49 04 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/b74105bb-b817-4c47-8c41-1b72f7fa27b3">
 
-8. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
+7. Total deployment takes around 40 minutes. Once the deployment is complete head to API Gateway. Search for API with name
 rag-llm-api-{env_name}. Get the invoke URL for the API
 
    <img width="1407" alt="ApiGw1" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/623344df-adf0-41b0-a90f-16b8cec62f25">
 
-7. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
+8. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
    * _Do not forget to append_ **"rag"** _at the end of the API-GW url_
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
