@@ -166,7 +166,7 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 <details>
  <summary><b> Create an Admin User to deploy this stack </b></summary>
 
- #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin user/role, you may skip this step) 
+ #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin role, you may skip this step) 
 
 1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Roles“ tab under ”Access Management” and Click on “Create Role”
 <img width="950" alt="Screenshot 2024-04-05 at 5 29 09 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/e199fd79-5e39-4e93-9165-846be76b009a">
