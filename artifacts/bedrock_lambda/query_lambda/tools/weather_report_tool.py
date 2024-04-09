@@ -15,6 +15,10 @@ weather_tool_description = "Gets the weather reports for various places"
 
 get_weather_specs = """\
 <tool_set>
+ <instructions>
+   1. You will only provide the weather details such as temperature, windspeed for a given place
+   </instructions>
+
    <tool_description>
    <tool_usage>This tool is used to get the weather details for a given latitude and longitude</tool_usage>
    <tool_name>get_weather</tool_name>
