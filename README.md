@@ -22,7 +22,6 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
   * Introducing Function calling support with Anthropic's Claude3
   * Weather-Agent with two functions to find latitude longitude and the weather data of a particular place through function calls
   * Hotel-Booking Agent to book a room(call functions) with prompt-engg on Claude3
-  https://github.com/aws-samples/serverless-rag-demo/assets/25897220/916f6714-8ee3-4a2d-a9b5-0ee10de8a27b
 
 
 
