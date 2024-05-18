@@ -17,7 +17,7 @@ import re
 from prompt_utils import get_system_prompt, agent_execution_step
 
 bedrock_client = boto3.client('bedrock-runtime')
-embed_model_id = 'amazon.titan-embed-text-v1'
+embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-text-v1")
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT",

@@ -18,7 +18,7 @@ fi
 echo "Environment: $infra_env"
 
 deployment_region=$(curl -s http://169.254.169.254/task/AvailabilityZone | sed 's/\(.*\)[a-z]/\1/')
-
+embed_model_id='amazon.titan-embed-text-v1'
 if [ -z "$deployment_region" ]
 then
     printf  "$Red !!! Cannot detect region. Manually select your AWS Cloudshell region from the below list $NC"
@@ -40,6 +40,7 @@ then
                 ;;
             "ap-southeast-1")
                 deployment_region='ap-southeast-1'
+                embed_model_id='cohere.embed-english-v3'
                 printf "$Green Deploy in Asia Pacific (Singapore) $NC"
                 ;;
             "ap-northeast-1")
@@ -48,6 +49,7 @@ then
                 ;;
             "ap-south-1")
                 deployment_region='ap-south-1'
+                embed_model_id='cohere.embed-english-v3'
                 printf "$Green Deploy in Asia Pacific (Mumbai) $NC"
                 ;;
             "eu-central-1")
@@ -204,12 +206,12 @@ echo "--- pip install requirements ---"
 python3 -m pip install -r requirements.txt
 
 echo "--- CDK synthesize ---"
-cdk synth -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected
+cdk synth -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected -c embed_model_id=$embed_model_id
 
 echo "--- CDK deploy ---"
 CURRENT_UTC_TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
 echo Setting Tagging Lambda Image with timestamp $CURRENT_UTC_TIMESTAMP
-cdk deploy -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key="$secret_api_key" -c is_aoss="$aoss_selected" LlmsWithServerlessRag"$infra_env"Stack --require-approval never
+cdk deploy -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key="$secret_api_key" -c is_aoss="$aoss_selected" -c embed_model_id=$embed_model_id LlmsWithServerlessRag"$infra_env"Stack --require-approval never
 echo "--- Get Build Container ---"
 project=lambdaragllmcontainer"$infra_env"
 echo project: $project
@@ -253,7 +255,7 @@ then
         COLLECTION_ENDPOINT=$(aws opensearchserverless batch-get-collection --names $COLLECTION_NAME |jq '.collectionDetails[0]["collectionEndpoint"]' -r)
     fi
 
-    cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected ApiGwLlmsLambda"$infra_env"Stack --require-approval never
+    cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c llm_model_id="$model_id" -c secret_api_key=$secret_api_key -c is_aoss=$aoss_selected -c embed_model_id=$embed_model_id ApiGwLlmsLambda"$infra_env"Stack --require-approval never
    
 
     if [ "$opt" != "Amazon Bedrock" ]
