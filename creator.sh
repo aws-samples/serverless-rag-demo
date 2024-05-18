@@ -25,7 +25,7 @@ then
     printf "\n"
     printf "$Green Please enter your current AWS cloudshell region (1/2/3/4/5/6): $NC"
     printf "\n"
-    region_options=("us-east-1" "us-west-2" "ap-southeast-1" "ap-northeast-1" "eu-central-1" "Quit")
+    region_options=("us-east-1" "us-west-2" "ap-southeast-1" "ap-northeast-1" "ap-south-1" "eu-central-1" "Quit")
     select region_opts in "${region_options[@]}"
     do
         case $region_opts in 
@@ -45,6 +45,10 @@ then
             "ap-northeast-1")
                 deployment_region='ap-northeast-1'
                 printf "$Green Deploy in Asia Pacific (Tokyo) $NC"
+                ;;
+            "ap-south-1")
+                deployment_region='ap-south-1'
+                printf "$Green Deploy in Asia Pacific (Mumbai) $NC"
                 ;;
             "eu-central-1")
                 deployment_region='eu-central-1'
