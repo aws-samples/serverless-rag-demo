@@ -24,12 +24,12 @@ class ApiGw_Stack(Stack):
         llm_model_id = self.node.try_get_context("llm_model_id")
         secret_api_key = self.node.try_get_context("secret_api_key")
         is_opensearch = self.node.try_get_context("is_aoss")
+        embed_model_id = self.node.try_get_context("embed_model_id")
 
         html_header_name = 'Llama2-7B'
         try:
             collection_endpoint = self.node.get_context("collection_endpoint")
             collection_endpoint = collection_endpoint.replace("https://", "")
-
         except Exception as e:
             pass
 
@@ -176,7 +176,8 @@ class ApiGw_Stack(Stack):
                                   environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
                                                 'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
                                                 'REGION': region,
-                                                'S3_BUCKET_NAME': bucket_name
+                                                'S3_BUCKET_NAME': bucket_name,
+                                                'EMBED_MODEL_ID': embed_model_id
                                   },
                                   memory_size=3000,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
@@ -198,7 +199,8 @@ class ApiGw_Stack(Stack):
                                                 'IS_RAG_ENABLED': is_opensearch,
                                                 'S3_BUCKET_NAME': bucket_name,
                                                 'WRANGLER_NAME': env_params['bedrock_wrangler_function_name'],
-                                                'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no'
+                                                'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no',
+                                                'EMBED_MODEL_ID': embed_model_id
                                   },
                                   memory_size=3000,
                                   layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]

@@ -21,6 +21,8 @@ endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT", "https://admin:P@@search-opsearc
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
+embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-text-v1")
+
 credentials = boto3.Session().get_credentials()
 
 service = 'aoss'
@@ -61,6 +63,12 @@ def index_sample_data(event):
 
 def create_index() :
     print(f'In create index')
+    dimensions = 1536
+    if embed_model_id == 'amazon.titan-embed-text-v1':
+        dimensions = 1536
+    elif embed_model_id == 'cohere.embed-english-v3':
+        dimensions = 1024
+
     if not ops_client.indices.exists(index=INDEX_NAME):
     # Create indicies
         settings = {
@@ -75,7 +83,7 @@ def create_index() :
                     "text": {"type": "text"},
                     "embedding": {
                         "type": "knn_vector",
-                        "dimension": 1536,
+                        "dimension": dimensions,
                     },
                 }
             },
@@ -111,18 +119,17 @@ def index_documents(event):
 
 def _generate_embeddings_and_index(chunk_text):
         body = json.dumps({"inputText": chunk_text.page_content})
-        model_id = 'amazon.titan-embed-text-v1'
         try:
             response = bedrock_client.invoke_model(
                     body = body,
-                    modelId = model_id,
+                    modelId = embed_model_id,
                     accept = 'application/json',
                     contentType = 'application/json'
             )
             result = json.loads(response['body'].read())
             embeddings = result.get('embedding')
         except Exception as e:
-            return failure_response(f'Do you have Titan-Embed Model Access {e.info["error"]["reason"]}')
+            return failure_response(f'Do you have access to embed model {embed_model_id}. Error {e.info["error"]["reason"]}')
         doc = {
             'embedding' : embeddings,
             'text': chunk_text.page_content
