@@ -510,10 +510,11 @@ def handler(event, context):
         if routeKey != '$connect':
             if 'body' in event:
                 input_to_llm = json.loads(event['body'], strict=False)
+                print('input_to_llm: ', input_to_llm)
                 query = input_to_llm['query']
                 behaviour = input_to_llm['behaviour']
                 if 'agent' not in behaviour:
-                    query_vectordb = input_to_llm['query_vectordb']
+                    query_vectordb = input_to_llm['query_vectordb'] if 'query_vectordb' in input_to_llm else 'no'
                     model_id = input_to_llm['model_id']
                     query_data(query, behaviour, model_id, query_vectordb, connect_id)
                 else:
