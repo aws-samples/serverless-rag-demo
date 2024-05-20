@@ -84,6 +84,11 @@ def create_index() :
                     "embedding": {
                         "type": "knn_vector",
                         "dimension": dimensions,
+                        "method": {
+                            "name":"hnsw",
+                            "engine":"nmslib",
+                            "space_type": "cosinesimil"
+                        }
                     },
                 }
             },
@@ -98,7 +103,7 @@ def index_documents(event):
 
     text_splitter = RecursiveCharacterTextSplitter(
     # Set a really small chunk size, just to show.
-    chunk_size = 1000,
+    chunk_size = 512,
     chunk_overlap  = 100)
 
     texts = text_splitter.create_documents([text_val])
@@ -118,7 +123,14 @@ def index_documents(event):
 
 
 def _generate_embeddings_and_index(chunk_text):
-        body = json.dumps({"inputText": chunk_text.page_content})
+        body = None
+        embeddings_key="embedding"
+        if 'cohere' in embed_model_id:
+            body=json.dumps({"texts": [chunk_text.page_content], "input_type": 'search_document'})
+            embeddings_key = "embeddings"
+        else:
+            # Titan-embeddings V1
+            body = json.dumps({"inputText": chunk_text.page_content})
         try:
             response = bedrock_client.invoke_model(
                     body = body,
@@ -127,7 +139,7 @@ def _generate_embeddings_and_index(chunk_text):
                     contentType = 'application/json'
             )
             result = json.loads(response['body'].read())
-            embeddings = result.get('embedding')
+            embeddings = result.get(embeddings_key)
         except Exception as e:
             return failure_response(f'Do you have access to embed model {embed_model_id}. Error {e.info["error"]["reason"]}')
         doc = {
@@ -164,7 +176,10 @@ def create_presigned_post(event):
     
     if 'file_extension' in query_params:
         extension = query_params['file_extension']
-        s3_client = boto3.client('s3')
+        session = boto3.Session()
+        s3_client = session.client('s3', region_name=region)
+
+        # s3_client = boto3.client('s3')
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
         s3_key = f"index/data/{date_time}.{extension}"
