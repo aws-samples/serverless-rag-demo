@@ -148,7 +148,8 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
                 "fields": ["text", "doc_type"]
             }
             
-            print('Search for context from Opensearch serverless vector collections')
+            print(f'Search for context from Opensearch serverless vector collections {vector_query}')
+            
             try:
                 response = ops_client.search(body=vector_query, index=INDEX_NAME)
                 #print(response["hits"]["hits"])

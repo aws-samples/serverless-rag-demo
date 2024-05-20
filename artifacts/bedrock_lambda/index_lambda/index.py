@@ -9,7 +9,7 @@ import boto3
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 import threading
 
@@ -103,8 +103,8 @@ def index_documents(event):
 
     text_splitter = RecursiveCharacterTextSplitter(
     # Set a really small chunk size, just to show.
-    chunk_size = 512,
-    chunk_overlap  = 100)
+    chunk_size = 1000,
+    chunk_overlap  = 50)
 
     texts = text_splitter.create_documents([text_val])
 
@@ -144,7 +144,8 @@ def _generate_embeddings_and_index(chunk_text):
             return failure_response(f'Do you have access to embed model {embed_model_id}. Error {e.info["error"]["reason"]}')
         doc = {
             'embedding' : embeddings,
-            'text': chunk_text.page_content
+            'text': chunk_text.page_content,
+            'timestamp': datetime.today().replace(tzinfo=timezone.utc).isoformat()
         }
         try:
             # Index the document
