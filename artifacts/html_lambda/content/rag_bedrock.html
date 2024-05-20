@@ -307,7 +307,7 @@
 
     }
 
-  
+
     .conversations .mask-custom {
       background: rgba(24, 24, 16, .2) !important;
       border-radius: 2em;
@@ -548,9 +548,9 @@
                   onclick="javascript:query('thai')">Thai</button>
                 <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
                   onclick="javascript:query('spanish')">Spanish</button>
-                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                <button type="button" id="french" class="btn btn-info assistant btn-sm"
                   onclick="javascript:query('french')">French</button>
-                <button type="button" id="spanish" class="btn btn-info assistant btn-sm"
+                <button type="button" id="german" class="btn btn-info assistant btn-sm"
                   onclick="javascript:query('german')">German</button>
                 <button type="button" id="bengali" class="btn btn-info assistant btn-sm"
                   onclick="javascript:query('bengali')">Bengali</button>
@@ -558,6 +558,8 @@
                   onclick="javascript:query('tamil')">Tamil</button>
                 <button type="button" id="tamil" class="btn btn-info assistant btn-sm"
                   onclick="javascript:query('arabic')">Arabic</button>
+                  <button type="button" id="italian" class="btn btn-info assistant btn-sm"
+                  onclick="javascript:query('italian')">Italian</button>
                 <button type="button" id="sentiment" class="btn btn-info assistant btn-sm"
                   onclick="javascript:query('sentiment')">Sentiment Analysis</button>
                 <button type="button" id="pii" class="btn btn-info assistant btn-sm"
@@ -926,7 +928,7 @@
         }
         // Image upload code end
       });
-        
+
       });
 
       var model_id = null;
@@ -1017,7 +1019,7 @@
           $('#index-spinner').css('visibility', 'visible');
           $('#index-button').css('visibility', 'hidden');
           $('#delete-button').css('visibility', 'hidden');
-          
+
           $.ajax({
           type: "GET",
           url: awsData.apiGatewayUrl + '/get-presigned-url',
@@ -1026,7 +1028,7 @@
           data: {"file_extension": file_extension},
           contentType: "application/json",
           success: function (result) {
-            alertbuilder('Uploading to S3', true) 
+            alertbuilder('Uploading to S3', true)
             var formData = new FormData();
             formData = build_form_data(result['result'], formData)
             content = content.replace(/^data:.+;base64,/, "")
@@ -1049,7 +1051,7 @@
                   $('#index-button').css('visibility', 'visible');
                   $('#query-button').css('visibility', 'visible');
                   $('#delete-button').css('visibility', 'visible');
-                  alertbuilder('Document Not Indexed', false) 
+                  alertbuilder('Document Not Indexed', false)
                   console.log(err)
                 }
               });
@@ -1065,10 +1067,10 @@
             alertbuilder(err.responseText.replaceAll('"', ''), false)
           }
         });
-          
+
         }
 
-        
+
 
       }
 
@@ -1086,7 +1088,7 @@
           data: JSON.stringify({ "s3_key": s3_key }),
           success: function (result) {
             if (typeof result['result'] != 'string' && 'jobId' in result['result']) {
-              alertbuilder('Indexing request for file '+ i +' sent:' + result['result']['jobId'], true) 
+              alertbuilder('Indexing request for file '+ i +' sent:' + result['result']['jobId'], true)
               interval_retry_counter = 0
               job_id = result['result']['jobId']
               indexing_checker = setInterval(() => {
@@ -1120,7 +1122,7 @@
                   }
                   else if (result['statusCode']=='200' && result['result'] != true) {
                     alertbuilder('Document Indexing In-progress', true)
-                  }  
+                  }
                   else if (result['statusCode']=='400'){
                     $('#index-spinner').css('visibility', 'hidden');
                     $('#index-button').css('visibility', 'visible');
@@ -1135,12 +1137,12 @@
                     $('#index-button').css('visibility', 'visible');
                     $('#query-button').css('visibility', 'visible');
                     $('#delete-button').css('visibility', 'visible');
-                        
+
                     alertbuilder('Indexing status IN_Progress after 1 minute of waiting', false)
                     clearInterval(indexing_checker)
                  }
                  });
-                 
+
               }, 5000)
 
             } else {
@@ -1149,7 +1151,7 @@
               $('#query-button').css('visibility', 'visible');
               $('#delete-button').css('visibility', 'visible');
               alertbuilder(result['result'], true)
-            } 
+            }
           },
           error: function (err) {
             $('#index-spinner').css('visibility', 'hidden');
@@ -1161,7 +1163,7 @@
           }
         });
       }
-      
+
       function get_job_status(jobId, callback) {
 
         $.ajax({
@@ -1444,7 +1446,7 @@
         });
 
       }
-      // Chat functions 
+      // Chat functions
 
       function showChatBox() {
         ws = null

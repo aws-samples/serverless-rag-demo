@@ -3,7 +3,7 @@ from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
 import requests
-from requests.auth import HTTPBasicAuth 
+from requests.auth import HTTPBasicAuth
 import os
 import json
 from decimal import Decimal
@@ -67,7 +67,7 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
     global embed_model_id
     global bedrock_client
     prompt = DEFAULT_PROMPT
-    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'french', 'german', 'bengali', 'tamil', 'arabic']:
+    if behaviour in ['english', 'hindi', 'thai', 'spanish', 'french', 'german', 'bengali', 'tamil', 'arabic', 'italian']:
         prompt = f''' Output Rules :
                        {DEFAULT_PROMPT}
                        This rule is of highest priority. You will always reply in {behaviour.upper()} language only. Do not forget this line
@@ -78,7 +78,7 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
                      You will share a confidence level between 0-100, a lower value corresponds to negative and higher value towards positive
                      You will share the words that made you think its overall a positive or a negative or neutral sentiment
                      You will also share any improvements recommended in the review
-                     You will structure the sentiment analysis in a json as below 
+                     You will structure the sentiment analysis in a json as below
                       where sentiment can be positive, neutral, negative.
                       confidence score can be a value from 0 to 100
                       reasons would contain an array of words, sentences that made you think its overall a positive or a negative or neutral sentiment
@@ -91,10 +91,10 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
                       "improvements": [ ]
                      }
                      '''
-                    
+
     elif behaviour == 'pii':
         prompt = '''
-                    You are a PII(Personally identifiable information) data detector named Ira created by FSTech. 
+                    You are a PII(Personally identifiable information) data detector named Ira created by FSTech.
                     Your goal is to identify PII data in the user question.
                     You will structure the PII data in a json array as below
                     where type is the type of PII data, and value is the actual value of PII data.
@@ -104,16 +104,16 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
                     }]
                     '''
     elif behaviour == 'redact':
-        prompt = '''You will serve to protect user data and redact any PII information observed in the user statement. 
+        prompt = '''You will serve to protect user data and redact any PII information observed in the user statement.
                     You will swap any PII with the term REDACTED.
                     You will then only share the REDACTED user statement
                     You will not explain yourself.
                 '''
-    elif behaviour == 'chat':   
+    elif behaviour == 'chat':
         prompt = 'You are a helpful AI assistant possessing vast knowledge and good reasoning skills.'
     else:
         prompt = DEFAULT_PROMPT
-    
+
     context = ''
     user_query = ''
 
@@ -147,7 +147,7 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
                 "_source": False,
                 "fields": ["text", "doc_type"]
             }
-            
+
             print('Search for context from Opensearch serverless vector collections')
             try:
                 response = ops_client.search(body=vector_query, index=INDEX_NAME)
@@ -168,14 +168,14 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
         response = None
         print(f'LLM Model ID -> {model_id}')
         model_list = ['anthropic.claude-','meta.llama2-', 'cohere.command', 'amazon.titan-', 'ai21.j2-']
-        
+
 
         if model_id.startswith(tuple(model_list)):
             prompt_template = prepare_prompt_template(model_id, behaviour, prompt, context, query)
             query_bedrock_models(model_id, prompt_template, connect_id, behaviour)
         else:
             return failure_response(connect_id, f'Model not available on Amazon Bedrock {model_id}')
-                
+
     except Exception as e:
         print(f'Exception {e}')
         return failure_response(connect_id, f'Exception occured when querying LLM: {e}')
@@ -211,7 +211,7 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
                 if chunk_json['type'] == 'content_block_delta' and chunk_json['delta']['type'] == 'text_delta':
                     chunk_str = chunk_json['delta']['text']
             else:
-                chunk_str = chunk_json['completion']    
+                chunk_str = chunk_json['completion']
             print(f'chunk string {chunk_str}')
             if chunk_str is not None:
                 websocket_send(connect_id, { "text": chunk_str } )
@@ -241,7 +241,7 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
     if behaviour == 'chat' and not sent_ack:
             sent_ack = True
             websocket_send(connect_id, { "text": "ack-end-of-string" } )
-            
+
 
 def get_conversations_query(connect_id):
     query = {
@@ -252,7 +252,7 @@ def get_conversations_query(connect_id):
                {
                  "match": {
                    "connect_id": connect_id
-                } 
+                }
                }
               ]
             }
@@ -268,7 +268,7 @@ def get_conversations_query(connect_id):
     return query
 
 
-def parse_response(model_id, response): 
+def parse_response(model_id, response):
     print(f'parse_response {response}')
     result = ''
     if 'claude' in model_id:
@@ -295,7 +295,7 @@ tool_descriptions = []
 
 def query_agents(agent_type, user_input, connect_id):
     format_prompt_invoke_function(agent_type, user_input, connect_id)
-    
+
 
 
 def format_prompt_invoke_function(agent_type, user_input, connect_id):
@@ -304,22 +304,22 @@ def format_prompt_invoke_function(agent_type, user_input, connect_id):
         if 'role' in chat_history_list[0] and 'user' == chat_history_list[0]['role']:
             for text_inputs in chat_history_list[0]['content']:
                 if text_inputs['type'] == 'text' and '<user-request>' not in text_inputs['text']:
-                    text_inputs['text'] =  f'What is the first step in order to solve this problem?  <user-request> {text_inputs["text"]} </user-request>' 
-                    break          
+                    text_inputs['text'] =  f'What is the first step in order to solve this problem?  <user-request> {text_inputs["text"]} </user-request>'
+                    break
                 if '<special_char>' in text_inputs['text']:
                     text_inputs['text'] = re.sub('<special_char>.*</special_char>', '', text_inputs['text'])
 
     print(f'Agent Chat history {chat_history_list}')
 
     system_prompt = get_system_prompt(agent_type)
-                
+
     prompt_template= {
                         "anthropic_version": "bedrock-2023-05-31",
                         "max_tokens": 10000,
                         "system": system_prompt,
                         "messages": chat_history_list
-                    }  
-    
+                    }
+
     prompt_flow = []
     prompt_flow.extend(chat_history_list)
 
@@ -333,21 +333,21 @@ def format_prompt_invoke_function(agent_type, user_input, connect_id):
             prompt_flow.append({"role":"user", "content":  human_prompt })
         # To be displayed in StackTrace
         websocket_send(connect_id, {"prompt_flow": prompt_flow, "done": done})
-        
+
         if not done:
             print(f'{assistant_prompt}')
         else:
             print('Final answer from LLM:\n'+f'{assistant_prompt}')
             return assistant_prompt
             #break
-        
+
         prompt_template= {
                         "anthropic_version": "bedrock-2023-05-31",
                         "max_tokens": 10000,
                         "system": system_prompt,
                         "messages": prompt_flow
-                    } 
-    
+                    }
+
 
 def invoke_model(step_id, prompt, connect_id):
     modelId = "anthropic.claude-3-sonnet-20240229-v1:0"
@@ -370,7 +370,7 @@ def query_bedrock_claude3_model(step_id, model, prompt, connect_id):
         if 'chunk' in evt:
             chunk = evt['chunk']['bytes']
             chunk_json = json.loads(chunk.decode("UTF-8"))
-            
+
             if chunk_json['type'] == 'content_block_delta' and chunk_json['delta']['type'] == 'text_delta':
                 cnk_str.append(chunk_json['delta']['text'])
         else:
@@ -386,7 +386,7 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
     prompt_template = {"inputText": f"""{prompt}\n{query}"""}
     #if model_id in ['anthropic.claude-v1', 'anthropic.claude-instant-v1', 'anthropic.claude-v2']:
     # Define Template for all anthropic claude models
-    
+
     decoded_q_text, image_ids = extract_query_image_values(query)
 
     if 'claude' in model_id:
@@ -397,20 +397,20 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
                     If the context doesnt provide the answer politely reply that you dont know the answer
                     '''
         if context != '':
-            context = f'''Here is the document you should 
+            context = f'''Here is the document you should
                       reference when answering user questions: <guide>{context}</guide>'''
         task = f'''
                    Here is the user's question <question> {decoded_q_text} <question>
                 '''
-        
+
         output = f'''Think about your answer before you respond. '''
                 # Put your response in <response></response> tags'''
-        
+
         prompt_template = f"""{prompt}
-                              {context} 
+                              {context}
                               {task}
                               {output}"""
-        
+
         # Chat works with a different payload. Assuming Chat is on Claude-2.1 and not using messages API
         if behaviour == 'chat':
             chat_history_list = json.loads(base64.b64decode(query))
@@ -426,14 +426,14 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
                                     """
 
             prompt_template = {'prompt': f'''
-                                    \n\nSystem: {prompt}. You may use emoji's as needed 
+                                    \n\nSystem: {prompt}. You may use emoji's as needed
                                     \n\nHuman: {context}
                                     \n\n{sub_template}
                                     Assistant:''',
 
             "max_tokens_to_sample": 10000, "temperature": 0.3
             }
-        
+
         elif 'anthropic.claude-3-' in model_id:
                 # prompt => Default Systemp prompt
                 # Query => User input
@@ -442,24 +442,24 @@ def prepare_prompt_template(model_id, behaviour, prompt, context, query):
                 prompt_template_arr = claude3_prompt_builder_for_images_and_text(query, context, output)
 
                 user_messages =  {"role": "user", "content": prompt_template_arr}
-                
+
                 prompt_template= {
                                     "anthropic_version": "bedrock-2023-05-31",
                                     "max_tokens": 10000,
                                     "system": prompt,
                                     "messages": [user_messages]
-                                }  
-                
+                                }
+
         else:
                 prompt_template = {"prompt":f"""
                                             \n\nHuman: {prompt_template}
                                             \n\nAssistant:""",
-                                "max_tokens_to_sample": 10000, "temperature": 0.1}    
+                                "max_tokens_to_sample": 10000, "temperature": 0.1}
     elif model_id == 'cohere.command-text-v14':
         prompt_template = {"prompt": f"""{prompt} {context}\n
                               {decoded_q_text}"""}
     elif model_id == 'amazon.titan-text-express-v1':
-        prompt_template = {"inputText": f"""{prompt} 
+        prompt_template = {"inputText": f"""{prompt}
                                             {context}\n
                             {decoded_q_text}
                             """}
@@ -485,13 +485,13 @@ def store_image_in_s3(event):
     file_encoded_data = payload['content']
     content_id = payload['id']
     file_extension = extract_file_extension(file_encoded_data)
-    file_encoded_data = file_encoded_data[file_encoded_data.find(",") + 1:] 
+    file_encoded_data = file_encoded_data[file_encoded_data.find(",") + 1:]
     file_content = base64.b64decode(file_encoded_data)
     s3_client = boto3.client('s3')
     s3_key = f"bedrock/data/{content_id}.{file_extension}"
     s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
     return http_success_response({'file_extension': file_extension, 'file_id': content_id, 'message': 'stored successfully'})
-    
+
 
 def extract_file_extension(base64_encoded_file):
     if base64_encoded_file.find(';') > -1:
@@ -513,13 +513,14 @@ def handler(event, context):
         api_id = event['requestContext']['apiId']
         domain = f'{api_id}.execute-api.{region}.amazonaws.com'
         websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=f'https://{domain}/{stage}')
-    
+
         connect_id = event['requestContext']['connectionId']
         routeKey = event['requestContext']['routeKey']
-        
-        if routeKey != '$connect': 
+
+        if routeKey != '$connect':
             if 'body' in event:
                 input_to_llm = json.loads(event['body'], strict=False)
+                print('input_to_llm: ', input_to_llm)
                 query = input_to_llm['query']
                 behaviour = input_to_llm['behaviour']
                 if 'agent' not in behaviour:
@@ -531,7 +532,7 @@ def handler(event, context):
         elif routeKey == '$connect':
             if 'x-api-key' in event['queryStringParameters']:
                 headers = {'Content-Type': 'application/json', 'x-api-key':  event['queryStringParameters']['x-api-key'] }
-                auth = HTTPBasicAuth('x-api-key', event['queryStringParameters']['x-api-key']) 
+                auth = HTTPBasicAuth('x-api-key', event['queryStringParameters']['x-api-key'])
                 response = requests.get(f'{rest_api_url}connect-tracker', headers=headers, auth=auth, verify=False)
                 if response.status_code != 200:
                     print(f'Response Error status_code: {response.status_code}, reason: {response.reason}')
@@ -540,8 +541,8 @@ def handler(event, context):
                     return {'statusCode': '200', 'body': 'Bedrock says hello' }
             else:
                 return {'statusCode': '403', 'body': 'Forbidden' }
-        
-    
+
+
     elif 'httpMethod' in event:
         api_map = {
             'POST/rag/file_data': lambda x: store_image_in_s3(x)
@@ -558,13 +559,13 @@ def handler(event, context):
         except Exception:
             LOG.exception(f"error=error_processing_api, api={api_path}")
             return respond(http_success_response('system_exception'), None)
-    
+
     return {'statusCode': '200', 'body': 'Bedrock says hello' }
 
 
 def http_failure_response(error_message):
     return {"success": False, "errorMessage": error_message, "statusCode": "400"}
-   
+
 def http_success_response(result):
     return {"success": True, "result": result, "statusCode": "200"}
 
@@ -596,7 +597,7 @@ def failure_response(connect_id, error_message):
     global websocket_client
     err_msg = {"success": False, "errorMessage": error_message, "statusCode": "400"}
     websocket_send(connect_id, err_msg)
-    
+
 
 def extract_query_image_values(query):
     image_id = []
@@ -624,7 +625,7 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
             if 'data' in user_query_type and 'file_extension' in user_query_type:
                 s3_key = f"bedrock/data/{user_query_type['data']}.{user_query_type['file_extension']}"
                 encoded_file = base64.b64encode(get_file_from_s3(s3_bucket_name, s3_key))
-                prompt_content.append({ "type": "image", "source": 
+                prompt_content.append({ "type": "image", "source":
                                        { "type": "base64", "media_type": "image/jpeg", "data": encoded_file.decode('utf-8')}
                                 })
         elif user_query_type['type'] == 'other':
@@ -641,7 +642,7 @@ def claude3_prompt_builder_for_images_and_text(query, context, output):
                 else:
                     text_data_from_file = get_contents(user_query_type['file_extension'], get_file_from_s3(s3_bucket_name, s3_key))
                 prompt_content.append({ "type": "text", "text": f"""This is additional data {text_data_from_file}. Provide useful insights"""})
-                
+
 
     return prompt_content
 
@@ -655,8 +656,8 @@ def get_contents(file_extension, file_bytes):
             for block in response['Blocks']:
                 if block['BlockType'] == 'LINE':
                     content = content + ' ' + block['Text']
-        
-        else: 
+
+        else:
             #file_extension in ['sql', 'txt', 'json', 'csv']:
             #if file_extension in ['csv', 'xls', 'xlsx']:
             content = file_bytes.decode()
