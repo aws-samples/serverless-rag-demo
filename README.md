@@ -13,6 +13,18 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Project Updates</b></summary>
 
+  #### (05-Apr-2024):
+  * You can now index PDFs/Json/CSV/txt files into AOSS.
+  * You can now **optionally** augment your prompts with knowledge from in AOSS
+  * Lambda size reduced to 3GB so newer AWS accounts can deploy this stack
+  
+  #### (27-Mar-2024):
+  * Introducing Function calling support with Anthropic's Claude3
+  * Weather-Agent with two functions to find latitude longitude and the weather data of a particular place through function calls
+  * Hotel-Booking Agent to book a room(call functions) with prompt-engg on Claude3
+
+
+
   #### (16-Mar-2024):
   * Multi-modal support with Claude-3 Haiku and Sonnet.
   * Compare two or more images, analyze PDFs/Txt/Json file with Claude-3
@@ -68,6 +80,10 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
 <details>
   <summary><b>Available Features</b></summary>
 
+  ##### Multi-Modal support with Claude-3 Models
+  
+  <img width="1421" alt="Screenshot 2024-03-16 at 8 30 11 AM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/9f659803-482c-4044-8dec-04c20e2cc8ef">
+
 
   #### Multi-lingual Support
   
@@ -96,9 +112,6 @@ Text generation using RAG with LLMs enables you to generate domain-specific text
  <summary><b>Bedrock RAG Demo</b></summary>
 
    #### Bedrock RAG Demo Video
-   
-  ##### Introducing Conversations with Opensearch Serverless
-   https://github.com/aws-samples/serverless-rag-demo/assets/25897220/1a2302e1-a02d-4b77-8a82-978137b849e7
 
   ##### Translations / Sentiment Analysis / PII Identification and Redaction
    https://github.com/aws-samples/serverless-rag-demo/assets/25897220/33abc31e-e47b-41d1-b95f-8cdfa49b8dfb
@@ -155,35 +168,28 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 <details>
  <summary><b> Create an Admin User to deploy this stack </b></summary>
 
- #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin user/role, you may skip this step) 
+ #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin role, you may skip this step) 
 
-1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Users“ tab under ”Access Management” and Click on “Create User”
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.40.44%20PM.png)
+1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Roles“ tab under ”Access Management” and Click on “Create Role”
+<img width="1389" alt="Screenshot 2024-04-05 at 5 52 42 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/f02c2096-98d8-4601-b5d3-d36da7ecff4b">
 
-2. Give a name to the IAM user and click “Next“
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.41.48%20PM.png)
+2. Select AWS Account and click “Next“
+<img width="1241" alt="role-iam" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/0b0aeb95-cbf5-43eb-83e0-87b73f232496">
 
-3. Now Click on Attach Policies directly and Choose "AdminsitratorAccess" and click "Next" 
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.42.44%20PM.png)
+3. Under permissions select Administrator access
+<img width="1232" alt="Screenshot 2024-04-05 at 5 31 30 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/3e2cc7e7-fa6d-4447-9ea9-3061e8c64422">
 
-4. Now review the details and click on "Create User"
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.43.24%20PM.png)
+4. Give the role a name and create the role
+   <img width="1187" alt="Screenshot 2024-04-05 at 5 33 45 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/00af1a5f-7904-4218-b289-8d45a729c5f8">
 
-5. Now we need to create credentials for this IAM. Go to "Users" tab again and you will see your new user listed over there. Now click on the username.
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.44.14%20PM.png)
+5. You can now assume this role and proceed to deploy the stack. Click on Switch-Role
+<img width="1423" alt="assune-role" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/15f311a6-3f1b-4518-b90c-ce7eb42aa384">
 
-6. Go to Security Credentials Tab and under "Access Keys" click on "Create Access key"
-<img width="1377" alt="LLMAdminSecurityCredentials2" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/36bdf80f-8b0e-43a4-ad0f-a3233ce753cb">
 
-7. In the window that appears choose the first option "Command line Interface" and click the checkbox at the bottom and click Next
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.24%20PM.png)
+6. Switch role
+<img width="1423" alt="Screenshot 2024-04-05 at 5 42 06 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/4c4221ed-32b1-4c44-828b-191daad3bbce">
 
-8.Now the Tag is optional and you can leave this empty and click on Create Access Key
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.34%20PM.png)
-
-9. Now click on Download .csv file to download the credentials and click on "Done". Now lets proceed to section 2
-![image](https://github.com/aws-samples/serverless-rag-demo/blob/main/media/Screenshot%202023-08-24%20at%204.45.49%20PM.png)
-
+7. Proceed to cloudshell step
 </details>
 
 
@@ -192,13 +198,9 @@ This solution demonstrates building a [RAG (Retrieval Augmented Solution)](https
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
-1. Search for **AWS Cloudshell**. Configure your aws cli environment with the access/secret keys of the new admin user using the below command on AWS Cloudshell.
-   **Optional if you have assumed an Administrator role.**
-   ```
-      aws configure
-   ```
+1. Switch to Admin role. Search for Cloudshell service on the AWS Console and follow the steps below to clone the github repository
+   <img width="1423" alt="Screenshot 2024-04-05 at 5 48 41 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/ca950dc0-2800-4752-97e5-c42378177221">
 
-<img width="1118" alt="LLMAdminConfigureCloudShell" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/58175b14-259d-4d7d-b3e4-bb75fb48e998">
 
 2. Git Clone the serverless-rag-demo repository from aws-samples
    ```
@@ -230,7 +232,7 @@ rag-llm-api-{env_name}. Get the invoke URL for the API
 
    <img width="1407" alt="ApiGw1" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/623344df-adf0-41b0-a90f-16b8cec62f25">
 
-7. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
+9. Invoke the Api Gateway URL that loads an html page for testing the RAG based solution as api-gateway-url/rag
    * _Do not forget to append_ **"rag"** _at the end of the API-GW url_
 
    eg: https://xxxxxxx.execute-api.us-east-1.amazonaws.com/dev/rag
