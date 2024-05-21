@@ -21,7 +21,7 @@ endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT", "https://admin:P@@search-opsearc
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
-embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-text-v1")
+embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
 
 credentials = boto3.Session().get_credentials()
 
@@ -63,12 +63,6 @@ def index_sample_data(event):
 
 def create_index() :
     print(f'In create index')
-    dimensions = 1536
-    if embed_model_id == 'amazon.titan-embed-text-v1':
-        dimensions = 1536
-    elif embed_model_id == 'cohere.embed-english-v3':
-        dimensions = 1024
-
     if not ops_client.indices.exists(index=INDEX_NAME):
     # Create indicies
         settings = {
@@ -83,7 +77,7 @@ def create_index() :
                     "text": {"type": "text"},
                     "embedding": {
                         "type": "knn_vector",
-                        "dimension": dimensions,
+                        "dimension": 384,
                         "method": {
                             "name":"hnsw",
                             "engine":"nmslib",
@@ -123,14 +117,8 @@ def index_documents(event):
 
 
 def _generate_embeddings_and_index(chunk_text):
-        body = None
-        embeddings_key="embedding"
-        if 'cohere' in embed_model_id:
-            body=json.dumps({"texts": [chunk_text.page_content], "input_type": 'search_document'})
-            embeddings_key = "embeddings"
-        else:
-            # Titan-embeddings V1
-            body = json.dumps({"inputText": chunk_text.page_content})
+        body = json.dumps({"inputText": chunk_text.page_content, "embeddingConfig": {"outputEmbeddingLength": 384}})
+        
         try:
             response = bedrock_client.invoke_model(
                     body = body,
@@ -139,7 +127,12 @@ def _generate_embeddings_and_index(chunk_text):
                     contentType = 'application/json'
             )
             result = json.loads(response['body'].read())
-            embeddings = result.get(embeddings_key)
+
+            finish_reason = result.get("message")
+            if finish_reason is not None:
+                print(f'Embed Error {finish_reason}')
+                
+            embeddings = result.get("embedding")
         except Exception as e:
             return failure_response(f'Do you have access to embed model {embed_model_id}. Error {e.info["error"]["reason"]}')
         doc = {
