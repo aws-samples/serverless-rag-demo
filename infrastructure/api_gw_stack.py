@@ -353,6 +353,8 @@ class ApiGw_Stack(Stack):
         index_docs_api.add_method(
                 "POST",
                 bedrock_index_lambda_integration,
+                authorizer=cognito_authorizer,
+                authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
                 operation_name="index document",
                 method_responses=method_responses,
                 api_key_required=True
@@ -360,6 +362,8 @@ class ApiGw_Stack(Stack):
         index_docs_api.add_method(
                 "DELETE",
                 bedrock_index_lambda_integration,
+                authorizer=cognito_authorizer,
+                authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
                 operation_name="delete document index",
                 method_responses=method_responses,
                 api_key_required=True
@@ -368,6 +372,8 @@ class ApiGw_Stack(Stack):
         index_sample_data_api.add_method(
                 "POST",
                 bedrock_index_lambda_integration,
+                authorizer=cognito_authorizer,
+                authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
                 operation_name="index sample document",
                 method_responses=method_responses,
                 api_key_required=True
@@ -375,6 +381,8 @@ class ApiGw_Stack(Stack):
         detect_text_api.add_method(
             "POST",
             lambda_integration,
+            authorizer=cognito_authorizer,
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Detect Text or Index a file",
             api_key_required=True,
             method_responses=method_responses,
@@ -382,6 +390,8 @@ class ApiGw_Stack(Stack):
         index_files_api.add_method(
             "POST",
             lambda_integration,
+            authorizer=cognito_authorizer,
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Index a file",
             api_key_required=True,
             method_responses=method_responses,
@@ -389,6 +399,8 @@ class ApiGw_Stack(Stack):
         get_job_status_api.add_method(
             "GET",
             lambda_integration,
+            authorizer=cognito_authorizer,
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Get Job Status",
             api_key_required=True,
             method_responses=method_responses,
@@ -396,6 +408,8 @@ class ApiGw_Stack(Stack):
         get_presigned_url_api.add_method(
             "GET",
             lambda_integration,
+            authorizer=cognito_authorizer,
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Get Presigned Post URL",
             api_key_required=True,
             method_responses=method_responses,
@@ -403,6 +417,8 @@ class ApiGw_Stack(Stack):
         file_data_api.add_method(
             "POST",
             bedrock_query_lambda_integration,
+            authorizer=cognito_authorizer,
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Store documents",
             method_responses=method_responses,
             api_key_required=True
