@@ -3,3 +3,4 @@
 .DS_Store
 cdk.out
 */__pycache__
+node_modules

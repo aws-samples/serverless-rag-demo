@@ -1,0 +1,38 @@
+import { BrowserRouter, Routes, Route, Navigate, HashRouter } from 'react-router-dom';
+import { USE_BROWSER_ROUTER } from "./common/constants";
+import GlobalHeader from "./components/global-header";
+import NotFound from "./pages/not-found";
+import ChatPage from "./pages/chat-page";
+import "./styles/app.scss";
+import ConfirmUserPage from './confirmUserPage';
+
+
+import LoginPage from './loginPage';
+
+
+export default function App() {
+  const Router = USE_BROWSER_ROUTER ? BrowserRouter : HashRouter;
+  
+  const isAuthenticated = () => {
+    const accessToken = sessionStorage.getItem('accessToken');
+    return !!accessToken;
+  };
+
+  return (
+    <div style={{ height: "100%" }}>
+      <Router>
+        <GlobalHeader />
+        <div style={{ height: "56px", backgroundColor: "#000716" }}>&nbsp;</div>
+        <div>
+          <Routes>
+            <Route path="/" element={isAuthenticated() ? <Navigate replace to="/chat" /> : <Navigate replace to="/login" />} />
+            <Route path="/confirm" element={<ConfirmUserPage />} />
+            <Route path="/chat" element={isAuthenticated() ? <ChatPage /> : <Navigate replace to="/login" />} />
+            <Route index path="/login" element={<LoginPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
+      </Router>
+    </div>
+  );
+}

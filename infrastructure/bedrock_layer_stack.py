@@ -26,12 +26,6 @@ class BedrockLayerStack(NestedStack):
         aws4auth_layer_name = config_details['aws4auth_layer']
         wrangler_layer_name = config_details["wrangler_layer"]
 
-        llm_model_id = 'random'
-        try:
-            llm_model_id = self.node.get_context("llm_model_id")
-        except Exception as e:
-            pass
-
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
         region = os.getenv("CDK_DEFAULT_REGION")
         current_timestamp = self.node.try_get_context('current_timestamp')
