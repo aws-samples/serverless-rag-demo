@@ -4,3 +4,4 @@
 cdk.out
 */__pycache__
 node_modules
+generate-react-cli.json

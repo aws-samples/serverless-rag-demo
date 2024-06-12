@@ -8,6 +8,7 @@ import ConfirmUserPage from './confirmUserPage';
 
 
 import LoginPage from './loginPage';
+import UploadPage from './pages/upload-page';
 
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/" element={isAuthenticated() ? <Navigate replace to="/chat" /> : <Navigate replace to="/login" />} />
             <Route path="/confirm" element={<ConfirmUserPage />} />
             <Route path="/chat" element={isAuthenticated() ? <ChatPage /> : <Navigate replace to="/login" />} />
+            <Route path="/upload" element={isAuthenticated() ? <UploadPage /> : <Navigate replace to="/login" />} />
             <Route index path="/login" element={<LoginPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

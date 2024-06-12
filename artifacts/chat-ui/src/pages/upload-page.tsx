@@ -1,10 +1,10 @@
 import { useState } from "react";
 import BaseAppLayout from "../components/base-app-layout";
-import { ChatUI } from "../components/chat-ui/chat-ui";
+import { UploadUI } from "../components/upload-ui/upload-ui";
 import { ChatMessage, ChatMessageType } from "../components/chat-ui/types";
 import axios from "axios";
 
-export default function ChatPage() {
+export default function UploadPage() {
   const [running, setRunning] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
@@ -36,11 +36,7 @@ export default function ChatPage() {
   return (
     <BaseAppLayout
       content={
-        <ChatUI
-          onSendMessage={sendMessage}
-          messages={messages}
-          running={running}
-        />
+        <UploadUI/>
       }
     />
   );
