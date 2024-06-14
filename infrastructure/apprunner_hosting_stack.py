@@ -36,7 +36,7 @@ class AppRunnerHostingStack(NestedStack):
             statements=[
                 _iam.PolicyStatement(
                     actions=["ecr:GetAuthorizationToken"],
-                    resources=["*"],
+                    resources="*",
                     effect=_iam.Effect.ALLOW
                 ),
                 _iam.PolicyStatement(
