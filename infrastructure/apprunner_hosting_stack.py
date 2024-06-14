@@ -31,15 +31,17 @@ class AppRunnerHostingStack(Stack):
         # Generate ECR Full repo name
         full_ecr_repo_name = f'{account_id}.dkr.ecr.{region}.amazonaws.com/{ecr_repo_name}:{current_timestamp}'
         
-        apprunner_policy_document = _iam.PolicyDocument(
-            assign_sids=True,
-            statements=[
-                _iam.PolicyStatement(
+        apprunner_role = _iam.Role(self, f"rag-llm-role-{env_name}",
+                  assumed_by=_iam.ServicePrincipal("build.apprunner.amazonaws.com"),
+                )
+        
+        apprunner_role.add_to_policy(_iam.PolicyStatement(
                     actions=["ecr:GetAuthorizationToken"],
                     resources=["*"],
                     effect=_iam.Effect.ALLOW
-                ),
-                _iam.PolicyStatement(
+                ))
+        
+        apprunner_role.add_to_policy(_iam.PolicyStatement(
                     actions=["ecr:BatchCheckLayerAvailability", "ecr:GetDownloadUrlForLayer",
                             "ecr:GetRepositoryPolicy","ecr:DescribeRepositories", "ecr:ListImages",
                             "ecr:DescribeImages","ecr:BatchGetImage","ecr:GetLifecyclePolicy",
@@ -47,14 +49,7 @@ class AppRunnerHostingStack(Stack):
                             "ecr:DescribeImageScanFindings"],
                     resources=["arn:aws:ecr:" + region + ":" + account_id + "repository/" + ecr_repo_name],
                     effect=_iam.Effect.ALLOW
-                )
-            ]
-        )
-
-        apprunner_role = _iam.Role(self, f"rag-llm-role-{env_name}",
-                  assumed_by=_iam.ServicePrincipal("build.apprunner.amazonaws.com"),
-                  inline_policies={"AppRunnerPolicy": apprunner_policy_document}
-                )
+                ))
 
         app_runner_ui = _runner.CfnService(self, f"rag-llm-ecr-service-{env_name}",
                             instance_configuration=_runner.CfnService.InstanceConfigurationProperty(
