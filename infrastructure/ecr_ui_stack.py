@@ -1,8 +1,10 @@
+import json
 from aws_cdk import (
     NestedStack,
     Stack,
     aws_apprunner as _runner,
     aws_ecr as _ecr,
+    aws_cognito as _cognito,
     aws_codebuild as _codebuild,
     aws_iam as _iam)
 
@@ -12,9 +14,9 @@ import yaml
 import aws_cdk as _cdk
 
 # This stack will dockerize the latest UI build and upload it to ECR
-class ECRUIStack(Stack):
+class ECRUIStack(NestedStack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, user_pool_id: str, app_client_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         # Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context('environment_name')
@@ -34,14 +36,27 @@ class ECRUIStack(Stack):
         ecr_repo_ui.add_lifecycle_rule(tag_status=_ecr.TagStatus.ANY, max_image_count=10)
         ecr_repo_ui.add_lifecycle_rule(tag_status=_ecr.TagStatus.UNTAGGED, max_image_age=_cdk.Duration.days(1))
 
-        build_spec_yml = ''
+        # Before launching the buildspec
+        # Step 1 load the cognitoUserPool from domain
+        # Step 2 inject the clientID/PoolID in the config.json file in the nodejs application
+        with open("artifacts/chat-ui/src/config.json", "r") as f:
+            try:
+                    data = json.load(f)
+                    data['region']=region
+                    data['userPoolId']=user_pool_id
+                    data['clientId']=app_client_id
+                    f.seek(0)
+                    json.dump(data, f, indent=4)
+                    f.truncate() 
+            except Exception as e:
+                    print(e)
         
+        build_spec_yml = ''
         with open("buildspec_dockerize_ui.yml", "r") as stream:
                 try:
                     build_spec_yml = yaml.safe_load(stream)
                 except yaml.YAMLError as exc:
                     print(exc)
-
 
         # Trigger CodeBuild job
         containerize_build_job =_codebuild.Project(
@@ -49,7 +64,7 @@ class ECRUIStack(Stack):
             f"rag_llm_ui_container_{env_name}",
             build_spec=_codebuild.BuildSpec.from_object_to_yaml(build_spec_yml),
             environment = _codebuild.BuildEnvironment(
-            build_image=_codebuild.LinuxBuildImage.STANDARD_7_0,
+            build_image=_codebuild.LinuxBuildImage.STANDARD_6_0,
             privileged=True,
             environment_variables={
                 "ecr_repo": _codebuild.BuildEnvironmentVariable(value = full_ecr_repo_name),

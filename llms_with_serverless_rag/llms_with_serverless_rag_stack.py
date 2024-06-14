@@ -27,13 +27,6 @@ class LlmsWithServerlessRagStack(Stack):
             self.tag_my_stack(oss_stack)
             stack_deployed.add_dependency(oss_stack)
 
-        ecr_ui_stack = ECRUIStack(self, f"ecr_ui_{env_name}")
-        self.tag_my_stack(ecr_ui_stack)
-
-        apprunner_stack = AppRunnerHostingStack(self, f"apprunner_hosting_{env_name}")
-        self.tag_my_stack(apprunner_stack)
-        apprunner_stack.add_dependency(ecr_ui_stack)
-
         
     
 

@@ -1,5 +1,6 @@
 from aws_cdk import (
     Stack,
+    Tags,
     aws_iam as _iam,
     aws_lambda as _lambda,
     aws_ecr as _ecr, 
@@ -12,6 +13,9 @@ import os
 from constructs import Construct, DependencyGroup
 import cdk_nag as _cdk_nag
 from cdk_nag import NagSuppressions, NagPackSuppression
+
+from infrastructure.apprunner_hosting_stack import AppRunnerHostingStack
+from infrastructure.ecr_ui_stack import ECRUIStack
 
 class ApiGw_Stack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -53,6 +57,7 @@ class ApiGw_Stack(Stack):
                                       )
                                       )
         
+        user_pool.from_user_pool_id
         # for the user pool created above create a application client
         user_pool_client = _cognito.UserPoolClient(self, f"rag-llm-user-pool-client-{env_name}",
                                                    user_pool=user_pool,
@@ -63,7 +68,7 @@ class ApiGw_Stack(Stack):
                                                     )
                                                    )
         
-        user_pool_client.user_pool_client_id
+        
 
         # create an api gateway authorizer with the cognito user pool above
         cognito_authorizer = _cdk.aws_apigateway.CognitoUserPoolsAuthorizer(self, f"rag-llm-cognito-authrzr-{env_name}",
@@ -442,7 +447,24 @@ class ApiGw_Stack(Stack):
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(index_sample_data_api)
+
         
+        user_pool_client_id = user_pool_client.user_pool_client_id
+        user_pool_id = user_pool.user_pool_id
+        
+        # Trigger the UI stacks here
+        ecr_ui_stack = ECRUIStack(self, f"ecr_ui_{env_name}", user_pool_id, user_pool_client_id)
+        self.tag_my_stack(ecr_ui_stack)
+
+        apprunner_stack = AppRunnerHostingStack(self, f"apprunner_hosting_{env_name}")
+        self.tag_my_stack(apprunner_stack)
+        apprunner_stack.add_dependency(ecr_ui_stack)
+
+        
+
+    def tag_my_stack(self, stack):
+        tags = Tags.of(stack)
+        tags.add("project", "llms-with-serverless-rag")
 
     def add_cors_options(self, apiResource: _cdk.aws_apigateway.IResource):
         apiResource.add_method(
