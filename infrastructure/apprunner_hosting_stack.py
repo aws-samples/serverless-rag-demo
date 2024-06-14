@@ -25,7 +25,6 @@ class AppRunnerHostingStack(Stack):
         current_timestamp = self.node.try_get_context('current_timestamp')
         
         ecr_repo_name = config_details['ecr_repository_name']
-        _ecr.Repository(self, ecr_repo_name, repository_name=ecr_repo_name)
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
         region = os.getenv("CDK_DEFAULT_REGION")
         current_timestamp = self.node.try_get_context('current_timestamp')
