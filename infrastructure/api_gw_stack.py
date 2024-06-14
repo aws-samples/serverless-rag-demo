@@ -452,13 +452,9 @@ class ApiGw_Stack(Stack):
         user_pool_client_id = user_pool_client.user_pool_client_id
         user_pool_id = user_pool.user_pool_id
         
-        # Trigger the UI stacks here
+        # Trigger the ECR UI stacks here
         ecr_ui_stack = ECRUIStack(self, f"ecr_ui_{env_name}", user_pool_id, user_pool_client_id)
         self.tag_my_stack(ecr_ui_stack)
-
-        apprunner_stack = AppRunnerHostingStack(self, f"apprunner_hosting_{env_name}")
-        self.tag_my_stack(apprunner_stack)
-        apprunner_stack.add_dependency(ecr_ui_stack)
 
         
 

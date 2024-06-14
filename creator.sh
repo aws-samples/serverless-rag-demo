@@ -169,9 +169,51 @@ then
     fi
 
     cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c is_aoss=$aoss_selected -c embed_model_id=$embed_model_id ApiGwLlmsLambda"$infra_env"Stack --require-approval never
-   
+
+    echo "---Deploying the UI ---"
+    project=ragllmuicontainer"$infra_env"
+    echo project: $project
+    build_container=$(aws codebuild list-projects|grep -o $project'[^,"]*')
+    echo container: $build_container
+    echo "--- Trigger UI Build ---"
+    BUILD_ID=$(aws codebuild start-build --project-name $build_container | jq '.build.id' -r)
+    echo Build ID : $BUILD_ID
+    if [ "$?" != "0" ]; then
+        echo "Could not start UI CodeBuild project. Exiting."
+        exit 1
+    else
+        echo "UI Build started successfully."
+    fi
+
+    echo "Check UI build status every 30 seconds. Wait for codebuild to finish"
+    j=0
+    while [ $j -lt 50 ];
+    do 
+        sleep 10
+        echo 'Wait for 30 seconds. Build job typically takes 5 minutes to complete...'
+        build_status=$(aws codebuild batch-get-builds --ids $BUILD_ID | jq -cs '.[0]["builds"][0]["buildStatus"]')
+        build_status="${build_status%\"}"
+        build_status="${build_status#\"}"
+        if [ $build_status = "SUCCEEDED" ] || [ $build_status = "FAILED" ] || [ $build_status = "STOPPED" ]
+        then
+            echo "Build complete: $latest_build : status $build_status"
+            break
+        fi
+        ((j++))
+    done
+
+    if [ $build_status = "SUCCEEDED" ]
+    then
+       echo "Host UI on AppRunner..."
+       cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c is_aoss=$aoss_selected -c embed_model_id=$embed_model_id AppRunnerHosting"$infra_env"Stack --require-approval never
+    else
+       echo "Exiting. Build did not succeed."
+       exit 1
+    fi
+
 else
     echo "Exiting. Build did not succeed."
+    exit 1
 fi
 
 echo "Deployment Complete"

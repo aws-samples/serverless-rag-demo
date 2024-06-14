@@ -32,7 +32,12 @@ class ECRUIStack(NestedStack):
         current_timestamp = self.node.try_get_context('current_timestamp')
         # Generate ECR Full repo name
         full_ecr_repo_name = f'{account_id}.dkr.ecr.{region}.amazonaws.com/{ecr_repo_name}:{current_timestamp}'
-        ecr_repo_ui = _ecr.Repository(self, ecr_repo_name, repository_name=ecr_repo_name, removal_policy=_cdk.RemovalPolicy.DESTROY)
+        
+        ecr_repo_ui = _ecr.Repository(self,
+                                    ecr_repo_name, 
+                                    repository_name=ecr_repo_name,
+                                    removal_policy=_cdk.RemovalPolicy.DESTROY)
+        
         ecr_repo_ui.add_lifecycle_rule(tag_status=_ecr.TagStatus.ANY, max_image_count=10)
         ecr_repo_ui.add_lifecycle_rule(tag_status=_ecr.TagStatus.UNTAGGED, max_image_age=_cdk.Duration.days(1))
 

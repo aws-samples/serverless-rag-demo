@@ -12,7 +12,7 @@ import yaml
 import aws_cdk as _cdk
 
 # This stack will dockerize the latest UI build and upload it to ECR
-class AppRunnerHostingStack(NestedStack):
+class AppRunnerHostingStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)

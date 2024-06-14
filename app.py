@@ -3,6 +3,7 @@ import os
 
 import aws_cdk as cdk
 from aws_cdk import Stack, Tags
+from infrastructure.apprunner_hosting_stack import AppRunnerHostingStack
 from llms_with_serverless_rag.llms_with_serverless_rag_stack import LlmsWithServerlessRagStack
 from infrastructure.api_gw_stack import ApiGw_Stack
 
@@ -37,5 +38,9 @@ LlmsWithServerlessRagStack(app, f"LlmsWithServerlessRag{env_name}Stack", env=env
 
 api_gw_stack = ApiGw_Stack(app, f'ApiGwLlmsLambda{env_name}Stack')
 tag_my_stack(api_gw_stack)
+
+apprunner_stack = AppRunnerHostingStack(app, f"AppRunnerHosting{env_name}Stack") 
+tag_my_stack(apprunner_stack)
+
 app.synth()
 
