@@ -1,5 +1,6 @@
 from aws_cdk import (
     NestedStack,
+    Stack,
     aws_apprunner as _runner,
     aws_ecr as _ecr,
     aws_codebuild as _codebuild,

@@ -2,6 +2,7 @@ from aws_cdk import (
     NestedStack,
     aws_apprunner as _runner,
     aws_ecr as _ecr,
+    Stack,
     aws_codebuild as _codebuild,
     aws_iam as _iam)
 
@@ -36,7 +37,7 @@ class AppRunnerHostingStack(NestedStack):
             statements=[
                 _iam.PolicyStatement(
                     actions=["ecr:GetAuthorizationToken"],
-                    resources="*",
+                    resources=["*"],
                     effect=_iam.Effect.ALLOW
                 ),
                 _iam.PolicyStatement(
