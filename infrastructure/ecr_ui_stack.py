@@ -49,7 +49,7 @@ class ECRUIStack(Stack):
             f"rag_llm_ui_container_{env_name}",
             build_spec=_codebuild.BuildSpec.from_object_to_yaml(build_spec_yml),
             environment = _codebuild.BuildEnvironment(
-            build_image=_codebuild.LinuxBuildImage.STANDARD_6_0,
+            build_image=_codebuild.LinuxBuildImage.STANDARD_7_0,
             privileged=True,
             environment_variables={
                 "ecr_repo": _codebuild.BuildEnvironmentVariable(value = full_ecr_repo_name),
@@ -58,11 +58,13 @@ class ECRUIStack(Stack):
             })
         )
 
+
         ecr_policy = _iam.PolicyStatement(actions=[
         "ecr:BatchCheckLayerAvailability", "ecr:CompleteLayerUpload", "ecr:GetAuthorizationToken",
         "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart", "ecr:CreateRepository",
         ], resources=["*"])
         containerize_build_job.add_to_role_policy(ecr_policy)
+        
 
 
         
