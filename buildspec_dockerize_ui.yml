@@ -15,11 +15,11 @@ phases:
   build:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
-      - git checkout feature-v1.1.0
       - ls
       - cd serverless-rag-demo
+      - git checkout feature-v1.1.0
       - echo Build started on `date`
-      - echo Building the Docker image...
+      - echo Building the Docker image ...
       - cd artifacts/chat-ui/
       - ls
       - docker build -t $ecr_repo .
