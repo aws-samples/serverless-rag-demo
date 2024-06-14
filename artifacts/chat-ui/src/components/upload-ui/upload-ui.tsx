@@ -4,13 +4,10 @@ import FormField from "@cloudscape-design/components/form-field";
 import Button from "@cloudscape-design/components/button";
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import axios from "axios";
-interface UploadUIInputPanelProps {
-  upload_file?: (files: File[]) => void;
-}
 
-export function UploadUI( props: UploadUIInputPanelProps ) {
-   const [value, setValue] = React.useState([]);
-   const upload_file = (files:File[]) => {
+export function UploadUI() {
+   const [value, setValue] = React.useState<File[]>([]);
+   const upload_file = (files: any) => {
       console.log(files)
       axios.post('XXXXXXXXXXXXXXXXXXXXXXXXXXXX', {
          file: value
@@ -31,7 +28,6 @@ export function UploadUI( props: UploadUIInputPanelProps ) {
       <FileUpload
           onChange={({ detail }) => {
             setValue(detail.value);
-            upload_file(detail)
           }}
           value={value}
           i18nStrings={{
@@ -55,7 +51,7 @@ export function UploadUI( props: UploadUIInputPanelProps ) {
       />
       <br/><br/><br/><br/><br/><br/><br/><br/><br/>
       <SpaceBetween direction="horizontal" size="xs">
-      <Button variant="primary" onClick={upload_file}>Index Document</Button>
+      <Button variant="primary" onClick={(event) => upload_file(event)}>Index Document</Button>
       <Button>Delete All</Button>
       </SpaceBetween>
       

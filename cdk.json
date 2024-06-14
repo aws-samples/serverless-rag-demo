@@ -64,7 +64,8 @@
     },
 
     "dev": {
-      "ecr_repository_name": "lambda_rag_repo_dev",
+      "ecr_repository_name": "rag_llm_react_ui_dev",
+      "apprunner_service_name": "sample_chatbot_dev",
       "lambda_role_name": "lambda_llm_rag_dev",
       "lambda_function_name": "llm_rag_example_dev",
       "bedrock_agents_function_name": "bedrock_agents_dev",
@@ -83,19 +84,11 @@
       "wrangler_layer": "aws-wranglr-layer", 
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
-      "pandas_layer_name": "pandas-layer",
-      "sagemaker_endpoint": "llama2-7b-endpoint",
-      "llama2_7b_sagemaker_endpoint": "llama2-7b-endpoint",
-      "llama2_13b_sagemaker_endpoint": "llama2-13b-endpoint",
-      "llama2_70b_sagemaker_endpoint": "llama2-70b-endpoint",
-      "falcon_7b_sagemaker_endpoint": "falcon-7b-endpoint",
-      "falcon_40b_sagemaker_endpoint": "falcon-40b-endpoint",
-      "falcon_180b_sagemaker_endpoint": "falcon-180b-endpoint",
-      "sagemaker_role_name": "sagemaker_llm_role_dev",
-      "model_path": "/var/task/sentencetransformers/"
+      "pandas_layer_name": "pandas-layer"
     },
     "qa": {
-      "ecr_repository_name": "lambda_rag_repo_qa",
+      "ecr_repository_name": "rag_llm_react_ui_qa",
+      "apprunner_service_name": "sample_chatbot_qa",
       "lambda_role_name": "lambda_llm_rag_qa",
       "lambda_function_name": "llm_rag_example_qa",
       "bedrock_agents_function_name": "bedrock_agents_qa",
@@ -114,19 +107,11 @@
       "wrangler_layer": "aws-wranglr-layer", 
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
-      "pandas_layer_name": "pandas-layer",
-      "sagemaker_endpoint": "llama2-7b-endpoint",
-      "llama2_7b_sagemaker_endpoint": "llama2-7b-endpoint",
-      "llama2_13b_sagemaker_endpoint": "llama2-13b-endpoint",
-      "llama2_70b_sagemaker_endpoint": "llama2-70b-endpoint",
-      "falcon_7b_sagemaker_endpoint": "falcon-7b-endpoint",
-      "falcon_40b_sagemaker_endpoint": "falcon-40b-endpoint",
-      "falcon_180b_sagemaker_endpoint": "falcon-180b-endpoint",
-      "sagemaker_role_name": "sagemaker_llm_role_qa",
-      "model_path": "/var/task/sentencetransformers/"
+      "pandas_layer_name": "pandas-layer"
     },
     "sandbox": {
-      "ecr_repository_name": "lambda_rag_repo_sandbox",
+      "ecr_repository_name": "rag_llm_react_ui_sandbox",
+      "apprunner_service_name": "sample_chatbot_sandbox",
       "lambda_role_name": "lambda_llm_rag_sandbox",
       "lambda_function_name": "llm_rag_example_sandbox",
       "bedrock_agents_function_name": "bedrock_agents_sandbox",
@@ -145,16 +130,7 @@
       "wrangler_layer": "aws-wranglr-layer", 
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
-      "pandas_layer_name": "pandas-layer",
-      "sagemaker_endpoint": "llama2-7b-endpoint",
-      "llama2_7b_sagemaker_endpoint": "llama2-7b-endpoint",
-      "llama2_13b_sagemaker_endpoint": "llama2-13b-endpoint",
-      "llama2_70b_sagemaker_endpoint": "llama2-70b-endpoint",
-      "falcon_7b_sagemaker_endpoint": "falcon-7b-endpoint",
-      "falcon_40b_sagemaker_endpoint": "falcon-40b-endpoint",
-      "falcon_180b_sagemaker_endpoint": "falcon-180b-endpoint",
-      "sagemaker_role_name": "sagemaker_llm_role_sandbox",
-      "model_path": "/var/task/sentencetransformers/"
+      "pandas_layer_name": "pandas-layer"
     }
   }
 }

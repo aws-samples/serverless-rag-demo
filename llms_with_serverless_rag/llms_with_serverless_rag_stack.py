@@ -3,6 +3,8 @@ from constructs import Construct
 from infrastructure.opensearch_vectordb_stack import OpensearchVectorDbStack
 from infrastructure.api_gw_stack import ApiGw_Stack
 from infrastructure.bedrock_layer_stack import BedrockLayerStack
+from infrastructure.ecr_ui_stack import ECRUIStack
+from infrastructure.apprunner_hosting_stack import AppRunnerHostingStack
 import os
 
 
@@ -24,10 +26,16 @@ class LlmsWithServerlessRagStack(Stack):
             oss_stack = OpensearchVectorDbStack(self, f"vector_db_{env_name}")
             self.tag_my_stack(oss_stack)
             stack_deployed.add_dependency(oss_stack)
+
+        ecr_ui_stack = ECRUIStack(self, f"ecr_ui_{env_name}")
+        self.tag_my_stack(ecr_ui_stack)
+
+        apprunner_stack = AppRunnerHostingStack(self, f"apprunner_hosting_{env_name}")
+        self.tag_my_stack(apprunner_stack)
+        apprunner_stack.add_dependency(ecr_ui_stack)
+
         
-        # Lambda / Api Gateway text/html
-        #api_gw_stack = ApiGw_Stack(self, f'api_gw_lambda_{env_name}')
-        # Sagemaker
+    
 
         
         

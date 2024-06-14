@@ -5,14 +5,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn, signUp } from './authService';
 import Header from "@cloudscape-design/components/header";
-import ContentLayout from "@cloudscape-design/components/content-layout";
 import Container from "@cloudscape-design/components/container";
 
 import Form from "@cloudscape-design/components/form";
 import SpaceBetween from "@cloudscape-design/components/space-between";
 import Button from "@cloudscape-design/components/button";
 import FormField from "@cloudscape-design/components/form-field";
-import Input from "@cloudscape-design/components/input";
 import Grid from "@cloudscape-design/components/grid";
 
 const LoginPage = () => {
