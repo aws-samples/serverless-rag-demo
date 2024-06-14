@@ -32,7 +32,7 @@ class AppRunnerHostingStack(Stack):
         full_ecr_repo_name = f'{account_id}.dkr.ecr.{region}.amazonaws.com/{ecr_repo_name}:{current_timestamp}'
         
         apprunner_role = _iam.Role(self, f"rag-llm-role-{env_name}",
-                  assumed_by=_iam.ServicePrincipal("tasks.apprunner.amazonaws.com"),
+                  assumed_by=_iam.ServicePrincipal("build.apprunner.amazonaws.com"),
                 )
         
         apprunner_role.add_to_policy(_iam.PolicyStatement(
@@ -63,6 +63,7 @@ class AppRunnerHostingStack(Stack):
                                            name="name",
                                            value="value")],)))
                            )
+        
         
         _cdk.CfnOutput(self, f"rag-llm-ecr-service-output-{env_name}", value=app_runner_ui.attr_service_url,
                        export_name="ServiceUrl"
