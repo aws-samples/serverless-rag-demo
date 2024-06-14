@@ -36,21 +36,13 @@ class AppRunnerHostingStack(Stack):
                 )
         
         apprunner_role.add_to_policy(_iam.PolicyStatement(
-                    actions=["ecr:GetAuthorizationToken"],
+                    actions=["ecr:GetDownloadUrlForLayer", "ecr:BatchCheckLayerAvailability",
+                            "ecr:BatchGetImage", "ecr:DescribeImages", "ecr:GetAuthorizationToken"],
                     resources=["*"],
                     effect=_iam.Effect.ALLOW
-                ))
+        ))
         
-        apprunner_role.add_to_policy(_iam.PolicyStatement(
-                    actions=["ecr:BatchCheckLayerAvailability", "ecr:GetDownloadUrlForLayer",
-                            "ecr:GetRepositoryPolicy","ecr:DescribeRepositories", "ecr:ListImages",
-                            "ecr:DescribeImages","ecr:BatchGetImage","ecr:GetLifecyclePolicy",
-                            "ecr:GetLifecyclePolicyPreview","ecr:ListTagsForResource",
-                            "ecr:DescribeImageScanFindings"],
-                    resources=["arn:aws:ecr:" + region + ":" + account_id + "repository/" + ecr_repo_name],
-                    effect=_iam.Effect.ALLOW
-                ))
-
+        
         app_runner_ui = _runner.CfnService(self, f"rag-llm-ecr-service-{env_name}",
                             instance_configuration=_runner.CfnService.InstanceConfigurationProperty(
                             cpu="2048",
