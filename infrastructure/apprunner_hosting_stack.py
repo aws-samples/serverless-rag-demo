@@ -58,7 +58,7 @@ class AppRunnerHostingStack(Stack):
                                    image_identifier=full_ecr_repo_name,
                                    image_repository_type="ECR",
                                    image_configuration=_runner.CfnService.ImageConfigurationProperty(
-                                       port="3001", 
+                                       port="80", 
                                        runtime_environment_variables=[_runner.CfnService.KeyValuePairProperty(
                                            name="name",
                                            value="value")],)))
