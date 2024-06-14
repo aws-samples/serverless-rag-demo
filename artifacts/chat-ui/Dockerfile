@@ -6,7 +6,7 @@ COPY . .
 RUN npm run build
 FROM nginx:stable-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 3001
+COPY nginx.conf /etc/nginx/nginx.conf
 CMD ["nginx", "-g", "daemon off;"]
 
 # COPY public/ /react-docker/public
