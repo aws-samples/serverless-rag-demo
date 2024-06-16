@@ -453,10 +453,10 @@ class ApiGw_Stack(Stack):
         user_pool_id = user_pool.user_pool_id
         
         _cdk.CfnOutput(self, f"rag-llm-user-poolid-output-{env_name}", value=user_pool_id,
-                       export_name="user_pool_id"
+                       export_name="user-pool-id"
                     )
         _cdk.CfnOutput(self, f"rag-llm-auth-clientid-output-{env_name}", value=user_pool_client_id,
-                       export_name="client_id"
+                       export_name="client-id"
                     )
 
         
