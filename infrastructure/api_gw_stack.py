@@ -452,9 +452,12 @@ class ApiGw_Stack(Stack):
         user_pool_client_id = user_pool_client.user_pool_client_id
         user_pool_id = user_pool.user_pool_id
         
-        # Trigger the ECR UI stacks here
-        ecr_ui_stack = ECRUIStack(self, f"ecr_ui_{env_name}", user_pool_id, user_pool_client_id)
-        self.tag_my_stack(ecr_ui_stack)
+        _cdk.CfnOutput(self, f"rag-llm-user-poolid-output-{env_name}", value=user_pool_id,
+                       export_name="user_pool_id"
+                    )
+        _cdk.CfnOutput(self, f"rag-llm-auth-clientid-output-{env_name}", value=user_pool_client_id,
+                       export_name="client_id"
+                    )
 
         
 

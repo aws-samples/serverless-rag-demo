@@ -14,9 +14,9 @@ import yaml
 import aws_cdk as _cdk
 
 # This stack will dockerize the latest UI build and upload it to ECR
-class ECRUIStack(NestedStack):
+class ECRUIStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, user_pool_id: str, app_client_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         # Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context('environment_name')
@@ -44,18 +44,18 @@ class ECRUIStack(NestedStack):
         # Before launching the buildspec
         # Step 1 load the cognitoUserPool from domain
         # Step 2 inject the clientID/PoolID in the config.json file in the nodejs application
-        print(f'Injecting clientID {app_client_id} and PoolID {user_pool_id} in config.json') 
-        with open("artifacts/chat-ui/src/config.json", "wb") as f:
-            try:
-                    data = json.load(f)
-                    data['region']=region
-                    data['userPoolId']=user_pool_id
-                    data['clientId']=app_client_id
-                    f.seek(0)
-                    json.dump(data, f, indent=4)
-                    # f.truncate() 
-            except Exception as e:
-                    print(e)
+        # print(f'Injecting clientID {app_client_id} and PoolID {user_pool_id} in config.json') 
+        # with open("artifacts/chat-ui/src/config.json", "wb") as f:
+        #     try:
+        #             data = json.load(f)
+        #             data['region']=region
+        #             data['userPoolId']=user_pool_id
+        #             data['clientId']=app_client_id
+        #             f.seek(0)
+        #             json.dump(data, f, indent=4)
+        #             # f.truncate() 
+        #     except Exception as e:
+        #             print(e)
         
         build_spec_yml = ''
         with open("buildspec_dockerize_ui.yml", "r") as stream:
