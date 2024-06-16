@@ -52,7 +52,7 @@ class ECRUIStack(NestedStack):
                     data['clientId']=app_client_id
                     f.seek(0)
                     json.dump(data, f, indent=4)
-                    f.truncate() 
+                    # f.truncate() 
             except Exception as e:
                     print(e)
         
