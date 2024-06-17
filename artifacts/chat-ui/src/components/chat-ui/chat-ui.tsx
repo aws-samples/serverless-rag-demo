@@ -13,7 +13,7 @@ export interface ChatUIProps {
   inputPlaceholderText?: string;
   sendButtonText?: string;
   showCopyButton?: boolean;
-  onSendMessage?: (message: string) => void;
+  onSendMessage?: (message: string, type: string) => void;
 }
 
 export abstract class ChatScrollState {
@@ -68,7 +68,7 @@ export function ChatUI(props: ChatUIProps) {
         )}
       </div>
       <div className={styles.input_container}>
-        <ChatUIInputPanel {...props} />
+        <ChatUIInputPanel {...props}/>
       </div>
     </div>
   );

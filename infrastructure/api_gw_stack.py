@@ -459,7 +459,7 @@ class ApiGw_Stack(Stack):
                        export_name="client-id"
                     )
         
-        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id) 
+        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_api_url, streaming_url) 
         self.tag_my_stack(ecr_ui_stack)
         
         

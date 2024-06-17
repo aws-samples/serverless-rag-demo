@@ -7,19 +7,25 @@ import {
 import { useEffect, useLayoutEffect, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
 import { ChatScrollState } from "./chat-ui";
-import { ChatMessage } from "./types";
+import { ChatMessage, ChatMessageType } from "./types";
 import styles from "../../styles/chat-ui.module.scss";
+import config from "../../config.json";
+
 
 export interface ChatUIInputPanelProps {
   inputPlaceholderText?: string;
   sendButtonText?: string;
   running?: boolean;
   messages?: ChatMessage[];
-  onSendMessage?: (message: string) => void;
+  onSendMessage?: (message: string, type: string) => void;
 }
 
 export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
+  const socketUrl = config.websocketUrl;
+  const [message, setMessage] = useState('');
+  var ws = null; 
+  var chat_messages = []
 
   useEffect(() => {
     const onWindowScroll = () => {
@@ -66,8 +72,54 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
 
   const onSendMessage = () => {
     ChatScrollState.userHasScrolled = false;
-    props.onSendMessage?.(inputText);
+    props.onSendMessage?.(inputText, ChatMessageType.Human);
     setInputText("");
+
+    const access_token = sessionStorage.getItem('accessToken');
+    
+    if (inputText.trim() !== '') {
+      if ("WebSocket" in window) {
+        chat_messages.push({"type": "text", "data": inputText})
+        if(ws==null || ws.readyState==3 || ws.readyState==2) {
+          
+          ws = new WebSocket(socketUrl + '?access_token='+access_token);
+          ws.onerror = function (event) {
+            console.log(event);
+          }
+        } else {
+          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))) , behaviour: 'chat', 'query_vectordb': 'no', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0', access_token: access_token }));
+          chat_messages = []
+       }
+        
+        ws.onopen = () => {
+          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))), behaviour: 'chat', 'query_vectordb': 'no', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0', access_token: access_token }));
+          chat_messages = []
+        };
+        var messages = ''
+        ws.onmessage = (event) => {
+          var chat_output = JSON.parse(atob(event.data))
+          if ('text' in chat_output) {
+            messages += chat_output['text']
+            if (messages.endsWith('ack-end-of-string')) {
+              messages = messages.replace('ack-end-of-string', '')
+              props.onSendMessage?.(messages, ChatMessageType.AI);
+            }
+          } else {
+            props.onSendMessage?.(chat_output, ChatMessageType.AI);
+          }
+          setMessage("");
+        };
+
+        ws.onclose = () => {
+          console.log('WebSocket connection closed');
+          chat_messages = []
+        };
+
+      } else {
+        console.log('WebSocket is not supported by your browser.');
+        chat_messages = []
+      }
+    }
   };
 
   const onTextareaKeyDown = (

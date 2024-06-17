@@ -21,7 +21,7 @@ phases:
       - ls
       - cd serverless-rag-demo
       - git checkout feature-v1.1.0
-      - jq -n --arg region "$region" --arg user_pool_id "$user_pool_id" --arg client_id "$client_id" '{ region:$region, userPoolId:$user_pool_id, clientId:$client_id} ' > artifacts/chat-ui/src/config.json
+      - jq -n --arg region "$region" --arg user_pool_id "$user_pool_id" --arg client_id "$client_id" --arg rest_endpoint_url $rest_endpoint_url --arg streaming_url "$streaming_url"  '{ region:$region, userPoolId:$user_pool_id, clientId:$client_id, apiUrl:$rest_endpoint_url, websocketUrl:$streaming_url }' > artifacts/chat-ui/src/config.json
       - echo Build started on `date`
       - echo Building the Docker image ...
       - cd artifacts/chat-ui/
