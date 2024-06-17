@@ -458,7 +458,10 @@ class ApiGw_Stack(Stack):
         _cdk.CfnOutput(self, f"rag-llm-auth-clientid-output-{env_name}", value=user_pool_client_id,
                        export_name="client-id"
                     )
-
+        
+        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id) 
+        self.tag_my_stack(ecr_ui_stack)
+        
         
 
     def tag_my_stack(self, stack):

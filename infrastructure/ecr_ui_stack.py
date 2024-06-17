@@ -14,22 +14,19 @@ import yaml
 import aws_cdk as _cdk
 
 # This stack will dockerize the latest UI build and upload it to ECR
-class ECRUIStack(Stack):
+class ECRUIStack(NestedStack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, pool_id: str, client_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         # Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context('environment_name')
         config_details = self.node.try_get_context(env_name)
         
-        account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
-        region = os.getenv("CDK_DEFAULT_REGION")
-        current_timestamp = self.node.try_get_context('current_timestamp')
-        
         ecr_repo_name = config_details['ecr_repository_name']
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
         region = os.getenv("CDK_DEFAULT_REGION")
         current_timestamp = self.node.try_get_context('current_timestamp')
+
         # Generate ECR Full repo name
         full_ecr_repo_name = f'{account_id}.dkr.ecr.{region}.amazonaws.com/{ecr_repo_name}:{current_timestamp}'
         
@@ -75,7 +72,9 @@ class ECRUIStack(Stack):
             environment_variables={
                 "ecr_repo": _codebuild.BuildEnvironmentVariable(value = full_ecr_repo_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_ACCOUNT")),
-                "region": _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_REGION"))
+                "region": _codebuild.BuildEnvironmentVariable(value = os.getenv("CDK_DEFAULT_REGION")),
+                "user_pool_id": _codebuild.BuildEnvironmentVariable(value = pool_id),
+                "client_id": _codebuild.BuildEnvironmentVariable(value = client_id)
             })
         )
 

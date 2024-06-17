@@ -7,17 +7,21 @@ phases:
     commands:
       - pwd
       - ls
-      - echo Printing variables  $ecr_repo $account_id $region
+      - echo Printing variables  $ecr_repo $account_id $region $user_pool_id $client_id
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $region | docker login --username AWS --password-stdin $account_id.dkr.ecr.$region.amazonaws.com
   build:
     commands:
+      - echo Install JQ
+      - sudo apt-get update
+      - sudo apt-get install jq
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
       - cd serverless-rag-demo
       - git checkout feature-v1.1.0
+      - jq -n --arg region "$region" --arg user_pool_id "$user_pool_id" --arg client_id "$client_id" '{ region:$region, userPoolId:$user_pool_id, clientId:$client_id} ' > artifacts/chat-ui/src/config.json
       - echo Build started on `date`
       - echo Building the Docker image ...
       - cd artifacts/chat-ui/

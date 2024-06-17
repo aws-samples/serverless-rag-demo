@@ -169,13 +169,6 @@ then
     fi
 
     cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c is_aoss=$aoss_selected -c embed_model_id=$embed_model_id ApiGwLlmsLambda"$infra_env"Stack --require-approval never
-
-    user_pool_id=$(aws cloudformation --region $deployment_region describe-stacks --stack-name ApiGwLlmsLambda"$infra_env"Stack --query 'Stacks[0].Outputs[?ExportName==`user-pool-id`].OutputValue' --output text)
-    client_id=$(aws cloudformation --region $deployment_region describe-stacks --stack-name ApiGwLlmsLambda"$infra_env"Stack --query 'Stacks[0].Outputs[?ExportName==`client-id`].OutputValue' --output text)
-    jq -n --arg region "$deployment_region" --arg user_pool_id "$user_pool_id" --arg client_id "$client_id" '{region: $region, userPoolId: $user_pool_id, clientId: $client_id}' > artifacts/chat-ui/src/config.json
-    echo "JSON data written to artifacts/chat-ui/src/config.json"
-
-    cdk deploy -c environment_name=$infra_env -c collection_endpoint=$COLLECTION_ENDPOINT -c current_timestamp=$CURRENT_UTC_TIMESTAMP -c is_aoss=$aoss_selected -c embed_model_id=$embed_model_id ECRUI"$infra_env"Stack --require-approval never
     
     echo "---Deploying the UI ---"
     project=ragllmuicontainer"$infra_env"

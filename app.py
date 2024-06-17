@@ -40,9 +40,6 @@ LlmsWithServerlessRagStack(app, f"LlmsWithServerlessRag{env_name}Stack", env=env
 api_gw_stack = ApiGw_Stack(app, f'ApiGwLlmsLambda{env_name}Stack')
 tag_my_stack(api_gw_stack)
 
-ecr_ui_stack = ECRUIStack(app, f"ECRUI{env_name}Stack") 
-tag_my_stack(ecr_ui_stack)
-
 apprunner_stack = AppRunnerHostingStack(app, f"AppRunnerHosting{env_name}Stack") 
 tag_my_stack(apprunner_stack)
 
