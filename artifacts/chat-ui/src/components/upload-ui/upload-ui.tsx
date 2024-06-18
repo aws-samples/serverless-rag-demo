@@ -55,6 +55,7 @@ export function UploadUI() {
       console.log(err)
     })
   }
+}
 
   return (
     <FormField
@@ -94,6 +95,5 @@ export function UploadUI() {
 
     </FormField>
   );
-
 
 }
