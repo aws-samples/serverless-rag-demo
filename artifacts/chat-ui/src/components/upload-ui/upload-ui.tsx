@@ -27,6 +27,8 @@ export function UploadUI() {
       var file_name = file_data['name'];
       var period = file_name.lastIndexOf('.');
       var file_name_no_ext = file_name.substring(0, period);
+      file_name_no_ext = file_name_no_ext.replace(/\s/g,'-')
+      file_name_no_ext = file_name_no_ext.replace(/[^0-9a-z-]/gi, '')
       var fileExtension = file_name.substring(period + 1);
       axios.get(config.apiUrl + 'get-presigned-url', {
         params:{ "file_extension": fileExtension, "file_name": file_name_no_ext }, 
