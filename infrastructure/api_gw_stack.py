@@ -98,6 +98,8 @@ class ApiGw_Stack(Stack):
             #                                                           authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO  
             #                                                         )
         )
+
+        
             
         parent_path='rag'
         rag_llm_api = rag_llm_root_api.root.add_resource(parent_path)
@@ -343,7 +345,7 @@ class ApiGw_Stack(Stack):
         rag_llm_api.add_method("GET",
                                 html_generation_lambda_integration, operation_name="HTML file",
                                 method_responses=method_responses)
-
+        
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
         detect_text_api = rag_llm_api.add_resource("detect-text")
@@ -373,7 +375,6 @@ class ApiGw_Stack(Stack):
                 method_responses=method_responses,
                 api_key_required=False
             )
-    
         index_sample_data_api.add_method(
                 "POST",
                 bedrock_index_lambda_integration,
@@ -497,6 +498,7 @@ class ApiGw_Stack(Stack):
                     },
                 }
             ],
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.NONE
         )
     
     def stack_level_suppressions(self):
