@@ -28,7 +28,7 @@ export function UploadUI() {
       var period = file_name.lastIndexOf('.');
       var file_name_no_ext = file_name.substring(0, period);
       var fileExtension = file_name.substring(period + 1);
-      axios.get(config.apiUrl + '/rag/get-presigned-url', {
+      axios.get(config.apiUrl + 'get-presigned-url', {
         params:{ "file_extension": fileExtension, "file_name": file_name_no_ext }, 
         headers: {
           authorization: StorageHelper.getAuthToken(),
