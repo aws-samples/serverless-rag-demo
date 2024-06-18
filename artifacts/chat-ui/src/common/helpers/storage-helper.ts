@@ -50,4 +50,9 @@ export abstract class StorageHelper {
 
     return newState;
   }
+
+  static getAuthToken() {
+    var accessToken = sessionStorage.getItem('accessToken');
+    return 'Bearer ' + accessToken
+  }
 }

@@ -168,15 +168,17 @@ def create_presigned_post(event):
     if 'queryStringParameters' in event:
         query_params = event['queryStringParameters']
     
-    if 'file_extension' in query_params:
+    if 'file_extension' in query_params and 'file_name' in query_params:
         extension = query_params['file_extension']
+        file_name = query_params['file_name']
         session = boto3.Session()
         s3_client = session.client('s3', region_name=region)
+        file_name = file_name.replace(' ', '_')
 
         # s3_client = boto3.client('s3')
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
-        s3_key = f"index/data/{date_time}.{extension}"
+        s3_key = f"index/data/{file_name}_{date_time}.{extension}"
         response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
                                               Key=s3_key,
                                               Fields=None,

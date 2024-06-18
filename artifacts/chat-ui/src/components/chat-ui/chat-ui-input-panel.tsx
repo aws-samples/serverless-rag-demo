@@ -87,11 +87,13 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
             console.log(event);
           }
         } else {
+          // query_vectordb allowed values -> yes/no
           ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))) , behaviour: 'chat', 'query_vectordb': 'no', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0', access_token: access_token }));
           chat_messages = []
        }
         
         ws.onopen = () => {
+          // query_vectordb allowed values -> yes/no
           ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))), behaviour: 'chat', 'query_vectordb': 'no', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0', access_token: access_token }));
           chat_messages = []
         };
@@ -105,6 +107,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
               props.onSendMessage?.(messages, ChatMessageType.AI);
             }
           } else {
+            // Display errors
             props.onSendMessage?.(chat_output, ChatMessageType.AI);
           }
           setMessage("");

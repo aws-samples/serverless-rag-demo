@@ -94,9 +94,9 @@ class ApiGw_Stack(Stack):
                 "description": env_name + " stage deployment",
             },
             description=api_description,
-            default_method_options= _cdk.aws_apigateway.MethodOptions(authorizer=cognito_authorizer,
-                                                                      authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO  
-                                                                    )
+            # default_method_options= _cdk.aws_apigateway.MethodOptions(authorizer=cognito_authorizer,
+            #                                                           authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO  
+            #                                                         )
         )
             
         parent_path='rag'
@@ -362,7 +362,7 @@ class ApiGw_Stack(Stack):
                 authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
                 operation_name="index document",
                 method_responses=method_responses,
-                api_key_required=True
+                api_key_required=False
             )
         index_docs_api.add_method(
                 "DELETE",
@@ -371,7 +371,7 @@ class ApiGw_Stack(Stack):
                 authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
                 operation_name="delete document index",
                 method_responses=method_responses,
-                api_key_required=True
+                api_key_required=False
             )
     
         index_sample_data_api.add_method(
@@ -381,7 +381,7 @@ class ApiGw_Stack(Stack):
                 authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
                 operation_name="index sample document",
                 method_responses=method_responses,
-                api_key_required=True
+                api_key_required=False
             )
         detect_text_api.add_method(
             "POST",
@@ -389,7 +389,7 @@ class ApiGw_Stack(Stack):
             authorizer=cognito_authorizer,
             authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Detect Text or Index a file",
-            api_key_required=True,
+            api_key_required=False,
             method_responses=method_responses,
         )
         index_files_api.add_method(
@@ -398,7 +398,7 @@ class ApiGw_Stack(Stack):
             authorizer=cognito_authorizer,
             authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Index a file",
-            api_key_required=True,
+            api_key_required=False,
             method_responses=method_responses,
         )
         get_job_status_api.add_method(
@@ -407,7 +407,7 @@ class ApiGw_Stack(Stack):
             authorizer=cognito_authorizer,
             authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Get Job Status",
-            api_key_required=True,
+            api_key_required=False,
             method_responses=method_responses,
         )
         get_presigned_url_api.add_method(
@@ -416,7 +416,7 @@ class ApiGw_Stack(Stack):
             authorizer=cognito_authorizer,
             authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Get Presigned Post URL",
-            api_key_required=True,
+            api_key_required=False,
             method_responses=method_responses,
         )
         file_data_api.add_method(
@@ -426,7 +426,7 @@ class ApiGw_Stack(Stack):
             authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
             operation_name="Store documents",
             method_responses=method_responses,
-            api_key_required=True
+            api_key_required=False
         )
         
         connect_tracker_api.add_method(
@@ -434,7 +434,7 @@ class ApiGw_Stack(Stack):
                 bedrock_index_lambda_integration,
                 operation_name="Websocket rate limiter",
                 method_responses=method_responses,
-                api_key_required=True
+                api_key_required=False
             )
         
         self.add_cors_options(file_data_api)
@@ -459,7 +459,7 @@ class ApiGw_Stack(Stack):
                        export_name="client-id"
                     )
         
-        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_api_url, streaming_url) 
+        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_endpoint_url, wss_url + '/' + env_name) 
         self.tag_my_stack(ecr_ui_stack)
         
         

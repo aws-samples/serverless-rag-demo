@@ -1,9 +1,9 @@
 {
   "id": "/",
   "start_url": "/",
-  "name": "Example App",
-  "short_name": "Example App",
-  "description": "Example App sample",
+  "name": "Serverless RAG",
+  "short_name": "Serverless RAG",
+  "description": "Serverless RAG demo",
   "theme_color": "#000000",
   "background_color": "#ffffff",
   "display": "standalone",

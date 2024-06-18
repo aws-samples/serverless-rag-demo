@@ -166,9 +166,8 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
 
     try:
         response = None
-        print(f'LLM Model ID -> {model_id}')
+        LOG.debug(f'LLM Model ID -> {model_id}')
         model_list = ['anthropic.claude-3','meta.llama2-']
-
 
         if model_id.startswith(tuple(model_list)):
             prompt_template = prepare_prompt_template(prompt, context, query)
@@ -190,9 +189,6 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
         accept='application/json',
         contentType='application/json'
     )
-    print('EventStream')
-    print(dir(response['body']))
-
     assistant_chat = ''
     counter=0
     sent_ack = False
@@ -205,9 +201,7 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
             chunk = evt['chunk']['bytes']
             chunk_json = json.loads(chunk.decode("UTF-8"))
             print(f'Chunk JSON {json.loads(str(chunk, "UTF-8"))}' )
-            if 'llama2' in model:
-                chunk_str = chunk_json['generation']
-            elif 'claude-3-' in model:
+            if 'claude-3-' in model:
                 if chunk_json['type'] == 'content_block_delta' and chunk_json['delta']['type'] == 'text_delta':
                     chunk_str = chunk_json['delta']['text']
             else:
@@ -243,60 +237,14 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
             websocket_send(connect_id, { "text": "ack-end-of-string" } )
 
 
-def get_conversations_query(connect_id):
-    query = {
-        "size": 20,
-        "query": {
-            "bool": {
-              "must": [
-               {
-                 "match": {
-                   "connect_id": connect_id
-                }
-               }
-              ]
-            }
-        },
-        "sort": [
-          {
-            "timestamp": {
-              "order": "asc"
-            }
-          }
-        ]
-    }
-    return query
-
-
-def parse_response(model_id, response):
-    print(f'parse_response {response}')
-    result = ''
-    if 'claude' in model_id:
-        result = response['completion']
-    elif model_id == 'cohere.command-text-v14':
-        text = ''
-        for token in response['generations']:
-            text = text + token['text']
-        result = text
-    elif model_id == 'amazon.titan-text-express-v1':
-        #TODO set the response for this model
-        result = response
-    elif model_id in ['ai21.j2-ultra-v1', 'ai21.j2-mid-v1']:
-        result = response
-    else:
-        result = str(response)
-    print('parse_response_final_result' + result)
-    return result
-
 # Agent code start
 list_of_tools_specs = []
 tool_names = []
 tool_descriptions = []
 
+
 def query_agents(agent_type, user_input, connect_id):
     format_prompt_invoke_function(agent_type, user_input, connect_id)
-
-
 
 def format_prompt_invoke_function(agent_type, user_input, connect_id):
     chat_history_list = json.loads(base64.b64decode(user_input))
