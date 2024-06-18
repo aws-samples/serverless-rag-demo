@@ -1,3 +1,4 @@
+from io import BytesIO
 from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
@@ -12,6 +13,7 @@ import base64
 from datetime import datetime, timezone
 import time
 import threading
+from PyPDF2 import PdfReader
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -208,12 +210,68 @@ def get_job_status(event):
         return success_response(isJobCompleted(query_params['jobId']))
     else:
         return failure_response('jobId is missing')
-
+"""{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2024-06-18T10:26:52.692Z",
+      "eventName": "ObjectRemoved:Delete",
+      "userIdentity": {
+        "principalId": "AWS:AROAWO3F73T2G7EGZUV5V:fraseque-Isengard"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "10.107.97.237"
+      },
+      "responseElements": {
+        "x-amz-request-id": "V2B093Q3C8EM8HYQ",
+        "x-amz-id-2": "yM1VS0B+uudubjZhOxtVCjzh/pKL/4Yq8VNsOa8mZfHcRPiKun0n9bgQqAKpuMdySrSdpsqVywDTlQI05JJrHC2OAQbxHNSf9gaaj9GYkys="
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "invoke_lambda",
+        "bucket": {
+          "name": "bedrockstore-dev-444206144756-us-east-1",
+          "ownerIdentity": {
+            "principalId": "A39XEE2Y21D328"
+          },
+          "arn": "arn:aws:s3:::bedrockstore-dev-444206144756-us-east-1"
+        },
+        "object": {
+          "key": "index/Screenshot+2024-06-17+at+12.12.12%E2%80%AFPM.png",
+          "sequencer": "00667160ECAB054C4A"
+        }
+      }
+    }
+  ]
+}"""
 def process_file_upload(event):
     if 'Records' in event:
         for record in event['Records']:
+            file_extension = 'txt'
             if 's3' in record:
                 s3_key = record['object']['key']
+            if '.' in s3_key:
+                file_extension = s3_key[s3_key.rindex('.')+1:]
+            content = get_file_from_s3(s3_key)
+            if file_extension.lower() in ['pdf']:
+                # First try pypdf
+                try:
+                    reader = PdfReader(BytesIO(content))
+                    for page in reader.pages:
+                        content = page.extract_text()
+                        if content is not None:
+                            print(f"Text: {page.extract_text()}")
+                    return success_response('PDF read successful')
+                except Exception as e:
+                    print(f'Error reading PDF {e}')
+                    return failure_response('PDF could not be read')
+            else:
+                decoded_txt = content.decode()
+                print(f'Decoded txt {decoded_txt}')
+                return success_response('File read successful ')
+
 
 
 def detect_text_index(event):

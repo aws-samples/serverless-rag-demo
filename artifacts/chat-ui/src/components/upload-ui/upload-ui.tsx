@@ -34,7 +34,7 @@ export function UploadUI() {
           authorization: StorageHelper.getAuthToken(),
         }
       }) // Handle the response from backend here
-        .then(function(result){
+        .then(function(result) {
           var formData = new FormData();
           formData = build_form_data(result['data']['result'], formData)
           formData.append('file', file_data);
@@ -42,17 +42,18 @@ export function UploadUI() {
           axios.post(upload_url, formData)
           .then(function(result) {
             console.log(result['data']['result']['s3_key'])
-          })
-        }).catch(function(err) {
+            // TODO:  Open a websocket listener here to listen on indexing status
+          }).catch(function(err) {
             console.log(err)
-
-        })
+          })
         // Catch errors if any
         .catch((err) => {
           console.log(err)
          });
 
-    }
+    }).catch((err)=> {
+      console.log(err)
+    })
   }
 
   return (
