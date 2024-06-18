@@ -84,7 +84,8 @@
       "wrangler_layer": "aws-wranglr-layer", 
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
-      "pandas_layer_name": "pandas-layer"
+      "pandas_layer_name": "pandas-layer",
+      "pypdf_layer": "pypdf-layer"
     },
     "qa": {
       "ecr_repository_name": "rag_llm_react_ui_qa",
@@ -107,7 +108,8 @@
       "wrangler_layer": "aws-wranglr-layer", 
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
-      "pandas_layer_name": "pandas-layer"
+      "pandas_layer_name": "pandas-layer",
+      "pypdf_layer": "pypdf-layer"
     },
     "sandbox": {
       "ecr_repository_name": "rag_llm_react_ui_sandbox",
@@ -130,7 +132,8 @@
       "wrangler_layer": "aws-wranglr-layer", 
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
-      "pandas_layer_name": "pandas-layer"
+      "pandas_layer_name": "pandas-layer",
+      "pypdf_layer": "pypdf-layer"
     }
   }
 }

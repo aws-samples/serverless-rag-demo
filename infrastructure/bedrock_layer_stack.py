@@ -25,6 +25,7 @@ class BedrockLayerStack(NestedStack):
         langchainpy_layer_name = config_details['langchainpy_layer_name']
         aws4auth_layer_name = config_details['aws4auth_layer']
         wrangler_layer_name = config_details["wrangler_layer"]
+        pypdf_layer_name = config_details["pypdf_layer"]
 
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
         region = os.getenv("CDK_DEFAULT_REGION")
@@ -53,7 +54,8 @@ class BedrockLayerStack(NestedStack):
                 "langchainpy_layer_name":  _codebuild.BuildEnvironmentVariable(value = langchainpy_layer_name),
                 "wrangler_layer_name": _codebuild.BuildEnvironmentVariable(value = wrangler_layer_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = account_id),
-                "region": _codebuild.BuildEnvironmentVariable(value = region)
+                "region": _codebuild.BuildEnvironmentVariable(value = region),
+                "pypdf_layer_name": _codebuild.BuildEnvironmentVariable(value = pypdf_layer_name) 
             })
         )
 

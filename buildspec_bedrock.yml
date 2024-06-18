@@ -37,6 +37,11 @@ phases:
       - zip -r langchainpy.zip python
       - aws lambda publish-layer-version --layer-name $langchainpy_layer_name --zip-file fileb://langchainpy.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
       - rm -rf python langchainpy.zip
+      - mkdir python
+      - python3 -m pip install pypdf
+      - zip -r pypdf.zip python
+      - aws lambda publish-layer-version --layer-name $pypdf_layer_name --zip-file fileb://pypdf.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+      - rm -rf python pypdf.zip
   post_build:
     commands:
       - echo Build completed on `date`

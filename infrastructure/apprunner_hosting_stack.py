@@ -5,6 +5,8 @@ from aws_cdk import (
     Stack,
     aws_codebuild as _codebuild,
     aws_s3 as _s3,
+    aws_s3_notifications as _s3_notifications,
+    aws_lambda as _lambda,
     aws_iam as _iam)
 
 from constructs import Construct
@@ -76,6 +78,12 @@ class AppRunnerHostingStack(Stack):
                                                             allowed_methods=[_s3.HttpMethods.GET, _s3.HttpMethods.POST],
                                                             id="serverless-rag-demo-cors-rule")],
                                         versioned=False)
+        lambda_arn=f'arn:aws:lambda:{region}:{account_id}:function:{config_details['bedrock_indexing_function_name']}'
+        function = _lambda.Function.from_function_arn(self, f's3-notify-lambda-{env_name}', lambda_arn)
+        # create s3 notification for lambda function
+        notification = _s3_notifications.LambdaDestination(function)
+        self.images_bucket.add_event_notification(_s3.EventType.OBJECT_CREATED, notification)
+        self.images_bucket.add_event_notification(_s3.EventType.OBJECT_REMOVED_DELETE, notification)
         
         _cdk.CfnOutput(self, f"rag-llm-ecr-service-output-{env_name}", value=app_runner_ui.attr_service_url,
                        export_name="ServiceUrl"

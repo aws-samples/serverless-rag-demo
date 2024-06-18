@@ -208,7 +208,14 @@ def get_job_status(event):
         return success_response(isJobCompleted(query_params['jobId']))
     else:
         return failure_response('jobId is missing')
-    
+
+def process_file_upload(event):
+    if 'Records' in event:
+        for record in event['Records']:
+            if 's3' in record:
+                s3_key = record['object']['key']
+
+
 def detect_text_index(event):
     payload = json.loads(event['body'])
     s3_key = payload['s3_key']
@@ -341,6 +348,11 @@ def get_contents(file_extension: str, file_bytes=None, s3_key=None, jobId=None):
     pass
 def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
+    LOG.info(f"--- Event {event} --")
+
+    if 'Records' in event:
+        event['httpMethod']= 'POST'
+        event['resource']='s3-upload-file'
 
     api_map = {
         'POST/rag/index-sample-data': lambda x: index_sample_data(x),
@@ -350,7 +362,8 @@ def handler(event, context):
         'POST/rag/detect-text': lambda x: detect_text_index(x),
         'POST/rag/index-files': lambda x: index_file_in_aoss(x),
         'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
-        'GET/rag/get-job-status': lambda x: get_job_status(x)
+        'GET/rag/get-job-status': lambda x: get_job_status(x),
+        'POSTs3-upload-file': lambda x: process_file_upload(x)
         
     }
     

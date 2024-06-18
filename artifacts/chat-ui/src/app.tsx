@@ -5,21 +5,19 @@ import NotFound from "./pages/not-found";
 import ChatPage from "./pages/chat-page";
 import "./styles/app.scss";
 import ConfirmUserPage from './confirmUserPage';
-import axios from 'axios';
-
-
 import LoginPage from './loginPage';
 import UploadPage from './pages/upload-page';
-import { StorageHelper } from './common/helpers/storage-helper';
 
 
 export default function App() {
   const Router = USE_BROWSER_ROUTER ? BrowserRouter : HashRouter;
-  // Add a request interceptor
-  axios.interceptors.request.use(function (config) {
-    config.headers.Authorization = StorageHelper.getAuthToken();
-    return config;
-  });
+  // Add a request interceptor 
+  // commenting as it causes S3 presigned to break
+  // axios.interceptors.request.use(function (config) {
+  //   config.headers.Authorization = StorageHelper.getAuthToken();
+  //   return config;
+  // });
+  
   const isAuthenticated = () => {
     const accessToken = sessionStorage.getItem('accessToken');
     return !!accessToken;
