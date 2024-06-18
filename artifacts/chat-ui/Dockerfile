@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM public.ecr.aws/docker/library/node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -8,15 +8,3 @@ FROM nginx:stable-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
 CMD ["nginx", "-g", "daemon off;"]
-
-# COPY public/ /react-docker/public
-# COPY src/ /react-docker/src
-# COPY package.json /react-docker/
-# COPY postcss.config.js /react-docker/
-# COPY prettier.config.js /react-docker/
-# COPY tsconfig.json /react-docker/
-# COPY vite.config.ts /react-docker/
-# COPY .eslintrc.cjs /react-docker/
-# COPY tsconfig.node.json /react-docker/
-# RUN npm install
-# CMD ["npm", "run", "dev"]
