@@ -9,7 +9,6 @@ import { StorageHelper } from "../../common/helpers/storage-helper";
 
 export function UploadUI() {
   const [value, setValue] = React.useState<File[]>([]);
-  const [base64Files, setBase64] = React.useState<String[]>([]);
   
   function build_form_data(result, formdata) {
     if ('fields' in result) {
@@ -18,31 +17,6 @@ export function UploadUI() {
       }
     }
     return formdata
-  }
-
-  function getBase64(files: File[]) {
-    const base64s = []
-    var reader = new FileReader();
-    reader.onload = function () {
-      base64s.push(reader.result)
-      setBase64(base64s)
-    };
-    reader.onerror = function (error) {
-      console.log('Error: ', error);
-    };
-    for(var i=0; i<files.length; i++) {
-      reader.readAsDataURL(files[i]);
-    }
-  }
-
-  function base64ToArrayBuffer(base64) {
-    var binaryString = atob(base64);
-    var bytes = new Uint8Array(binaryString.length);
-    for (var i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    // return bytes.buffer;
-    return new File([bytes], 'sample')
   }
 
   const upload_file = (files: any) => {
@@ -54,22 +28,29 @@ export function UploadUI() {
       var period = file_name.lastIndexOf('.');
       var file_name_no_ext = file_name.substring(0, period);
       var fileExtension = file_name.substring(period + 1);
-      axios({
-        url: config.apiUrl + '/rag/get-presigned-url',
-        method: "GET",
+      axios.get(config.apiUrl + '/rag/get-presigned-url', {
+        params:{ "file_extension": fileExtension, "file_name": file_name_no_ext }, 
         headers: {
           authorization: StorageHelper.getAuthToken(),
-        },
-        data: { "file_extension": fileExtension, "file_name": file_name_no_ext },
+        }
       }) // Handle the response from backend here
-        .then((result) => {
+        .then(function(result){
           var formData = new FormData();
-          formData = build_form_data(result['result'], formData)
-          var file_bytes = base64ToArrayBuffer(file_data)
-          formData.append('file', file_bytes);
+          formData = build_form_data(result['data']['result'], formData)
+          formData.append('file', file_data);
+          var upload_url = result['data']['result']['url']
+          axios.post(upload_url, formData)
+          .then(function(result) {
+            console.log(result['data']['result']['s3_key'])
+          })
+        }).catch(function(err) {
+            console.log(err)
+
         })
         // Catch errors if any
-        .catch((err) => { });
+        .catch((err) => {
+          console.log(err)
+         });
 
     }
   }
@@ -82,7 +63,6 @@ export function UploadUI() {
       <FileUpload
         onChange={({ detail }) => {
           setValue(detail.value);
-          getBase64(detail.value);
         }}
         value={value}
         i18nStrings={{

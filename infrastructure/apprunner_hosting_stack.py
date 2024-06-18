@@ -4,6 +4,7 @@ from aws_cdk import (
     aws_ecr as _ecr,
     Stack,
     aws_codebuild as _codebuild,
+    aws_s3 as _s3,
     aws_iam as _iam)
 
 from constructs import Construct
@@ -25,9 +26,6 @@ class AppRunnerHostingStack(Stack):
         current_timestamp = self.node.try_get_context('current_timestamp')
         
         ecr_repo_name = config_details['ecr_repository_name']
-        account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
-        region = os.getenv("CDK_DEFAULT_REGION")
-        current_timestamp = self.node.try_get_context('current_timestamp')
         # Generate ECR Full repo name
         full_ecr_repo_name = f'{account_id}.dkr.ecr.{region}.amazonaws.com/{ecr_repo_name}:{current_timestamp}'
         
@@ -64,6 +62,20 @@ class AppRunnerHostingStack(Stack):
                                            value="value")],)))
                            )
         
+        # Lets create an S3 bucket to store Images and also an API call
+                    # create s3 bucket to store ocr related objects
+        bucket_name = f'{config_details["s3_images_data"]}-{account_id}-{region}'
+        cors_url='https://' + app_runner_ui.attr_service_url
+        self.images_bucket = _s3.Bucket(self,
+                                        id=config_details["s3_images_data"],
+                                        bucket_name=bucket_name,
+                                        auto_delete_objects=True,
+                                        removal_policy=_cdk.RemovalPolicy.DESTROY,
+                                        cors= [_s3.CorsRule(allowed_headers=["*"],
+                                                            allowed_origins=[cors_url],
+                                                            allowed_methods=[_s3.HttpMethods.GET, _s3.HttpMethods.POST],
+                                                            id="serverless-rag-demo-cors-rule")],
+                                        versioned=False)
         
         _cdk.CfnOutput(self, f"rag-llm-ecr-service-output-{env_name}", value=app_runner_ui.attr_service_url,
                        export_name="ServiceUrl"
