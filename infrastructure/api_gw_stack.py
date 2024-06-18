@@ -60,12 +60,13 @@ class ApiGw_Stack(Stack):
         user_pool.from_user_pool_id
         # for the user pool created above create a application client
         user_pool_client = _cognito.UserPoolClient(self, f"rag-llm-user-pool-client-{env_name}",
-                                                   user_pool=user_pool,
-                                                   user_pool_client_name=f"rag-llm-user-pool-client-{env_name}",
-                                                   generate_secret=False,
-                                                   auth_flows=_cognito.AuthFlow(
+                                                    user_pool=user_pool,
+                                                    user_pool_client_name=f"rag-llm-user-pool-client-{env_name}",
+                                                    generate_secret=False,
+                                                    auth_flows=_cognito.AuthFlow(
                                                        user_password=True
-                                                    )
+                                                    ),
+                                                    id_token_validity=_cdk.Duration.days(1)
                                                    )
         
         

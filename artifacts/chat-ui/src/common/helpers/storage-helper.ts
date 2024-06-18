@@ -52,7 +52,7 @@ export abstract class StorageHelper {
   }
 
   static getAuthToken() {
-    var accessToken = sessionStorage.getItem('accessToken');
-    return 'Bearer ' + accessToken
+    var idToken = sessionStorage.getItem('idToken');
+    return 'Bearer ' + idToken
   }
 }

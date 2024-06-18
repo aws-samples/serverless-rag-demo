@@ -55,7 +55,7 @@ export function UploadUI() {
       var file_name_no_ext = file_name.substring(0, period);
       var fileExtension = file_name.substring(period + 1);
       axios({
-        url: config.apiUrl + '/get-presigned-url',
+        url: config.apiUrl + '/rag/get-presigned-url',
         method: "GET",
         headers: {
           authorization: StorageHelper.getAuthToken(),
