@@ -6,9 +6,12 @@ import SpaceBetween from "@cloudscape-design/components/space-between";
 import axios from "axios";
 import config from '../../config.json'
 import { StorageHelper } from "../../common/helpers/storage-helper";
+import Flashbar from "@cloudscape-design/components/flashbar";
+import Link from "@cloudscape-design/components/link";
 
 export function UploadUI() {
   const [value, setValue] = React.useState<File[]>([]);
+  
   
   function build_form_data(result, formdata) {
     if ('fields' in result) {
@@ -19,8 +22,22 @@ export function UploadUI() {
     return formdata
   }
 
-  const upload_file = (files: any) => {
-    console.log(files)
+  const delete_index = () => {
+
+    axios.delete(config.apiUrl + 'index-documents', {
+      headers: {
+        authorization: StorageHelper.getAuthToken(),
+        "Content-Type": "text/json",
+      }
+    }).then((result) => {
+      console.log(result['data']['result'])
+    }).catch((err) => {
+
+    })
+
+  }
+
+  const upload_file = () => {
     for (var i = 0; i < value.length; i++) {
       // remove the words after the last dot
       var file_data = value[i]
@@ -91,9 +108,8 @@ export function UploadUI() {
       <br /><br /><br /><br /><br /><br /><br /><br /><br />
       <SpaceBetween direction="horizontal" size="xs">
         <Button variant="primary" onClick={(event) => upload_file(event)}>Index Document</Button>
-        <Button>Delete All</Button>
+        <Button onClick={(event) => delete_index()} >Delete All</Button>
       </SpaceBetween>
-
 
     </FormField>
   );
