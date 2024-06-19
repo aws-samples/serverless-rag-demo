@@ -14,7 +14,7 @@ import csv
 import re
 
 
-from prompt_utils import get_system_prompt, agent_execution_step
+from prompt_utils import get_system_prompt, agent_execution_step, rag_chat_bot_prompt
 
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
@@ -110,17 +110,18 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
                     You will not explain yourself.
                 '''
     elif behaviour == 'chat':
-        prompt = 'You are a chatbot'
+        prompt = rag_chat_bot_prompt
     else:
         prompt = DEFAULT_PROMPT
 
     context = ''
     user_query = ''
 
-    if is_rag_enabled == 'yes' and query_vectordb == 'yes' and query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact', 'chat']:
+    if query_vectordb == 'yes' and query is not None and len(query.split()) > 0 and behaviour not in ['sentiment', 'pii', 'redact']:
         try:
 
             user_query, img_ids =extract_query_image_values(query)
+            print(f'Extracted Query {user_query}')
             embeddings_key="embedding"
             if 'cohere' in   embed_model_id:
                 response = bedrock_client.invoke_model(
@@ -151,7 +152,6 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
 
             try:
                 response = ops_client.search(body=vector_query, index=INDEX_NAME)
-                #print(response["hits"]["hits"])
                 for data in response["hits"]["hits"]:
                     if context == '':
                         context = data['fields']['text'][0]
@@ -465,9 +465,12 @@ def extract_query_image_values(query):
 def claude3_prompt_builder_for_images_and_text(query, context):
     prompt_content = []
     user_queries_data = json.loads(base64.b64decode(query))
+    # TODO Add previous chat history from dynamodb
     for user_query_type in user_queries_data:
         if  user_query_type['type'] == 'text':
-            pmt_template = f"""Here is the user's question <question>{user_query_type['data']}<question>"""
+            pmt_template = f"""Here is the context: {context} .
+                               Here is the user's question <question>{user_query_type['data']}<question>
+                            """
             prompt_content.append({ "type": "text", "text": pmt_template})
 
         elif user_query_type['type'] == 'image':

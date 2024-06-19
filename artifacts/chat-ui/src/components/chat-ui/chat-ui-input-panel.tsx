@@ -82,19 +82,19 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
         chat_messages.push({"type": "text", "data": inputText})
         if(ws==null || ws.readyState==3 || ws.readyState==2) {
           
-          ws = new WebSocket(socketUrl + '?access_token='+access_token);
+          ws = new WebSocket(socketUrl);
           ws.onerror = function (event) {
             console.log(event);
           }
         } else {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))) , behaviour: 'chat', 'query_vectordb': 'no', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0', access_token: access_token }));
+          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))) , behaviour: 'chat', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
           chat_messages = []
        }
         
         ws.onopen = () => {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))), behaviour: 'chat', 'query_vectordb': 'no', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0', access_token: access_token }));
+          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(chat_messages))), behaviour: 'chat', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
           chat_messages = []
         };
         var messages = ''
