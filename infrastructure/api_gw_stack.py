@@ -506,7 +506,7 @@ class ApiGw_Stack(Stack):
                        export_name="client-id"
                     )
         
-        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_endpoint_url, wss_url + '/' + env_name) 
+        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_endpoint_url, wss_url + '/' + env_name, wss_index_notify_url + '/' + env_name) 
         self.tag_my_stack(ecr_ui_stack)
         
         

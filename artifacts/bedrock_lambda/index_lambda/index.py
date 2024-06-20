@@ -46,6 +46,11 @@ ops_client = OpenSearch(
         connection_class=RequestsHttpConnection,
         timeout=300
     )
+wss_url = getenv("WSS_INDEX_NOTIFY_URL", "WEBSOCKET_URL_MISSING")
+wss_url=wss_url.replace('wss:', 'https:')
+if wss_url.endswith('/'):
+    wss_url = wss_url[:-1]
+websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=wss_url)
 
 def create_index() :
     LOG.debug(f'method=create_index')
@@ -83,6 +88,7 @@ def index_documents(event):
     text_val = payload['text']
     title = payload['title']
     s3_source = payload['s3_source']
+    connect_id = payload['connect_id']
 
     text_splitter = RecursiveCharacterTextSplitter(
     # Set a really small chunk size, just to show.
@@ -101,6 +107,7 @@ def index_documents(event):
                     return failure_response(result['errorMessage'])
                 else:
                     print(result)
+            websocket_send(connect_id, {"success": True, "message": "Index complete", "statusCode": "200"})
                     
     return success_response('Documents indexed successfully')
 
@@ -144,7 +151,6 @@ def _generate_embeddings_and_index(chunk_text, title, s3_source):
             return failure_response(f'Error indexing documents {e.info["error"]["reason"]}')
         
 
-
 def delete_index(event):
     try:
         res = ops_client.indices.delete(index=INDEX_NAME)
@@ -153,6 +159,25 @@ def delete_index(event):
         LOG.error(f"method=delete_index, error={e.info['error']['reason']}")
         return failure_response(f'Error deleting index. {e.info["error"]["reason"]}')
     return success_response('Index deleted successfully')
+
+
+def delete_documents_by_s3_uri(s3_source: str):
+    delete_query= { 
+        "query": { 
+            "match": { 
+                "s3_source_uri": s3_source
+                }
+        }
+    }
+    
+    try:
+        res = ops_client.indices.delete_by_query(index=INDEX_NAME, body=delete_query)
+        LOG.debug(f"method=delete_documents_by_s3_uri, delete_response={res}")
+    except Exception as e:
+        LOG.error(f'method=delete_documents_by_s3_uri, delete_query={delete_query}')
+        LOG.error(f"method=delete_documents_by_s3_uri, error={e.info['error']['reason']}")
+        return failure_response(f'Error deleting by query. {e.info["error"]["reason"]}')
+    return success_response(f'vectorized content for file {s3_source} deleted successfully')
 
 
 def connect_tracker(event):
@@ -168,6 +193,9 @@ def create_presigned_post(event):
     if 'file_extension' in query_params and 'file_name' in query_params:
         extension = query_params['file_extension']
         file_name = query_params['file_name']
+        connect_id = 'none'
+        if 'connect_id' in query_params:
+            connect_id = query_params['connect_id']
         session = boto3.Session()
         s3_client = session.client('s3', region_name=region)
         file_name = file_name.replace(' ', '_')
@@ -176,11 +204,17 @@ def create_presigned_post(event):
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
         s3_key = f"index/data/{file_name}_{date_time}.{extension}"
+        # response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
+        #                                       Key=s3_key,
+        #                                       Fields=None,
+        #                                       Conditions=[]
+        #                                   )
         response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
-                                              Key=s3_key,
-                                              Fields=None,
-                                              Conditions=[]
-                                          )
+                                            Key=s3_key,
+                                            Fields={'x-amz-meta-connect_id': connect_id},
+                                            Conditions=[{'x-amz-meta-connect_id': connect_id}]
+                                        )
+        
 
 
         # The response contains the presigned URL and required fields
@@ -246,7 +280,8 @@ def process_file_upload(event):
                     s3_source = f'https://{s3_bucket}/{s3_key}'
                 if '.' in s3_key:
                     file_extension = s3_key[s3_key.rindex('.')+1:]
-                content = get_file_from_s3(s3_key)
+                content, metadata = get_file_from_s3(s3_key)
+                print(f'Metadata -> {metadata}')
                 if file_extension.lower() in ['pdf']:
                     try:
                         reader = PdfReader(BytesIO(content))
@@ -256,7 +291,7 @@ def process_file_upload(event):
                             # Read Text on Page
                             text_value = page.extract_text()
                             LOG.debug(f'method=process_file_upload, file_type=pdf-text, content={content}')
-                            generate_title_and_index_doc(event, page.page_number, text_value, s3_source)
+                            generate_title_and_index_doc(event, page.page_number, text_value, s3_source, metadata)
                             # Read Image on Page
                             for image_file_object in page.images:
                                 # Extract through low cost LLM (Claude3-Haiku)
@@ -264,7 +299,7 @@ def process_file_upload(event):
                                 text_value = query_bedrock(ocr_prompt, ocr_model_id)
                                 print(f'Image PDF: Text value {text_value}')
                                 LOG.debug(f'method=process_file_upload, file_type=pdf-image, content={text_value}')
-                                generate_title_and_index_doc(event, page.page_number, text_value, s3_source)
+                                generate_title_and_index_doc(event, page.page_number, text_value, s3_source, metadata)
     
                         
                     except Exception as e:
@@ -276,21 +311,36 @@ def process_file_upload(event):
                     ocr_prompt = generate_claude_3_ocr_prompt(content)
                     text_value = query_bedrock(ocr_prompt, ocr_model_id)
                     LOG.debug(f'method=process_file_upload, file_type=image-text, content={text_value}')
-                    generate_title_and_index_doc(event, 1, text_value, s3_source)
+                    generate_title_and_index_doc(event, 1, text_value, s3_source, metadata)
                     
                 else:
                     decoded_txt = content.decode()
                     print(f'Decoded txt {decoded_txt}')
-                    generate_title_and_index_doc(event, 1, decoded_txt, s3_source)
+                    generate_title_and_index_doc(event, 1, decoded_txt, s3_source, metadata)
+                # TODO Websocket notify
                 # TODO -> Store this information in dynamoDB so its easier to delete the vector if the file no longer exists in s3    
+            elif record['eventName'] == 'ObjectRemoved:Delete':
+                s3_source=''
+                s3_key=''
+                if 's3' in record:
+                    s3_key = record['s3']['object']['key']
+                    s3_bucket = record['s3']['bucket']['name']
+                    s3_source = f'https://{s3_bucket}/{s3_key}'
+                    delete_documents_by_s3_uri(s3_source)
+                    # TODO Websocket notify
+    
     return success_response(f'No files to read {event}')
 
-def generate_title_and_index_doc(event, page_number, text_value, s3_source):
+def generate_title_and_index_doc(event, page_number, text_value, s3_source, metadata):
     if text_value:
         if page_number <2:
             title_value = generate_title(text_value)
         text_value = f'Page Number: {page_number}, content: {text_value}'
         event['body'] = json.dumps({"text": text_value, "title": title_value, 's3_source': s3_source})
+        if 'x-amz-meta-connect_id' in metadata:
+            connect_id = metadata['x-amz-meta-connect_id']
+            websocket_send(connect_id, {"success": True, "message": "Index in progress", "statusCode": "200"})
+            event['body']['connect_id']=connect_id
         index_documents(event)
 
 def generate_title(text_snippet):
@@ -323,41 +373,78 @@ def query_bedrock(prompt, model_id):
 
 
 def get_file_from_s3(s3_key):
-    s3 = boto3.resource('s3')
-    obj = s3.Object(s3_bucket_name, s3_key)
-    file_bytes = obj.get()['Body'].read()
+    s3_client = boto3.client('s3')
+    
+    response = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
+    file_bytes = response['Body'].read()
     print(f'returns S3 encoded object from key {s3_bucket_name}/{s3_key}')
-    return file_bytes
+    return file_bytes, response['Metadata']
 
+def websocket_send(connect_id, message):
+    global websocket_client
+    global wss_url
+    print(f'WSS URL {wss_url}, connect_id {connect_id}')
+    response = websocket_client.post_to_connection(
+                Data=json.dumps(message, indent=4).encode('utf-8'),
+                ConnectionId=connect_id
+    )
 
 def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
     LOG.info(f"--- Event {event} --")
+    global websocket_client
 
-    if 'Records' in event:
-        event['httpMethod']= 'POST'
-        event['resource']='s3-upload-file'
+    if 'httpMethod' not in event and 'requestContext' in event:
+        # This is a websocket request
+        stage = event['requestContext']['stage']
+        api_id = event['requestContext']['apiId']
+        domain = f'{api_id}.execute-api.{region}.amazonaws.com'
+        websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=f'https://{domain}/{stage}')
 
-    api_map = {
-        'POST/rag/index-documents': lambda x: index_documents(x),
-        'DELETE/rag/index-documents': lambda x: delete_index(x),
-        'GET/rag/connect-tracker': lambda x: connect_tracker(x),
-        'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
-        'POSTs3-upload-file': lambda x: process_file_upload(x)   
-    }
+        connect_id = event['requestContext']['connectionId']
+        routeKey = event['requestContext']['routeKey']
+
+        if routeKey != '$connect':
+            if 'body' in event:
+                index_request_check = json.loads(event['body'], strict=False)
+                print(f'index_request_check: {index_request_check}')
+                if 'request' in index_request_check and index_request_check['request'] == 'connect_id':
+                    message = {"success": True, "connect_id": connect_id, "statusCode": "200"}
+                    websocket_send(connect_id, message)
+                else:
+                    message = {"success": True, "connect_id": connect_id, "statusCode": "200"}
+                    websocket_send(connect_id, message)
+                
+        elif routeKey == '$connect':
+            # TODO Add authentication of access token
+            return {'statusCode': '200', 'body': 'Bedrock says hello' }
     
-    http_method = event['httpMethod'] if 'httpMethod' in event else ''
-    api_path = http_method + event['resource']
-    try:
-        if api_path in api_map:
-            LOG.debug(f"method=handler , api_path={api_path}")
-            return respond(None, api_map[api_path](event))
-        else:
-            LOG.info(f"error=api_not_found , api={api_path}")
-            return respond(failure_response('api_not_supported'), None)
-    except Exception:
-        LOG.exception(f"error=error_processing_api, api={api_path}")
-        return respond(failure_response('system_exception'), None)
+    elif 'httpMethod' in event:
+        # This comes from S3 event notification
+        if 'Records' in event:
+            event['httpMethod']= 'POST'
+            event['resource']='s3-upload-file'
+    
+        api_map = {
+            'POST/rag/index-documents': lambda x: index_documents(x),
+            'DELETE/rag/index-documents': lambda x: delete_index(x),
+            'GET/rag/connect-tracker': lambda x: connect_tracker(x),
+            'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
+            'POSTs3-upload-file': lambda x: process_file_upload(x)   
+        }
+        
+        http_method = event['httpMethod'] if 'httpMethod' in event else ''
+        api_path = http_method + event['resource']
+        try:
+            if api_path in api_map:
+                LOG.debug(f"method=handler , api_path={api_path}")
+                return respond(None, api_map[api_path](event))
+            else:
+                LOG.info(f"error=api_not_found , api={api_path}")
+                return respond(failure_response('api_not_supported'), None)
+        except Exception:
+            LOG.exception(f"error=error_processing_api, api={api_path}")
+            return respond(failure_response('system_exception'), None)
 
 
 def failure_response(error_message):
