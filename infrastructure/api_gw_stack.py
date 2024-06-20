@@ -348,7 +348,7 @@ class ApiGw_Stack(Stack):
         index_websocket_deployment.add_dependency(websocket_index_notify_route)
 
         index_websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bdrck-indx-stge-{env_name}', 
-                                           api_id=websocket_index_notify_route.ref,
+                                           api_id=websocket_index_api.ref,
                                            auto_deploy=True,
                                            deployment_id= index_websocket_deployment.ref,
                                            stage_name= env_name) 
