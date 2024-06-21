@@ -33,7 +33,7 @@ class ECRUIStack(NestedStack):
         ecr_repo_ui = _ecr.Repository(self,
                                     ecr_repo_name, 
                                     repository_name=ecr_repo_name,
-                                    removal_policy=_cdk.RemovalPolicy.DESTROY)
+                                    removal_policy=_cdk.RemovalPolicy.DESTROY, auto_delete_images=True)
         
         ecr_repo_ui.add_lifecycle_rule(tag_status=_ecr.TagStatus.ANY, max_image_count=10)
         ecr_repo_ui.add_lifecycle_rule(tag_status=_ecr.TagStatus.UNTAGGED, max_image_age=_cdk.Duration.days(1))
