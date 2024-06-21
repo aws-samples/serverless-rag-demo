@@ -15,6 +15,7 @@ import cdk_nag as _cdk_nag
 from cdk_nag import NagSuppressions, NagPackSuppression
 
 from infrastructure.apprunner_hosting_stack import AppRunnerHostingStack
+from infrastructure.dynamodb_stack import Storage_Stack
 from infrastructure.ecr_ui_stack import ECRUIStack
 
 class ApiGw_Stack(Stack):
@@ -508,6 +509,9 @@ class ApiGw_Stack(Stack):
         
         ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_endpoint_url, wss_url + '/' + env_name, wss_index_notify_url + '/' + env_name) 
         self.tag_my_stack(ecr_ui_stack)
+
+        storage_stack = Storage_Stack(self, f"Storage{env_name}Stack")
+        self.tag_my_stack(storage_stack)
         
         
 

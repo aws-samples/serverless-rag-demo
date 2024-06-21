@@ -85,7 +85,9 @@
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
       "pandas_layer_name": "pandas-layer",
-      "pypdf_layer": "pypdf-pil-layer"
+      "pypdf_layer": "pypdf-pil-layer",
+      "index_dynamo_table_name": "rag-llm-index-table-dev",
+      "conversations_dynamo_table_name": "rag-llm-conversations-table-dev"
     },
     "qa": {
       "ecr_repository_name": "rag_llm_react_ui_qa",
@@ -109,7 +111,9 @@
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
       "pandas_layer_name": "pandas-layer",
-      "pypdf_layer": "pypdf-pil-layer"
+      "pypdf_layer": "pypdf-pil-layer",
+      "index_dynamo_table_name": "rag-llm-index-table-qa",
+      "conversations_dynamo_table_name": "rag-llm-conversations-table-qa"
     },
     "sandbox": {
       "ecr_repository_name": "rag_llm_react_ui_sandbox",
@@ -133,7 +137,9 @@
       "langchainpy_layer_name": "langchainpy-layer",
       "yfinance_layer_name": "yfinance-layer",
       "pandas_layer_name": "pandas-layer",
-      "pypdf_layer": "pypdf-pil-layer"
+      "pypdf_layer": "pypdf-pil-layer",
+      "index_dynamo_table_name": "rag-llm-index-table-sandbox",
+      "conversations_dynamo_table_name": "rag-llm-conversations-table-sandbox"
     }
   }
 }
