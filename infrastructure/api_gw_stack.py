@@ -397,13 +397,10 @@ class ApiGw_Stack(Stack):
         
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
-        detect_text_api = rag_llm_api.add_resource("detect-text")
-        index_files_api = rag_llm_api.add_resource("index-files")
-        get_job_status_api = rag_llm_api.add_resource("get-job-status")
         get_presigned_url_api = rag_llm_api.add_resource("get-presigned-url")
-        index_sample_data_api = rag_llm_api.add_resource("index-sample-data")
         file_data_api = rag_llm_api.add_resource("file_data")
         connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
+        get_indexed_files_by_user_api = rag_llm_api.add_resource('get-indexed-files-by-user')
         
         
         index_docs_api.add_method(
@@ -424,42 +421,7 @@ class ApiGw_Stack(Stack):
                 method_responses=method_responses,
                 api_key_required=False
             )
-        index_sample_data_api.add_method(
-                "POST",
-                bedrock_index_lambda_integration,
-                authorizer=cognito_authorizer,
-                authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
-                operation_name="index sample document",
-                method_responses=method_responses,
-                api_key_required=False
-            )
-        detect_text_api.add_method(
-            "POST",
-            lambda_integration,
-            authorizer=cognito_authorizer,
-            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
-            operation_name="Detect Text or Index a file",
-            api_key_required=False,
-            method_responses=method_responses,
-        )
-        index_files_api.add_method(
-            "POST",
-            lambda_integration,
-            authorizer=cognito_authorizer,
-            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
-            operation_name="Index a file",
-            api_key_required=False,
-            method_responses=method_responses,
-        )
-        get_job_status_api.add_method(
-            "GET",
-            lambda_integration,
-            authorizer=cognito_authorizer,
-            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
-            operation_name="Get Job Status",
-            api_key_required=False,
-            method_responses=method_responses,
-        )
+        
         get_presigned_url_api.add_method(
             "GET",
             lambda_integration,
@@ -469,6 +431,16 @@ class ApiGw_Stack(Stack):
             api_key_required=False,
             method_responses=method_responses,
         )
+
+        get_indexed_files_by_user_api.add_method(
+            "GET",
+            lambda_integration,
+            authorizer=cognito_authorizer,
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
+            operation_name="Get Indexed Files by User",
+            method_responses=method_responses,
+        )
+
         file_data_api.add_method(
             "POST",
             bedrock_query_lambda_integration,
@@ -489,14 +461,10 @@ class ApiGw_Stack(Stack):
         
         self.add_cors_options(file_data_api)
         self.add_cors_options(connect_tracker_api)
-        self.add_cors_options(get_job_status_api)
         self.add_cors_options(get_presigned_url_api)
-        self.add_cors_options(index_files_api)
-        self.add_cors_options(detect_text_api)
-        
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
-        self.add_cors_options(index_sample_data_api)
+        self.add_cors_options(get_indexed_files_by_user_api)
 
         
         user_pool_client_id = user_pool_client.user_pool_client_id
