@@ -173,7 +173,8 @@ class ApiGw_Stack(Stack):
                                             'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,
                                             'REGION': region,
                                             'S3_BUCKET_NAME': bucket_name,
-                                            'EMBED_MODEL_ID': embed_model_id
+                                            'EMBED_MODEL_ID': embed_model_id,
+                                            'INDEX_DYNAMO_TABLE_NAME': env_params['index_dynamo_table_name']
                               },
                               memory_size=3000,
                               layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
@@ -195,7 +196,8 @@ class ApiGw_Stack(Stack):
                                             'S3_BUCKET_NAME': bucket_name,
                                             'WRANGLER_NAME': env_params['bedrock_wrangler_function_name'],
                                             'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no',
-                                            'EMBED_MODEL_ID': embed_model_id
+                                            'EMBED_MODEL_ID': embed_model_id,
+                                            'CONVERSATIONS_DYNAMO_TABLE_NAME': env_params['conversations_dynamo_table_name']
                               },
                               memory_size=3000,
                               layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
