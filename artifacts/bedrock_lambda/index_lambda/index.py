@@ -14,8 +14,10 @@ from datetime import datetime, timezone
 import time
 import threading
 from pypdf import PdfReader
-import PIL
 from prompt_builder import generate_claude_3_ocr_prompt, generate_claude_3_title_prompt
+import time
+from boto3.dynamodb.conditions import Key, Attr
+import time
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
@@ -25,8 +27,9 @@ endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT", "https://admin:P@@search-opsearc
 SAMPLE_DATA_DIR=getenv("SAMPLE_DATA_DIR", "sample_data")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
-embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
+embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-text-v2:0")
 ocr_model_id = getenv("OCR_MODEL_ID", "anthropic.claude-3-haiku-20240307-v1:0")
+dynamodb_table_name = getenv("INDEX_DYNAMO_TABLE_NAME", "rag-llm-index-table-dev")
 
 credentials = boto3.Session().get_credentials()
 
@@ -36,7 +39,8 @@ awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
                    region, service, session_token=credentials.token)
 
 bedrock_client = boto3.client('bedrock-runtime')
-textract_client = boto3.client('textract')
+dynamodb_client = boto3.resource('dynamodb')
+table = dynamodb_client.Table(dynamodb_table_name)
 
 ops_client = OpenSearch(
         hosts=[{'host': endpoint, 'port': 443}],
@@ -45,12 +49,7 @@ ops_client = OpenSearch(
         verify_certs=True,
         connection_class=RequestsHttpConnection,
         timeout=300
-    )
-wss_url = getenv("WSS_INDEX_NOTIFY_URL", "WEBSOCKET_URL_MISSING")
-wss_url=wss_url.replace('wss:', 'https:')
-if wss_url.endswith('/'):
-    wss_url = wss_url[:-1]
-websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=wss_url)
+)
 
 def create_index() :
     LOG.debug(f'method=create_index')
@@ -68,11 +67,15 @@ def create_index() :
                     "text": {"type": "text"},
                     "embedding": {
                         "type": "knn_vector",
-                        "dimension": 384,
+                        "dimension": 1024,
                         "method": {
                             "name":"hnsw",
-                            "engine":"nmslib",
-                            "space_type": "cosinesimil"
+                            "engine":"faiss",
+                            "space_type": "l2",
+                            "parameters": {
+                                "ef_construction": 512,
+                                "m": 16
+                          }
                         }
                     },
                 }
@@ -87,12 +90,12 @@ def index_documents(event):
     payload = json.loads(event['body'])
     text_val = payload['text']
     title = payload['title']
+    email_id = payload['email_id']
     s3_source = payload['s3_source']
-    connect_id = payload['connect_id']
 
     text_splitter = RecursiveCharacterTextSplitter(
     # Set a really small chunk size, just to show.
-    chunk_size = 200,
+    chunk_size = 500,
     chunk_overlap  = 10)
 
     texts = text_splitter.create_documents([text_val])
@@ -100,35 +103,43 @@ def index_documents(event):
     if texts is not None and len(texts) > 0:
         create_index()
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(_generate_embeddings_and_index,chunk_text, title, s3_source) for chunk_text in texts]
+            futures = [executor.submit(_generate_embeddings_and_index,chunk_text, title, s3_source, email_id) for chunk_text in texts]
             for future in as_completed(futures):
                 result = future.result()
                 if result['statusCode'] != "200":
-                    return failure_response(result['errorMessage'])
-                else:
-                    print(result)
-            websocket_send(connect_id, {"success": True, "message": "Index complete", "statusCode": "200"})
-                    
-    return success_response('Documents indexed successfully')
+                    result['errorMessage']
+                    return result
+                
+    return {"statusCode": "200", "message": "Documents indexed successfully"}
 
 
-def _generate_embeddings_and_index(chunk_text, title, s3_source):
-        body = json.dumps({"inputText": chunk_text.page_content, "embeddingConfig": {"outputEmbeddingLength": 384}})
+def _generate_embeddings_and_index(chunk_text, title, s3_source, email_id):
+        body = json.dumps({"inputText": chunk_text.page_content})
         
         try:
-            response = bedrock_client.invoke_model(
+            embeddings_key='embedding'
+            if 'cohere' in   embed_model_id:
+                response = bedrock_client.invoke_model(
+                body=json.dumps({"texts": [chunk_text.page_content], "input_type": 'search_document', "embedding_types":["int8"]}),
+                modelId=embed_model_id,
+                accept='application/json',
+                contentType='application/json'
+                )
+                embeddings_key="embeddings"
+            else:
+                response = bedrock_client.invoke_model(
                     body = body,
                     modelId = embed_model_id,
                     accept = 'application/json',
                     contentType = 'application/json'
-            )
+                )
             result = json.loads(response['body'].read())
 
             finish_reason = result.get("message")
             if finish_reason is not None:
                 print(f'Embed Error {finish_reason}')
                 
-            embeddings = result.get("embedding")
+            embeddings = result.get(embeddings_key)
         except Exception as e:
             return failure_response(f'Do you have access to embed model {embed_model_id}. Error {e.info["error"]["reason"]}')
         doc = {
@@ -137,7 +148,8 @@ def _generate_embeddings_and_index(chunk_text, title, s3_source):
             'timestamp': datetime.today().replace(tzinfo=timezone.utc).isoformat(),
             'meta': {
                 'title': title,
-                's3_source': s3_source
+                's3_source': s3_source,
+                'email_id': email_id
             },
             's3_source_uri': s3_source
         }
@@ -189,13 +201,14 @@ def create_presigned_post(event):
     query_params = {}
     if 'queryStringParameters' in event:
         query_params = event['queryStringParameters']
+    email_id = "empty_email_id"
+    if 'requestContext' in event and 'authorizer' in event['requestContext']:
+            if 'claims' in event['requestContext']['authorizer']:
+                email_id = event['requestContext']['authorizer']['claims']['email']
     
     if 'file_extension' in query_params and 'file_name' in query_params:
         extension = query_params['file_extension']
         file_name = query_params['file_name']
-        connect_id = 'none'
-        if 'connect_id' in query_params:
-            connect_id = query_params['connect_id']
         session = boto3.Session()
         s3_client = session.client('s3', region_name=region)
         file_name = file_name.replace(' ', '_')
@@ -211,8 +224,8 @@ def create_presigned_post(event):
         #                                   )
         response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
                                             Key=s3_key,
-                                            Fields={'x-amz-meta-connect_id': connect_id},
-                                            Conditions=[{'x-amz-meta-connect_id': connect_id}]
+                                            Fields={'x-amz-meta-email_id': email_id},
+                                            Conditions=[{'x-amz-meta-email_id': email_id}]
                                         )
         
 
@@ -222,13 +235,6 @@ def create_presigned_post(event):
     else:
         return failure_response('Missing file_extension field cannot generate signed url')
 
-
-def extract_file_extension(base64_encoded_file):
-    if base64_encoded_file.find(';') > -1:
-        extension = base64_encoded_file.split(';')[0]
-        return extension[extension.find('/') + 1:]
-    # default to PNG if we are not able to extract extension or string is not bas64 encoded
-    return 'png'
 
 """{
   "Records": [
@@ -281,44 +287,72 @@ def process_file_upload(event):
                 if '.' in s3_key:
                     file_extension = s3_key[s3_key.rindex('.')+1:]
                 content, metadata = get_file_from_s3(s3_key)
-                print(f'Metadata -> {metadata}')
-                if file_extension.lower() in ['pdf']:
-                    try:
-                        reader = PdfReader(BytesIO(content))
-                        LOG.debug(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
-                        for page in reader.pages:
-                            text_value = None
-                            # Read Text on Page
-                            text_value = page.extract_text()
-                            LOG.debug(f'method=process_file_upload, file_type=pdf-text, content={content}')
-                            generate_title_and_index_doc(event, page.page_number, text_value, s3_source, metadata)
-                            # Read Image on Page
-                            for image_file_object in page.images:
-                                # Extract through low cost LLM (Claude3-Haiku)
-                                ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
-                                text_value = query_bedrock(ocr_prompt, ocr_model_id)
-                                print(f'Image PDF: Text value {text_value}')
-                                LOG.debug(f'method=process_file_upload, file_type=pdf-image, content={text_value}')
-                                generate_title_and_index_doc(event, page.page_number, text_value, s3_source, metadata)
-    
+                utc_now = now_utc_iso8601()
+                email_id = 'no-id-set'
+                if 'email_id' in metadata:
+                    email_id = metadata['email_id']
+                elif 'userIdentity' in record:
+                    principal_id = record['userIdentity']['principalId']
+                    email_id = principal_id.replace('AWS:', '').replace(':', '-')
+                index_audit_insert(email_id, s3_source, s3_key, utc_now)
+                
+                try:
+                    response = {}
+                    index_success=True
+                    if file_extension.lower() in ['pdf']:
+                            reader = PdfReader(BytesIO(content))
+                            LOG.debug(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
+                            for page in reader.pages:
+                                text_value = None
+                                # Read Text on Page
+                                text_value = page.extract_text()
+                                LOG.debug(f'method=process_file_upload, file_type=pdf-text, content={content}')
+                                response = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id)
+                                if 'statusCode' in response and response['statusCode'] != '200':
+                                    LOG.error(f'Failed to index pdf {s3_key} on page {page.page_number}, error={response}')
+                                    index_success=False
+                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
+                                    
+                                # Read Image on Page
+                                for image_file_object in page.images:
+                                    # Extract through low cost LLM (Claude3-Haiku)
+                                    ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
+                                    text_value = query_bedrock(ocr_prompt, ocr_model_id)
+                                    LOG.debug(f'method=process_file_upload, file_type=pdf-image, content={text_value}')
+                                    response = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id)
+                                    if 'statusCode' in response and response['statusCode'] != '200':
+                                        LOG.error(f'Failed to index image on pdf {s3_key} on page {page.page_number}, error={response}')
+                                        index_success=False
+                                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
+        
+                    elif file_extension.lower() in ['png', 'jpg']:
+                        # Extract through low cost LLM (Claude3-Haiku)
+                        LOG.debug(f'method=process_file_upload, message=File is an image, record={record}')
+                        ocr_prompt = generate_claude_3_ocr_prompt(content)
+                        text_value = query_bedrock(ocr_prompt, ocr_model_id)
+                        LOG.debug(f'method=process_file_upload, file_type=image-text, content={text_value}')
+                        response = generate_title_and_index_doc(event, 1, text_value, s3_source, email_id)
+                        if 'statusCode' in response and response['statusCode'] != '200':
+                            LOG.error(f'Failed to index image {s3_key}, error={response["errorMessage"]}')
+                            index_success=False
+                            index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
                         
-                    except Exception as e:
-                        print(f'Error reading PDF {e}')
-                        return failure_response('PDF could not be read')
-                elif file_extension.lower() in ['png', 'jpg']:
-                    # Extract through low cost LLM (Claude3-Haiku)
-                    print(f'File is an image {record}')
-                    ocr_prompt = generate_claude_3_ocr_prompt(content)
-                    text_value = query_bedrock(ocr_prompt, ocr_model_id)
-                    LOG.debug(f'method=process_file_upload, file_type=image-text, content={text_value}')
-                    generate_title_and_index_doc(event, 1, text_value, s3_source, metadata)
+                    else:
+                        decoded_txt = content.decode()
+                        LOG.debug(f'method=process_file_upload, decoded_txt={decoded_txt}')
+                        response = generate_title_and_index_doc(event, 1, decoded_txt, s3_source, email_id)
+                        if 'statusCode' in response and response['statusCode'] != '200':
+                            LOG.error(f'Failed to index file {s3_key}, error={response["errorMessage"]}')
+                            index_success=False
+                            index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
                     
-                else:
-                    decoded_txt = content.decode()
-                    print(f'Decoded txt {decoded_txt}')
-                    generate_title_and_index_doc(event, 1, decoded_txt, s3_source, metadata)
-                # TODO Websocket notify
-                # TODO -> Store this information in dynamoDB so its easier to delete the vector if the file no longer exists in s3    
+                    if index_success:
+                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._SUCCESS, utc_now)
+                except Exception as e:
+                    LOG.error(f'Indexing failed for file {s3_source}, error={e}')
+                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now)
+            
+            
             elif record['eventName'] == 'ObjectRemoved:Delete':
                 s3_source=''
                 s3_key=''
@@ -327,22 +361,19 @@ def process_file_upload(event):
                     s3_bucket = record['s3']['bucket']['name']
                     s3_source = f'https://{s3_bucket}/{s3_key}'
                     delete_documents_by_s3_uri(s3_source)
-                    # TODO Websocket notify
     
-    return success_response(f'No files to read {event}')
+    return success_response(f'File process complete for event {event}')
 
-def generate_title_and_index_doc(event, page_number, text_value, s3_source, metadata):
+def generate_title_and_index_doc(event, page_number, text_value, s3_source, email_id):
     if text_value:
         if page_number <2:
             title_value = generate_title(text_value)
         text_value = f'Page Number: {page_number}, content: {text_value}'
-        event['body'] = json.dumps({"text": text_value, "title": title_value, 's3_source': s3_source})
-        if 'x-amz-meta-connect_id' in metadata:
-            connect_id = metadata['x-amz-meta-connect_id']
-            websocket_send(connect_id, {"success": True, "message": "Index in progress", "statusCode": "200"})
-            event['body']['connect_id']=connect_id
-        index_documents(event)
+        event['body'] = json.dumps({"text": text_value, "title": title_value, 's3_source': s3_source, 'email_id': email_id})
+        response = index_documents(event)
+        return response
 
+ 
 def generate_title(text_snippet):
     title_prompt = generate_claude_3_title_prompt(text_snippet)
     title_value = query_bedrock(title_prompt, ocr_model_id)
@@ -368,7 +399,7 @@ def query_bedrock(prompt, model_id):
                 texts.append(text)
 
     final_text = ' \n '.join(texts)
-    print(response_body)
+    LOG.debug(f"method=query_bedrock, prompt={prompt}, model_id={model_id}, response={response_body}")
     return final_text
 
 
@@ -377,60 +408,26 @@ def get_file_from_s3(s3_key):
     
     response = s3_client.get_object(Bucket=s3_bucket_name, Key=s3_key)
     file_bytes = response['Body'].read()
-    print(f'returns S3 encoded object from key {s3_bucket_name}/{s3_key}')
+    LOG.debug(f'method=get_file_from_s3,  bucket_key={s3_bucket_name}/{s3_key}, response={response}')
     return file_bytes, response['Metadata']
-
-def websocket_send(connect_id, message):
-    global websocket_client
-    global wss_url
-    print(f'WSS URL {wss_url}, connect_id {connect_id}')
-    response = websocket_client.post_to_connection(
-                Data=json.dumps(message, indent=4).encode('utf-8'),
-                ConnectionId=connect_id
-    )
 
 def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
     LOG.info(f"--- Event {event} --")
-    global websocket_client
-
-    if 'httpMethod' not in event and 'requestContext' in event:
-        # This is a websocket request
-        stage = event['requestContext']['stage']
-        api_id = event['requestContext']['apiId']
-        domain = f'{api_id}.execute-api.{region}.amazonaws.com'
-        websocket_client = boto3.client('apigatewaymanagementapi', endpoint_url=f'https://{domain}/{stage}')
-
-        connect_id = event['requestContext']['connectionId']
-        routeKey = event['requestContext']['routeKey']
-
-        if routeKey != '$connect':
-            if 'body' in event:
-                index_request_check = json.loads(event['body'], strict=False)
-                print(f'index_request_check: {index_request_check}')
-                if 'request' in index_request_check and index_request_check['request'] == 'connect_id':
-                    message = {"success": True, "connect_id": connect_id, "statusCode": "200"}
-                    websocket_send(connect_id, message)
-                else:
-                    message = {"success": True, "connect_id": connect_id, "statusCode": "200"}
-                    websocket_send(connect_id, message)
-                
-        elif routeKey == '$connect':
-            # TODO Add authentication of access token
-            return {'statusCode': '200', 'body': 'Bedrock says hello' }
     
-    elif 'httpMethod' in event:
-        # This comes from S3 event notification
-        if 'Records' in event:
+    # This comes from S3 event notification
+    if 'Records' in event:
             event['httpMethod']= 'POST'
             event['resource']='s3-upload-file'
     
+    if 'httpMethod' in event:
         api_map = {
             'POST/rag/index-documents': lambda x: index_documents(x),
             'DELETE/rag/index-documents': lambda x: delete_index(x),
             'GET/rag/connect-tracker': lambda x: connect_tracker(x),
             'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
-            'POSTs3-upload-file': lambda x: process_file_upload(x)   
+            'GET/rag/get-indexed-files-by-user': lambda x: get_indexed_files_by_user(x),
+            'POSTs3-upload-file': lambda x: process_file_upload(x),
         }
         
         http_method = event['httpMethod'] if 'httpMethod' in event else ''
@@ -452,6 +449,113 @@ def failure_response(error_message):
    
 def success_response(result):
     return {"success": True, "result": result, "statusCode": "200"}
+
+# Store the indexing metadata information in a dynamodb table
+# Triggered when a file is uploaded to S3
+def index_audit_insert(email_id, s3_uri, file_id, utc_now, error_message='None'):
+    LOG.info(f'method=index_audit_insert, email_id={email_id}, s3_uri={s3_uri}')
+    record = {
+        INDEX_KEYS._EMAIL_ID: email_id,
+        INDEX_KEYS._S3_SOURCE: s3_uri,
+        INDEX_KEYS._FILE_ID: file_id,
+        INDEX_KEYS._UPLOAD_TIMESTAMP: utc_now,
+        INDEX_KEYS._INDEX_TIMESTAMP: utc_now,
+        INDEX_KEYS._UPLOAD_STATUS: FILE_UPLOAD_STATUS._INPROGRESS,
+        INDEX_KEYS._ERROR_MESSAGE: error_message,
+        INDEX_KEYS._UPDATE_EPOCH: int(time.time())
+    }
+
+    if all(key in record for key in ([INDEX_KEYS._EMAIL_ID, INDEX_KEYS._S3_SOURCE, INDEX_KEYS._FILE_ID, INDEX_KEYS._UPLOAD_TIMESTAMP, INDEX_KEYS._UPLOAD_STATUS])):
+        try:
+            record[INDEX_KEYS._PRIMARY_KEY]='INDEX'
+            record[INDEX_KEYS._SORT_KEY]=generate_sort_key(record[INDEX_KEYS._EMAIL_ID], record[INDEX_KEYS._UPLOAD_TIMESTAMP], record[INDEX_KEYS._FILE_ID])
+            table.put_item(Item=record)
+        except Exception as e:
+            LOG.error(f'error=failed_to_store_index_audit, error={e}, record={record}')
+            return failure_response(f'Failed to store index audit {e}')
+    else:
+        LOG.error(f'failure=index_audit_insert, email_id={email_id}, s3_uri={s3_uri}, utc_now={utc_now}')
+        return failure_response(f"Invalid input , required inputs - {INDEX_KEYS._EMAIL_ID, INDEX_KEYS._S3_SOURCE, INDEX_KEYS._FILE_ID, INDEX_KEYS._UPLOAD_TIMESTAMP, INDEX_KEYS._UPLOAD_STATUS}")
+    LOG.info(f'success=index_audit_insert, email_id={email_id}, s3_uri={s3_uri}, utc_now={utc_now}')
+    return success_response(f"Inserted index audit for email_id={email_id}, utc_now={utc_now}, file_id={file_id}")
+    
+
+def index_audit_update(email_id, s3_uri, file_id, file_index_status, utc_now, error_message="None"):
+    LOG.info(f'method=index_audit_update, email_id={email_id}, s3_uri={s3_uri}, file_id={file_id}, index_status={file_index_status}, utc_now={utc_now}, error_message={error_message}')
+    try:
+        table.update_item(
+                    Key={
+                        INDEX_KEYS._PRIMARY_KEY: 'INDEX',
+                        INDEX_KEYS._SORT_KEY: generate_sort_key(email_id, utc_now, file_id)
+                    },
+                    UpdateExpression=f"set {INDEX_KEYS._UPLOAD_STATUS}=:s, {INDEX_KEYS._ERROR_MESSAGE}=:errm ",
+                    ExpressionAttributeValues={
+                        ':s': file_index_status,
+                        ':errm': error_message
+                    }
+        )
+    except Exception as e:
+        LOG.error(f'error=failed_to_update_index_audit, email_id={email_id}, s3_uri={s3_uri}, utc_now={utc_now}, error={e}')
+        return failure_response(f"Error updating dynamodb table, email_id={email_id}, utc_now={utc_now}, file_id={file_id}, error={e}")
+    return success_response(f"Updated index audit for email_id={email_id}, utc_now={utc_now}, file_id={file_id}")
+
+
+def get_indexed_files_by_user(event):
+    query_params = {}
+    if 'queryStringParameters' in event:
+        query_params = event['queryStringParameters']
+    if 'requestContext' in event and 'authorizer' in event['requestContext']:
+            if 'claims' in event['requestContext']['authorizer']:
+                email_id = event['requestContext']['authorizer']['claims']['email']
+                LOG.info(f'method=get_indexed_files_by_user, user_id={email_id}')
+                try:
+                    response = table.query(
+                        KeyConditionExpression=Key(INDEX_KEYS._PRIMARY_KEY).eq('INDEX') 
+                                    & Key(INDEX_KEYS._SORT_KEY)\
+                                    .begins_with(get_sort_key_beginswith_user_id(email_id)),
+                        ScanIndexForward=False
+                    )
+                
+                    items = response['Items']
+                    while 'LastEvaluatedKey' in response:
+                        response = table.query(ExclusiveStartKey=response['LastEvaluatedKey'])
+                        items.extend(response['Items'])
+                    return success_response(items)
+                except Exception as e:
+                    LOG.error(f'error=failed_to_get_indexed_files_by_user, error={e}, user_id={email_id}')
+                    return failure_response(f'Failed to get indexed files for user {email_id}')
+    else:
+        return failure_response(f'Unauthorized request. Email_id not found')
+    
+    
+def get_sort_key_beginswith_user_id(email_id):
+    return f'user-{email_id}-'
+
+def generate_sort_key(user_id, upload_timestamp, file_id):
+    return f'user-{user_id}-ts-{upload_timestamp}-fileid-{file_id}'
+
+def sanitize_s3_key(s3_key):
+    s3_key
+    return s3_key.replace('/', '')
+def now_utc_iso8601():
+    return datetime.utcnow().isoformat()[:-3] + 'Z'
+
+class INDEX_KEYS():
+    _PRIMARY_KEY: str = 'prim_key'
+    _SORT_KEY: str = 'sort_key'
+    _EMAIL_ID: str = 'email_id'
+    _S3_SOURCE: str = 's3_source'
+    _FILE_ID: str = 'file_id'
+    _UPLOAD_TIMESTAMP: str = 'upload_timestamp'
+    _INDEX_TIMESTAMP: str = 'index_timestamp'
+    _UPDATE_EPOCH: str = 'update_epoch'
+    _UPLOAD_STATUS: str = 'file_index_status'
+    _ERROR_MESSAGE: str = 'idx_err_msg'
+
+class FILE_UPLOAD_STATUS():
+    _SUCCESS: str = 'success'
+    _INPROGRESS: str = 'inprogress'
+    _FAILURE: str = 'failure'
 
 # Hack
 class CustomJsonEncoder(json.JSONEncoder):
