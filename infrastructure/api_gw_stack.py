@@ -243,7 +243,7 @@ class ApiGw_Stack(Stack):
                 "execute-api:InvalidateCache", "execute-api:Invoke", "execute-api:ManageConnections",
                 "bedrock:ListFoundationModelAgreementOffers", "bedrock:ListFoundationModels","bedrock:GetFoundationModel",
                 "bedrock:GetFoundationModelAvailability", "bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream",
-                "iam:ListUsers", "iam:ListRoles", "s3:*", "textract:*"],
+                "iam:ListUsers", "iam:ListRoles", "s3:*", "dynanmodb:*"],
             resources=["*"],
         )
 
