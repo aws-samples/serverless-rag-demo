@@ -18,7 +18,7 @@ fi
 echo "Environment: $infra_env"
 
 deployment_region=$(curl -s http://169.254.169.254/task/AvailabilityZone | sed 's/\(.*\)[a-z]/\1/')
-embed_model_id='amazon.titan-embed-image-v1'
+embed_model_id='amazon.titan-embed-text-v2:0'
 if [ -z "$deployment_region" ]
 then
     printf  "$Red !!! Cannot detect region. Manually select your AWS Cloudshell region from the below list $NC"
