@@ -225,9 +225,15 @@ def create_presigned_post(event):
         utc_now = now_utc_iso8601()
         response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
                                             Key=s3_key,
-                                            Fields={'x-amz-meta-email_id': email_id, "x-amz-meta-upload_utc": utc_now},
-                                            Conditions=[{'x-amz-meta-email_id': email_id, "x-amz-meta-upload_utc": utc_now}]
+                                            Fields={'x-amz-meta-email_id': email_id, 
+                                                     'x-amz-meta-uploaded_at': utc_now
+                                                    },
+                                            Conditions=[{'x-amz-meta-email_id': email_id},
+                                                        {'x-amz-meta-uploaded_at': utc_now}
+                                                        ]
                                         )
+        
+        # 'x-amz-meta-email_id': email_id, 
         # The response contains the presigned URL and required fields
         return success_response(response)
     else:
