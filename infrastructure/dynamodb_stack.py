@@ -3,6 +3,7 @@ from aws_cdk import (
     NestedStack,
     aws_dynamodb as dynamodb,
     aws_s3 as s3,
+    RemovalPolicy
 )
 from constructs import Construct
 import os
@@ -17,6 +18,7 @@ class Storage_Stack(NestedStack):
         self.indx_dynamodb = dynamodb.Table(self,
                                                  id=f'rag-llm-dynm-indx-{env_name}',
                                                  table_name=self.node.try_get_context(env_name)['index_dynamo_table_name'],
+                                                 removal_policy=RemovalPolicy.DESTROY,
                                                  partition_key=dynamodb.Attribute(name="prim_key",
                                                                                   type=dynamodb.AttributeType.STRING),
                                                  sort_key=dynamodb.Attribute(name="sort_key",
@@ -35,6 +37,7 @@ class Storage_Stack(NestedStack):
         self.conversations_dynamodb = dynamodb.Table(self,
                                                  id=f'rag-llm-dynm-conv-{env_name}',
                                                  table_name=self.node.try_get_context(env_name)['conversations_dynamo_table_name'],
+                                                 removal_policy=RemovalPolicy.DESTROY,
                                                  partition_key=dynamodb.Attribute(name="prim_key",
                                                                                   type=dynamodb.AttributeType.STRING),
                                                  sort_key=dynamodb.Attribute(name="sort_key",
