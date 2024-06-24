@@ -242,7 +242,12 @@ class ApiGw_Stack(Stack):
         )
 
         bedrock_querying_lambda_function.add_to_role_policy(bedrock_oss_policy)
+        
         bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
+        
+        bucket_name = f'{env_params["s3_images_data"]}-{account_id}-{region}'
+        s3_principal = _cdk.aws_iam.ArnPrincipal(f"arn:aws:s3:::{bucket_name}")
+        bedrock_indexing_lambda_function.grant_invoke(s3_principal)
         
         bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
         
