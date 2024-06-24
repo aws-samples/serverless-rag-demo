@@ -250,7 +250,7 @@ class ApiGw_Stack(Stack):
         
         s3_principal = _iam.ServicePrincipal('s3.amazonaws.com', conditions={ 
             "ArnLike": { 
-                "aws:SourceArn": f"arn:aws:s3:::{bucket_name}/*" 
+                "aws:SourceArn": f"arn:aws:s3:::{bucket_name}" 
                 },
                 "StringEquals": {
                     "aws:SourceAccount": account_id
