@@ -86,7 +86,8 @@ class AppRunnerHostingStack(Stack):
             _iam.PolicyStatement(
                 actions=["lambda:InvokeFunction"],
                 resources=[lambda_arn],
-                effect=_iam.Effect.ALLOW
+                effect=_iam.Effect.ALLOW,
+                principals=[_iam.ServicePrincipal("s3.amazonaws.com")]
         ))
 
         function = _lambda.Function.from_function_arn(self, f's3-notify-lambda-{env_name}', lambda_arn)
