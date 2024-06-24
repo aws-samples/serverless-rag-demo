@@ -132,14 +132,19 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
                 )
                 embeddings_key="embeddings"
             else:
+                print(f'In here')
                 # Get the query embedding from amazon-titan-embed model
                 response = bedrock_client.invoke_model(
-                    body=json.dumps({"inputText": user_query, "embeddingConfig": {"outputEmbeddingLength": 384}}),
+                    body=json.dumps({"inputText": user_query}),
                     modelId=embed_model_id,
                     accept='application/json',
                     contentType='application/json'
                 )
+                
             result = json.loads(response['body'].read())
+            finish_reason = result.get("message")
+            if finish_reason is not None:
+                    print(f'Embed Error {finish_reason}')
             embedded_search = result.get(embeddings_key)
 
             vector_query = {
