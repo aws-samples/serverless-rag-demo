@@ -78,7 +78,17 @@ class AppRunnerHostingStack(Stack):
                                                             allowed_methods=[_s3.HttpMethods.GET, _s3.HttpMethods.POST],
                                                             id="serverless-rag-demo-cors-rule")],
                                         versioned=False)
+        
         lambda_arn=f'arn:aws:lambda:{region}:{account_id}:function:{config_details["bedrock_indexing_function_name"]}'
+        
+        # Attach policy on bucket to invoke the lambda function
+        self.images_bucket.add_to_resource_policy(
+            _iam.PolicyStatement(
+                actions=["lambda:InvokeFunction"],
+                resources=[lambda_arn],
+                effect=_iam.Effect.ALLOW
+        ))
+
         function = _lambda.Function.from_function_arn(self, f's3-notify-lambda-{env_name}', lambda_arn)
         # create s3 notification for lambda function
         notification = _s3_notifications.LambdaDestination(function)
