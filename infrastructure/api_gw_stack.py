@@ -177,7 +177,7 @@ class ApiGw_Stack(Stack):
                                             'INDEX_DYNAMO_TABLE_NAME': env_params['index_dynamo_table_name']
                               },
                               memory_size=3000,
-                              layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer])
+                              layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer, pdfpy_layer])
         
         lambda_function = bedrock_indexing_lambda_function
         bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
