@@ -227,15 +227,9 @@ class ApiGw_Stack(Stack):
                                     name=f'Bedrock-streaming-{env_name}',
                                     route_selection_expression='$request.body.action'
                                     )
-        websocket_index_api = _cdk.aws_apigatewayv2.CfnApi(self, f'index-updates-{env_name}',
-                                    protocol_type='WEBSOCKET',
-                                    name=f'Rag-index-updates-{env_name}',
-                                    route_selection_expression='$request.body.action'
-        )
         
         print(f'Bedrock streaming wss url {websocket_api.attr_api_endpoint}')
         wss_url = websocket_api.attr_api_endpoint
-        wss_index_notify_url = websocket_index_api.attr_api_endpoint
         bedrock_oss_policy = _iam.PolicyStatement(
             actions=[
                 "aoss:ListCollections", "aoss:BatchGetCollection", "aoss:APIAccessAll", "lambda:InvokeFunction",
@@ -251,7 +245,6 @@ class ApiGw_Stack(Stack):
         bedrock_indexing_lambda_function.add_to_role_policy(bedrock_oss_policy)
         
         bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)
-        bedrock_indexing_lambda_function.add_environment('WSS_INDEX_NOTIFY_URL', wss_index_notify_url + '/' + env_name)
         
         bedrock_index_lambda_integration = _cdk.aws_apigateway.LambdaIntegration(
         bedrock_indexing_lambda_function, proxy=True, allow_test_invoke=True)
@@ -272,12 +265,6 @@ class ApiGw_Stack(Stack):
                                             credentials_arn=apigw_role.role_arn
                                             )
         
-        websocket_index_integrations = _cdk.aws_apigatewayv2.CfnIntegration(self, f'bdrck-ws-ndx-ntgrtn-{env_name}',
-                                            api_id=websocket_index_api.ref,
-                                            integration_type="AWS_PROXY",
-                                            integration_uri="arn:aws:apigateway:" + region + ":lambda:path/2015-03-31/functions/" + bedrock_indexing_lambda_function.function_arn + "/invocations",
-                                            credentials_arn=apigw_role.role_arn
-                                            )
         # Query Lambda Connect websocket route
         websocket_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-connect-route-{env_name}',
                                         api_id=websocket_api.ref, route_key="$connect",
@@ -289,15 +276,9 @@ class ApiGw_Stack(Stack):
                                                                                                      credentials_arn= apigw_role.role_arn).ref
         )
 
-        # Index Lambda connect websocket route
-        websocket_index_connect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bdrck-ndx-connct-rte-{env_name}',
-                                        api_id=websocket_index_api.ref, route_key="$connect",
-                                        authorization_type="NONE",
-                                        target="integrations/"+ websocket_index_integrations.ref)
         
         dependencygrp = DependencyGroup()
         dependencygrp.add(websocket_connect_route)
-        dependencygrp.add(websocket_index_connect_route)
         # Query Lambda Disconnect websocket route
         websocket_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bedrock-disconnect-route-{env_name}',
                                         api_id=websocket_api.ref, route_key="$disconnect",
@@ -314,23 +295,6 @@ class ApiGw_Stack(Stack):
                                         authorization_type="NONE",
                                         target="integrations/" + websocket_integrations.ref)
         
-        # Index Lambda Disconnet websocket route
-        websocket_index_disconnect_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bdrck-ndx-dscnnct-rte-{env_name}',
-                                        api_id=websocket_index_api.ref, route_key="$disconnect",
-                                        authorization_type="NONE",
-                                        target="integrations/" + websocket_index_integrations.ref)
-        # Index lambda Default websocket route
-        websocket_index_default_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bdrck-ndx-dflt-rte-{env_name}',
-                                        api_id=websocket_index_api.ref, route_key="$default",
-                                        authorization_type="NONE",
-                                        target="integrations/" + websocket_index_integrations.ref)
-        # Index Lambda Notify websocket route
-        websocket_index_notify_route = _cdk.aws_apigatewayv2.CfnRoute(self, f'bdrck-ndx-ntfy-rte-{env_name}',
-                                        api_id=websocket_index_api.ref, route_key="notify",
-                                        authorization_type="NONE",
-                                        target="integrations/" + websocket_index_integrations.ref)
-        
-        
         
         deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bedrock-streaming-deploy-{env_name}', api_id=websocket_api.ref)
         deployment.add_dependency(websocket_connect_route)
@@ -343,19 +307,7 @@ class ApiGw_Stack(Stack):
                                            auto_deploy=True,
                                            deployment_id= deployment.ref,
                                            stage_name= env_name) 
-
-        index_websocket_deployment = _cdk.aws_apigatewayv2.CfnDeployment(self, f'bdrck-indx-deploy-{env_name}', api_id=websocket_index_api.ref)
-        index_websocket_deployment.add_dependency(websocket_index_connect_route)
-        index_websocket_deployment.add_dependency(websocket_index_disconnect_route)
-        index_websocket_deployment.add_dependency(websocket_index_default_route)
-        index_websocket_deployment.add_dependency(websocket_index_notify_route)
-
-        index_websocket_stage = _cdk.aws_apigatewayv2.CfnStage(self, f'bdrck-indx-stge-{env_name}', 
-                                           api_id=websocket_index_api.ref,
-                                           auto_deploy=True,
-                                           deployment_id= index_websocket_deployment.ref,
-                                           stage_name= env_name) 
-            
+    
         html_generation_function = _cdk.aws_lambda.Function(self, f'llm_html_function_{env_name}',
                                             function_name=f'llm-html-generator-{env_name}',
                                             runtime=_cdk.aws_lambda.Runtime.PYTHON_3_9,
@@ -398,6 +350,7 @@ class ApiGw_Stack(Stack):
         query_api = rag_llm_api.add_resource("query")
         index_docs_api = rag_llm_api.add_resource("index-documents")
         get_presigned_url_api = rag_llm_api.add_resource("get-presigned-url")
+        del_file_api = rag_llm_api.add_resource("del-file")
         file_data_api = rag_llm_api.add_resource("file_data")
         connect_tracker_api = rag_llm_api.add_resource("connect-tracker")
         get_indexed_files_by_user_api = rag_llm_api.add_resource('get-indexed-files-by-user')
@@ -432,6 +385,16 @@ class ApiGw_Stack(Stack):
             method_responses=method_responses,
         )
 
+        del_file_api.add_method(
+            "POST",
+            lambda_integration,
+            authorizer=cognito_authorizer,
+            authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
+            operation_name="Get Presigned Delete URL",
+            api_key_required=False,
+            method_responses=method_responses,
+        )
+
         get_indexed_files_by_user_api.add_method(
             "GET",
             lambda_integration,
@@ -462,6 +425,7 @@ class ApiGw_Stack(Stack):
         self.add_cors_options(file_data_api)
         self.add_cors_options(connect_tracker_api)
         self.add_cors_options(get_presigned_url_api)
+        self.add_cors_options(del_file_api)
         self.add_cors_options(index_docs_api)
         self.add_cors_options(query_api)
         self.add_cors_options(get_indexed_files_by_user_api)
@@ -477,7 +441,7 @@ class ApiGw_Stack(Stack):
                        export_name="client-id"
                     )
         
-        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_endpoint_url, wss_url + '/' + env_name, wss_index_notify_url + '/' + env_name) 
+        ecr_ui_stack = ECRUIStack(self, f"ECRUI{env_name}Stack", user_pool_id, user_pool_client_id, rest_endpoint_url, wss_url + '/' + env_name) 
         self.tag_my_stack(ecr_ui_stack)
 
         storage_stack = Storage_Stack(self, f"Storage{env_name}Stack")

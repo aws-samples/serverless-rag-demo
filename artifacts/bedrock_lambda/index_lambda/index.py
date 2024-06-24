@@ -184,7 +184,7 @@ def delete_documents_by_s3_uri(s3_source: str):
     
     try:
         res = ops_client.indices.delete_by_query(index=INDEX_NAME, body=delete_query)
-        LOG.debug(f"method=delete_documents_by_s3_uri, delete_response={res}")
+        LOG.info(f"method=delete_documents_by_s3_uri, delete_response={res}")
     except Exception as e:
         LOG.error(f'method=delete_documents_by_s3_uri, delete_query={delete_query}')
         LOG.error(f"method=delete_documents_by_s3_uri, error={e.info['error']['reason']}")
@@ -222,18 +222,32 @@ def create_presigned_post(event):
         #                                       Fields=None,
         #                                       Conditions=[]
         #                                   )
+        utc_now = now_utc_iso8601()
         response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
                                             Key=s3_key,
-                                            Fields={'x-amz-meta-email_id': email_id},
-                                            Conditions=[{'x-amz-meta-email_id': email_id}]
+                                            Fields={'x-amz-meta-email_id': email_id, "x-amz-meta-upload_utc": utc_now},
+                                            Conditions=[{'x-amz-meta-email_id': email_id, "x-amz-meta-upload_utc": utc_now}]
                                         )
-        
-
-
         # The response contains the presigned URL and required fields
         return success_response(response)
     else:
         return failure_response('Missing file_extension field cannot generate signed url')
+
+
+def delete_file(event):
+    LOG.debug(f'method=delete_file, event={event}')
+    # Delete the file from S3
+    payload = json.loads(event['body'])
+    if 's3_key' not in payload:
+        s3_source = payload['s3_key']
+        # delete a file from S3 by key and bucket name
+        s3_client = boto3.client('s3')
+        s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_source)
+        LOG.info(f'method=delete_file, s3_key={s3_source}, message=complete')
+        return success_response("deleted file successfully")
+    else:
+        return failure_response('Missing s3_key')
+
 
 
 """{
@@ -287,13 +301,17 @@ def process_file_upload(event):
                 if '.' in s3_key:
                     file_extension = s3_key[s3_key.rindex('.')+1:]
                 content, metadata = get_file_from_s3(s3_key)
-                utc_now = now_utc_iso8601()
                 email_id = 'no-id-set'
+                utc_now = ''
                 if 'email_id' in metadata:
                     email_id = metadata['email_id']
                 elif 'userIdentity' in record:
                     principal_id = record['userIdentity']['principalId']
                     email_id = principal_id.replace('AWS:', '').replace(':', '-')
+                if 'upload_utc' in metadata:
+                    utc_now = metadata['upload_utc']
+                else:
+                    utc_now = now_utc_iso8601()
                 index_audit_insert(email_id, s3_source, s3_key, utc_now)
                 
                 try:
@@ -360,7 +378,23 @@ def process_file_upload(event):
                     s3_key = record['s3']['object']['key']
                     s3_bucket = record['s3']['bucket']['name']
                     s3_source = f'https://{s3_bucket}/{s3_key}'
+                    metadata = get_file_attributes(s3_key)
+                    email_id = 'no-id-set'
+                    if 'email_id' in metadata:
+                       email_id = metadata['email_id']
+                    elif 'userIdentity' in record:
+                        principal_id = record['userIdentity']['principalId']
+                        email_id = principal_id.replace('AWS:', '').replace(':', '-')
+                    if 'upload_utc' in metadata:
+                        utc_now = metadata['upload_utc']
+                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._DELETED, utc_now, 'File deleted successfully')
+                    else:
+                        LOG.error('UTC not found in Metadata of file')
+                        # Add another logic here to attempt to delete files
+                    
                     delete_documents_by_s3_uri(s3_source)
+                    if 'upload_utc' in metadata:
+                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INDEX_DELETE, utc_now, 'File index deleted successfully')
     
     return success_response(f'File process complete for event {event}')
 
@@ -411,6 +445,22 @@ def get_file_from_s3(s3_key):
     LOG.debug(f'method=get_file_from_s3,  bucket_key={s3_bucket_name}/{s3_key}, response={response}')
     return file_bytes, response['Metadata']
 
+def get_file_attributes(s3_key):
+    s3_client = boto3.client('s3')
+    metadata = {}
+    try:
+        response = s3_client.head_object(
+            Bucket=s3_bucket_name,
+            Key=s3_key)
+        LOG.debug(f'method=get_file_attributes, bucket_key={s3_bucket_name}/{s3_key}, response={response}')
+        if 'Metadata' in response:
+            return response['Metadata']
+        else:
+            LOG.error(f'No metadata found for {s3_key}, response={response}')
+    except Exception as e:
+        LOG.error(f'Error getting metadata for {s3_key}, error={e}')
+    return {}
+
 def handler(event, context):
     LOG.info("---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
     LOG.info(f"--- Event {event} --")
@@ -426,6 +476,7 @@ def handler(event, context):
             'DELETE/rag/index-documents': lambda x: delete_index(x),
             'GET/rag/connect-tracker': lambda x: connect_tracker(x),
             'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
+            'GET/rag/del-file': lambda x: delete_file(x),
             'GET/rag/get-indexed-files-by-user': lambda x: get_indexed_files_by_user(x),
             'POSTs3-upload-file': lambda x: process_file_upload(x),
         }
@@ -553,9 +604,11 @@ class INDEX_KEYS():
     _ERROR_MESSAGE: str = 'idx_err_msg'
 
 class FILE_UPLOAD_STATUS():
-    _SUCCESS: str = 'success'
+    _SUCCESS: str = 'success_index_create'
     _INPROGRESS: str = 'inprogress'
     _FAILURE: str = 'failure'
+    _DELETED: str = 'success_file_delete'
+    _INDEX_DELETE: str = 'success_index_delete'
 
 # Hack
 class CustomJsonEncoder(json.JSONEncoder):

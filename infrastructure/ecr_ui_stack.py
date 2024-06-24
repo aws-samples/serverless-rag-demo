@@ -16,7 +16,7 @@ import aws_cdk as _cdk
 # This stack will dockerize the latest UI build and upload it to ECR
 class ECRUIStack(NestedStack):
 
-    def __init__(self, scope: Construct, construct_id: str, pool_id: str, client_id: str, rest_endpoint_url, streaming_url, indexing_socket_url, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, pool_id: str, client_id: str, rest_endpoint_url, streaming_url, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         # Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context('environment_name')
@@ -76,8 +76,7 @@ class ECRUIStack(NestedStack):
                 "user_pool_id": _codebuild.BuildEnvironmentVariable(value = pool_id),
                 "client_id": _codebuild.BuildEnvironmentVariable(value = client_id),
                 "rest_endpoint_url": _codebuild.BuildEnvironmentVariable(value = rest_endpoint_url),
-                "streaming_url": _codebuild.BuildEnvironmentVariable(value = streaming_url),
-                "indexing_socket_url": _codebuild.BuildEnvironmentVariable(value = indexing_socket_url)
+                "streaming_url": _codebuild.BuildEnvironmentVariable(value = streaming_url)
             })
         )
 
