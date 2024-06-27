@@ -59,7 +59,7 @@ export function UploadUI() {
     {
       id: "delete_icon",
       header: "Delete File",
-      cell: item => <Icon name="delete-marker" />,
+      cell: item => <Icon name="delete-marker"/>,
     }
   ]);
   const [items, setItems] = React.useState([
@@ -272,9 +272,8 @@ export function UploadUI() {
               File Upload History
             </Header>
           }
-          // pagination={
-          //   <Pagination currentPageIndex={1} pagesCount={2} />
-          // }
+          
+          stickyColumns={{ first: 1, last: 0 }}
           preferences={
             <CollectionPreferences
               title="Preferences"
@@ -299,42 +298,7 @@ export function UploadUI() {
                   { value: 400, label: "400 resources" }
                 ]
               }}
-              wrapLinesPreference={{}}
-              stripedRowsPreference={{}}
-              contentDensityPreference={{}}
-              contentDisplayPreference={{
-                options: [
-                  {
-                    id: "variable",
-                    label: "Variable name",
-                    alwaysVisible: true
-                  },
-                  { id: "value", label: "Text value" },
-                  { id: "type", label: "Type" },
-                  { id: "description", label: "Description" }
-                ]
-              }}
-              stickyColumnsPreference={{
-                firstColumns: {
-                  title: "S3 Source",
-                  description:
-                    "Keep the first column(s) visible while horizontally scrolling the table content.",
-                  options: [
-                    { label: "None", value: 0 },
-                    { label: "First column", value: 1 },
-                    { label: "First two columns", value: 2 }
-                  ]
-                },
-                lastColumns: {
-                  title: "Stick last column",
-                  description:
-                    "Keep the last column visible while horizontally scrolling the table content.",
-                  options: [
-                    { label: "None", value: 0 },
-                    { label: "Last column", value: 1 }
-                  ]
-                }
-              }}
+              
             />
           }
         />

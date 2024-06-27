@@ -13,7 +13,6 @@ import config from "../../config.json";
 
 var ws = null; 
 var agent_prompt_flow = []
-var msgs = null
 
 export interface ChatUIInputPanelProps {
   inputPlaceholderText?: string;
@@ -26,6 +25,7 @@ export interface ChatUIInputPanelProps {
 export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
   const socketUrl = config.websocketUrl;
+  const [message, setMessage] = useState('');
   
   useEffect(() => {
     const onWindowScroll = () => {
@@ -79,10 +79,6 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
-        if (msgs){
-          agent_prompt_flow.push({ 'role': 'assistant', 'content': [{"type": "text", "text": msgs}] }) 
-          msgs=null 
-        }
         agent_prompt_flow.push({ 'role': 'user', 'content': [{"type": "text", "text": inputText}] })
         if(ws==null || ws.readyState==3 || ws.readyState==2) {
           
@@ -101,24 +97,80 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(agent_prompt_flow))), behaviour: 'advanced-rag-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
           
         };
-        
-        ws.onmessage = (event) => { 
-          var chat_output = JSON.parse(atob(event.data))
-          if ('text' in chat_output) {
-            if (msgs) {
-              msgs += chat_output['text']
+        var messages = ''
+        ws.onmessage = (event) => {
+          
+          var response_details = JSON.parse(atob(event.data))
+          if ('prompt_flow' in response_details) {
+            var is_done = Boolean(response_details['done'])
+            if (!is_done) {
+              var thought = ''
+              agent_prompt_flow = []
+              for (var k = 0; k < response_details['prompt_flow'].length; k++) {
+                var prompt_content_list = response_details['prompt_flow'][k]['content']
+                var content = []
+                for (var j = 0; j < prompt_content_list.length; j++) {
+                  if ('text' in prompt_content_list[j]) {
+                    content.push({ "type": "text", "text": prompt_content_list[j]['text'] })
+                  } else {
+                    content.push(prompt_content_list[j])
+                  }
+                }
+                agent_prompt_flow.push({ "role": response_details['prompt_flow'][k]['role'], "content": content })
+              }
+
+              for (var i = 0; i < response_details['prompt_flow'].length; i++) {
+                if ('content' in response_details['prompt_flow'][i]) {
+                  var content_list = response_details['prompt_flow'][i]['content']
+                  for (var j = 0; j < content_list.length; j++) {
+                    if ('text' in content_list[j]) {
+                      thought = thought + capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]['text']
+                    } else {
+                      thought = thought +  capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]
+                    }
+                  }
+                }
+              }
+              messages = thought.replace('ack-end-of-string', '')
+              props.onSendMessage?.(messages, ChatMessageType.AI);
             } else {
-              msgs = chat_output['text']
+              if (response_details['prompt_flow'].length > 0) {
+                var thought = ''
+                var last_element = response_details['prompt_flow'][response_details['prompt_flow'].length - 1]
+                if ('content' in last_element) {
+                  var content_list = last_element['content']
+                  var content = []
+                  for (var j = 0; j < content_list.length; j++) {
+                    if ('text' in content_list[j]) {
+                      content.push({ "type": "text", "text": content_list[j]['text'] })
+                      thought = thought + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]['text']
+                    } else {
+                      content.push(content_list[j])
+                      thought = thought + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]
+                    }
+                  }
+                  agent_prompt_flow.push({ "role": last_element['role'], "content": content })
+                  
+                  messages = thought.replace('ack-end-of-string', '')
+                  props.onSendMessage?.(messages, ChatMessageType.AI);
+                }
+              }
             }
-            
-            if (msgs.endsWith('ack-end-of-msg')) {
-              msgs = msgs.replace('ack-end-of-msg', '')
-            }
-            props.onSendMessage?.(msgs, ChatMessageType.AI);
-          } else {
-            // Display errors
-            props.onSendMessage?.(chat_output, ChatMessageType.AI);
+
           }
+
+          
+          // if ('text' in chat_output) {
+          //   messages += chat_output['text']
+          //   if (messages.endsWith('ack-end-of-string')) {
+          //     messages = messages.replace('ack-end-of-string', '')
+          //     props.onSendMessage?.(messages, ChatMessageType.AI);
+          //   }
+          // } else {
+          //   // Display errors
+          //   props.onSendMessage?.(chat_output, ChatMessageType.AI);
+          // }
+          setMessage("");
         };
 
         ws.onclose = () => {

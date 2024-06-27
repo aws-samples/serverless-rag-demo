@@ -33,8 +33,13 @@ export default function NavigationPanel() {
       },
       {
         type: "link",
-        text: "Weather Agent Demo",
+        text: "Weather Demo",
         href: "/weather-agent",
+      },
+      {
+        type: "link",
+        text: "Stock Price Agent Demo",
+        href: "/stock-agent",
       },
       {
         type: "link",

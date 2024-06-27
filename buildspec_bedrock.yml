@@ -7,31 +7,24 @@ phases:
     commands:
       - pwd
       - ls
-      - echo Printing variables  $langchainpy_layer_name $boto3_bedrock_layer_name $opensearchpy_layer_name $aws4auth_layer_name $account_id $region 
+      - echo Printing variables  $langchainpy_layer_name $addtional_libs_layer_name $agentic_libs_layer_name $account_id $region 
   build:
     commands:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
       - cd serverless-rag-demo
       - git checkout feature-v1.1.0
-      - echo Build a Opensearchpy lambda layer to be used by the Amazon Bedrock Querying lambda
+      - echo Build aws4auth xmldict Boto3 Opensearchpy lambda layer
       - mkdir python
-      - python3 -m pip install opensearch-py -t python/
-      - zip -r opensearch_layer.zip python
-      - aws lambda publish-layer-version --layer-name $opensearchpy_layer_name --zip-file fileb://opensearch_layer.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
-      - rm -rf python opensearch_layer.zip
-      - echo Build latest Boto3 layer to get Bedrock access
-      - mkdir python
-      - python3 -m pip install boto3 -t python/
-      - zip -r boto3_bedrock.zip python
-      - aws lambda publish-layer-version --layer-name $boto3_bedrock_layer_name --zip-file fileb://boto3_bedrock.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
-      - rm -rf python boto3_bedrock.zip
-      - echo Build aws4auth lambda layer
-      - mkdir python
-      - python3 -m pip install requests-aws4auth xmltodict -t python/
+      - python3 -m pip install requests-aws4auth xmltodict boto3 opensearch-py  -t python/
       - zip -r aws4auth.zip python
-      - aws lambda publish-layer-version --layer-name $aws4auth_layer_name --zip-file fileb://aws4auth.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region
+      - aws lambda publish-layer-version --layer-name $addtional_libs_layer_name --zip-file fileb://aws4auth.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region --description Boto3,AWSAuth,XMLDict,OpensearchPy
       - rm -rf python aws4auth.zip
+      - mkdir python
+      - python3 -m pip install geopy beautifulsoup4 python-pptx -t python/
+      - zip -r agentic_layers.zip python
+      - aws lambda publish-layer-version --layer-name $agentic_libs_layer_name --zip-file fileb://agentic_layers.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region --description geopy,beautifulsoup,python-pptx
+      - rm -rf python agentic_layers.zip
       - mkdir python
       - python3 -m pip install langchain -t python/
       - zip -r langchainpy.zip python

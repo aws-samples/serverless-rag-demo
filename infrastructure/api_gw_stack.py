@@ -137,26 +137,17 @@ class ApiGw_Stack(Stack):
         wss_url=''
         
         # These are created in buildspec-bedrock.yml file.
-        boto3_bedrock_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'boto3-bedrock-layer-{env_name}',
-                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["boto3_bedrock_layer"]}:1')
+        addtional_libs_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'additional-libs-layer-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["addtional_libs_layer_name"]}:1')
         
-        opensearchpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'opensearchpy-layer-{env_name}',
-                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["opensearchpy_layer"]}:1')
-        
-        aws4auth_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'aws4auth-layer-{env_name}',
-                                                       f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["aws4auth_layer"]}:1')
+        agentic_libs_layer_name = _lambda.LayerVersion.from_layer_version_arn(self, f'agentic-libs-layer-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["agentic_libs_layer_name"]}:1')
             
         langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
         
         pdfpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'pdfpy-layer-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["pypdf_layer"]}:1')
-        
-        wrangler_regions = self.node.try_get_context("wrangler_regions")
-        wrangler_layer = None
-        if region in wrangler_regions:
-            wrangler_arn = wrangler_regions[region]
-            wrangler_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'wrangler-layer-{env_name}', wrangler_arn)
         
         print('--- Amazon Bedrock Deployment ---')
         
@@ -177,7 +168,7 @@ class ApiGw_Stack(Stack):
                                             'INDEX_DYNAMO_TABLE_NAME': env_params['index_dynamo_table_name']
                               },
                               memory_size=3000,
-                              layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer, pdfpy_layer])
+                              layers= [addtional_libs_layer, langchainpy_layer, pdfpy_layer])
         
         lambda_function = bedrock_indexing_lambda_function
         bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
@@ -194,33 +185,12 @@ class ApiGw_Stack(Stack):
                                             'REST_ENDPOINT_URL': rest_endpoint_url,
                                             'IS_RAG_ENABLED': is_opensearch,
                                             'S3_BUCKET_NAME': bucket_name,
-                                            'WRANGLER_NAME': env_params['bedrock_wrangler_function_name'],
-                                            'IS_WRANGLER_ENABLED': 'yes' if wrangler_layer is not None else 'no',
                                             'EMBED_MODEL_ID': embed_model_id,
                                             'CONVERSATIONS_DYNAMO_TABLE_NAME': env_params['conversations_dynamo_table_name']
                               },
                               memory_size=3000,
-                              layers= [boto3_bedrock_layer , opensearchpy_layer, aws4auth_layer, langchainpy_layer]
+                              layers= [addtional_libs_layer, agentic_libs_layer_name, langchainpy_layer]
                             )
-        
-        if wrangler_layer is not None:
-            aws_wrangler_lambda_function = _lambda.Function(self, f'llm-bd-wrangler-{env_name}',
-                              function_name=env_params['bedrock_wrangler_function_name'],
-                              code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/wrangler_lambda/')),
-                              runtime=_lambda.Runtime.PYTHON_3_9,
-                              handler="aws_wrangler.handler",
-                              role=custom_lambda_role,
-                              timeout=_cdk.Duration.seconds(300),
-                              description="AWS Wrangler read files in multiple formats",
-                              memory_size=3000,
-                              layers= [wrangler_layer]
-                            )
-            wrangler_policy = _iam.PolicyStatement(
-                actions=[
-                 "s3:*"],
-                resources=["*"],
-            )
-            aws_wrangler_lambda_function.add_to_role_policy(wrangler_policy)
         
         websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
                                     protocol_type='WEBSOCKET',
@@ -257,7 +227,6 @@ class ApiGw_Stack(Stack):
                     }
         })
         
-
         bedrock_indexing_lambda_function.grant_invoke(s3_principal)
         
         bedrock_querying_lambda_function.add_environment('WSS_URL', wss_url + '/' + env_name)

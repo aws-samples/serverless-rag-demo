@@ -7,6 +7,8 @@ import "./styles/app.scss";
 import ConfirmUserPage from './confirmUserPage';
 import LoginPage from './loginPage';
 import UploadPage from './pages/upload-page';
+import AgentPage from './pages/agent-page';
+import StockAgentPage from './pages/stock-agent-page';
 
 
 export default function App() {
@@ -34,6 +36,8 @@ export default function App() {
             <Route path="/confirm" element={<ConfirmUserPage />} />
             <Route path="/chat" element={isAuthenticated() ? <ChatPage /> : <Navigate replace to="/login" />} />
             <Route path="/upload" element={isAuthenticated() ? <UploadPage /> : <Navigate replace to="/login" />} />
+            <Route path="/weather-agent" element={isAuthenticated() ? <AgentPage /> : <Navigate replace to="/login" />} />
+            <Route path="/stock-agent" element={isAuthenticated() ? <StockAgentPage /> : <Navigate replace to="/login" />} />
             <Route index path="/login" element={<LoginPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
