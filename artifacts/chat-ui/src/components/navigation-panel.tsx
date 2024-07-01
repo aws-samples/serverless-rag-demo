@@ -33,19 +33,9 @@ export default function NavigationPanel() {
       },
       {
         type: "link",
-        text: "Weather Demo",
-        href: "/weather-agent",
-      },
-      {
-        type: "link",
-        text: "Stock Price Agent Demo",
-        href: "/stock-agent",
-      },
-      {
-        type: "link",
-        text: "Hotel Agent Demo",
-        href: "/hotel-agent",
-      },
+        text: "Multi-Agent",
+        href: "/dynamic-agent",
+      }
     ];
 
     items.push(

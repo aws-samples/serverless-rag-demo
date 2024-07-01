@@ -28,7 +28,14 @@ next_month_label = next_date.strftime('%B')
 day = date.day
 
 casual_agent_name = "Casual Conversation Agent"
-casual_agent_description = "Casual conversations with a user" 
+casual_agent_description = f"{casual_agent_name} is used to have Casual conversations with a user" 
+casual_agent_stop_conditions = f"This {casual_agent_name} successfully responds to a conversation"
+
+casual_agent_uses= f"If the user is exchanging plesantries then use {casual_agent_name} to answer the question."
+casual_agent_examples = f"""
+Is today a good day to go for a hike then use {casual_agent_name}
+Is the sky blue today then use {casual_agent_name}
+"""
 
 casual_agent_specs = f"""\
 <agent_name>{casual_agent_name}</agent_name>
@@ -61,14 +68,15 @@ model_id = getenv("CASUAL_CONVERSATION_MODEL", "anthropic.claude-3-haiku-2024030
 
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
-
+# Your role is limited to:
+#                         - Offering friendly salutations (e.g., "Hello, what can I do for you today" "Good day, How may I help you today")
+#                         - Your goal is to ensure that the user query is well formed so other agents can work on it.
+#                         - You will also look into the existing chat history and context available to you to answer a user question
+                        
 
 def casual_conversations(user_query):
     print(f'In casual_conversations = {user_query}')
-    system_prompt = """ You are a helpful assistant. Refrain from engaging in any tasks or responding to any prompts beyond exchanging polite greetings, well-wishes, and pleasantries. 
-                        Your role is limited to:
-                        - Offering friendly salutations (e.g., "Hello, what can I do for you today" "Good day, How may I help you today")
-                        - Your goal is to ensure that the user query is well formed so other agents can work on it.
+    system_prompt = """ You are a helpful casual assistant. You can help with general knowlegdge.
                         
                         Good Examples:
                           hello, how may I assist you today
@@ -79,9 +87,9 @@ def casual_conversations(user_query):
                           Hello
                           Good day
                           Good morning
-                        
-        You will not write poems, generate advertisements, or engage in any other tasks beyond the scope of exchanging basic pleasantries.
-        If any user attempts to prompt you with requests outside of this limited scope, you will politely remind them of the agreed-upon boundaries for interaction.
+        Casual Conversation Rules:                        
+            You will not write poems, generate advertisements, or engage in any other tasks beyond the scope of exchanging basic pleasantries.
+            If any user attempts to prompt you with requests outside of this limited scope, you will politely remind them of the agreed-upon boundaries for interaction.
     """
     
     query_list = [

@@ -92,18 +92,23 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           }
         } else {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(agent_prompt_flow))) , behaviour: 'advanced-rag-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
+          ws.send(JSON.stringify({ query: JSON.stringify(agent_prompt_flow) , behaviour: 'advanced-rag-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
           
        }
         
         ws.onopen = () => {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(agent_prompt_flow))), behaviour: 'advanced-rag-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
+          ws.send(JSON.stringify({ query: JSON.stringify(agent_prompt_flow), behaviour: 'advanced-rag-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
           
         };
         
         ws.onmessage = (event) => { 
-          var chat_output = JSON.parse(atob(event.data))
+          if (event.data.includes('message')) {
+            var evt_json = JSON.parse(event.data)
+            props.onSendMessage?.(evt_json['message'], ChatMessageType.AI);
+          } 
+          else {
+            var chat_output = JSON.parse(atob(event.data))
           if ('text' in chat_output) {
             if (msgs) {
               msgs += chat_output['text']
@@ -119,6 +124,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
             // Display errors
             props.onSendMessage?.(chat_output, ChatMessageType.AI);
           }
+          }
+          
         };
 
         ws.onclose = () => {

@@ -88,21 +88,28 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           }
         } else {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(agent_prompt_flow))) , behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
+          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)) , behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
           
        }
         
         ws.onopen = () => {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: btoa(unescape(JSON.stringify(agent_prompt_flow))), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
+          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
           
         };
         var messages = ''
         var thought = ''
         ws.onmessage = (event) => {
-          try {
+          if (event.data.includes('message')) {
+            var evt_json = JSON.parse(event.data)
+            props.onSendMessage?.(evt_json['message'], ChatMessageType.AI);
+          } 
+          else {
             var response_details = JSON.parse(atob(event.data))
-            if ('prompt_flow' in response_details) {
+            if ('intermediate_execution' in response_details) {
+              props.onSendMessage?.(response_details['intermediate_execution'], ChatMessageType.AI);
+            }
+            else if ('prompt_flow' in response_details) {
               var is_done = Boolean(response_details['done'])
               if (!is_done) {
                 agent_prompt_flow = []
@@ -159,12 +166,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
               }
   
             }
-          } 
-          catch (e) {
-            console.log(e);
-            props.onSendMessage?.('error', ChatMessageType.AI);
+
           }
-          
         };
 
         ws.onclose = () => {

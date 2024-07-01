@@ -21,7 +21,7 @@ phases:
       - aws lambda publish-layer-version --layer-name $addtional_libs_layer_name --zip-file fileb://aws4auth.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region --description Boto3,AWSAuth,XMLDict,OpensearchPy
       - rm -rf python aws4auth.zip
       - mkdir python
-      - python3 -m pip install geopy beautifulsoup4 python-pptx --platform manylinux2014_x86_64 -t python/
+      - python3 -m pip install geopy beautifulsoup4 python-pptx --platform manylinux2014_x86_64 --only-binary=':all:' -t python/
       - zip -r agentic_layers.zip python
       - aws lambda publish-layer-version --layer-name $agentic_libs_layer_name --zip-file fileb://agentic_layers.zip --compatible-runtimes python3.10 python3.9 python3.11 --region $region --description geopy,beautifulsoup,python-pptx
       - rm -rf python agentic_layers.zip

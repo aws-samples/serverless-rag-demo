@@ -87,6 +87,7 @@ retriever_specs = f"""\
    
 <tool_set>
 """
+
 endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT",
                   "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
 
