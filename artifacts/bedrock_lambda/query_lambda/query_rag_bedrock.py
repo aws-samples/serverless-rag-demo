@@ -9,9 +9,10 @@ import json
 from decimal import Decimal
 import logging
 import base64
-import datetime
+from datetime import datetime
 import csv
 import re
+from ddb_util import push_to_dynamodb
 
 
 from prompt_utils import get_system_prompt, agent_execution_step, rag_chat_bot_prompt
@@ -173,7 +174,7 @@ def query_data(query, behaviour, model_id, query_vectordb, connect_id):
         model_list = ['anthropic.claude-3','meta.llama2-']
 
         if model_id.startswith(tuple(model_list)):
-            prompt_template = prepare_prompt_template(prompt, context, query)
+            prompt_template = prepare_prompt_template(prompt, context, query, connect_id)
             query_bedrock_models(model_id, prompt_template, connect_id, behaviour)
         else:
             return failure_response(connect_id, f'Model not available on Amazon Bedrock {model_id}')
@@ -217,7 +218,8 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
                 # send ACK to UI, so it print the chats
                 websocket_send(connect_id, { "text": "ack-end-of-string" } )
                 sent_ack = True
-            #websocket_send(connect_id, { "text": result } )
+               
+            #websocket_send(connect_id, { "text": result } )            #TODO:: this is bedrock response (final)
         elif 'internalServerException' in evt:
             result = evt['internalServerException']['message']
             websocket_send(connect_id, { "text": result } )
@@ -239,7 +241,10 @@ def query_bedrock_models(model, prompt, connect_id, behaviour):
             sent_ack = True
             websocket_send(connect_id, { "text": "ack-end-of-string" } )
 
-
+     # save to DB
+    assisntant_messages =  {"role": "assistant", "content": str(assistant_chat)}
+    push_to_dynamodb("", connect_id,  assisntant_messages)
+    
 # Agent code start
 list_of_tools_specs = []
 tool_names = []
@@ -333,9 +338,12 @@ def query_bedrock_claude3_model(step_id, model, prompt, connect_id):
 # Agent code end
 
 # Focus is only on Claude and Messages API builder
-def prepare_prompt_template(system_prompt, context, query):
+def prepare_prompt_template(system_prompt, context, query, connect_id):
     prompt_template_arr = claude3_prompt_builder_for_images_and_text(query, context)
-    user_messages =  {"role": "user", "content": prompt_template_arr}
+    user_messages =  {"role": "user", "content": prompt_template_arr}  #TODO::  this is user message
+    #save conversation
+    push_to_dynamodb('', connect_id, user_messages)
+    
     prompt_template= {"anthropic_version": "bedrock-2023-05-31",
                         "max_tokens": 10000,
                         "system": system_prompt,
@@ -532,7 +540,6 @@ def websocket_send(connect_id, message):
                 Data=base64.b64encode(json.dumps(message, indent=4).encode('utf-8')),
                 ConnectionId=connect_id
             )
-
 
 class CustomJsonEncoder(json.JSONEncoder):
     def default(self, obj):
