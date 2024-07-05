@@ -11,33 +11,27 @@ import logging
 from datetime import datetime, timedelta
 from agent_executor_utils import agent_executor
 
-date = datetime.now()
-next_date = datetime.now() + timedelta(days=30)
-year = date.year
-month = date.month
-month_label = date.strftime('%B')
-next_month_label = next_date.strftime('%B')
-day = date.day
 
+#Begin: Needed by Master orchestrator
 ws_agent_name = "Web Search Agent"
-ws_agent_description = f"{ws_agent_name} searches the web for accurate results" 
+# Agent success criteria
 ws_agent_stop_conditions = f"This {ws_agent_name} successfully returns summarized results from the web"
 # When to use this agent
 ws_agent_uses = f""" 
+Use the {ws_agent_name} if:
+   1. You dont have details about what the user is asking
+   2. The question asked by the user is complex
 If the user query is seeking additional information then use the {ws_agent_name} to answer the question
 """
+# Agent use examples
 ws_agent_use_examples = f"""
-Is APPL a buy then Use the {ws_agent_name}
-Is AMZ a buy then Use the {ws_agent_name}
-Is NVDA a buy then Use the {ws_agent_name}     
+Is APPL a buy then use the {ws_agent_name}
+Is AMZ a buy then use the {ws_agent_name}
+Is NVDA a buy then use the {ws_agent_name}     
 """
-
-
-
-
+# Agent Tool information
 web_search_specs = f"""\
 <agent_name>{ws_agent_name}</agent_name>
-<agent_description>{ws_agent_description}</agent_description>
 <tool_set>
 	<instructions>
 	  You are an agent that helps users to search the web for accurate results.
@@ -63,6 +57,17 @@ web_search_specs = f"""\
 	
 	</tool_set>
 """
+
+#End: Needed by Master orchestrator
+
+date = datetime.now()
+next_date = datetime.now() + timedelta(days=30)
+year = date.year
+month = date.month
+month_label = date.strftime('%B')
+next_month_label = next_date.strftime('%B')
+day = date.day
+
 
 bedrock_client = boto3.client('bedrock-runtime')
 credentials = boto3.Session().get_credentials()
@@ -93,7 +98,7 @@ def rewrite_user_query(chat_history):
                         </instructions>
                         """
     
-    search_query = agent_executor(system_prompt, json.loads(chat_history), "rewritten user query", "<user-query></user-query>")
+    search_query = agent_executor(system_prompt, json.loads(chat_history), "rewritten user query", "<user-query></user-query>", False)
     print(f'reformatted search_query text = {search_query}')
     return search_query
 
@@ -180,7 +185,7 @@ def summarize_search_results(search_data, user_query):
                         ]
         }
     ]
-    summarized = agent_executor(system_prompt, query_list, "Summarized Search Results", "<web_search_results></web_search_results>")
+    summarized = agent_executor(system_prompt, query_list, "Summarized Search Results", "<web_search_results></web_search_results>", False)
     return f'<web_search_results_summarized>{summarized}</web_search_results_summarized>'
 
 # if __name__ == '__main__':

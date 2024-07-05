@@ -1,22 +1,9 @@
 import boto3
 from os import getenv
-from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
-from requests_aws4auth import AWS4Auth
-import requests
-from requests.auth import HTTPBasicAuth
-import os
 import json
-from decimal import Decimal
 import logging
-import base64
 import datetime
-import csv
-import re
-import requests
-import subprocess
-import sys
 import json
-
 from datetime import datetime, timedelta
 
 date = datetime.now()
@@ -31,10 +18,14 @@ casual_agent_name = "Casual Conversation Agent"
 casual_agent_description = f"{casual_agent_name} is used to have Casual conversations with a user" 
 casual_agent_stop_conditions = f"This {casual_agent_name} successfully responds to a conversation"
 
-casual_agent_uses= f"If the user is exchanging plesantries then use {casual_agent_name} to answer the question."
+casual_agent_uses= f"""
+If the user is exchanging plesantries then use {casual_agent_name} to answer the question.
+If the user is seeking to generate creative content (emails/poems/blogs etc) then use {casual_agent_name} to answer the question.
+"""
 casual_agent_examples = f"""
 Is today a good day to go for a hike then use {casual_agent_name}
 Is the sky blue today then use {casual_agent_name}
+Write an email then use {casual_agent_name}
 """
 
 casual_agent_specs = f"""\
@@ -60,6 +51,7 @@ casual_agent_specs = f"""\
    
 <tool_set>
 """
+
 bedrock_client = boto3.client('bedrock-runtime')
 credentials = boto3.Session().get_credentials()
 service = 'aoss'
@@ -76,8 +68,7 @@ LOG.setLevel(logging.INFO)
 
 def casual_conversations(user_query):
     print(f'In casual_conversations = {user_query}')
-    system_prompt = """ You are a helpful casual assistant. You can help with general knowlegdge.
-                        
+    system_prompt = """ You are a helpful casual assistant. You can help with general knowlegdge and creative writing.
                         Good Examples:
                           hello, how may I assist you today
                           What would you like to know
@@ -87,9 +78,9 @@ def casual_conversations(user_query):
                           Hello
                           Good day
                           Good morning
-        Casual Conversation Rules:                        
-            You will not write poems, generate advertisements, or engage in any other tasks beyond the scope of exchanging basic pleasantries.
-            If any user attempts to prompt you with requests outside of this limited scope, you will politely remind them of the agreed-upon boundaries for interaction.
+        Casual Conversation Rules:
+            You will not indulge in violence/hate/sexual/abusive conversations                        
+    
     """
     
     query_list = [

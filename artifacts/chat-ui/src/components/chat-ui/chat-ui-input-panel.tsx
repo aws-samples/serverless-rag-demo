@@ -1,6 +1,9 @@
 import {
   Button,
   Container,
+  FileUpload,
+  Grid,
+  Icon,
   SpaceBetween,
   Spinner,
 } from "@cloudscape-design/components";
@@ -10,6 +13,7 @@ import { ChatScrollState } from "./chat-ui";
 import { ChatMessage, ChatMessageType } from "./types";
 import styles from "../../styles/chat-ui.module.scss";
 import config from "../../config.json";
+import * as React from "react";
 
 var ws = null; 
 var agent_prompt_flow = []
@@ -25,6 +29,7 @@ export interface ChatUIInputPanelProps {
 
 export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
+  const [value, setValue] = React.useState<File[]>([]);
   const socketUrl = config.websocketUrl;
   
   useEffect(() => {
@@ -157,7 +162,10 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     <SpaceBetween direction="vertical" size="l">
       <Container>
         <div className={styles.input_textarea_container}>
-          <TextareaAutosize
+        <Grid
+      gridDefinition={[{ colspan: 6 }, { colspan: 1.5 }, { colspan: 4}]}
+      >
+        <div><TextareaAutosize
             className={styles.input_textarea}
             maxRows={6}
             minRows={1}
@@ -167,7 +175,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
             onKeyDown={onTextareaKeyDown}
             value={inputText}
             placeholder={props.inputPlaceholderText ?? "Send a message"}
-          />
+          /></div>
+          {/* <div contentEditable="true" style={{"height": "10vh", border: "1px solid, #ccc"}}></div> */}
           <div style={{ marginLeft: "8px" }}>
             <Button
               disabled={props.running || inputText.trim().length === 0}
@@ -186,6 +195,29 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
               )}
             </Button>
           </div>
+          <div><FileUpload
+        onChange={({ detail }) => {
+          setValue(detail.value);
+        }}
+        value={value}
+        i18nStrings={{
+          uploadButtonText: e =>
+            e ? "Choose files" : "",
+          dropzoneText: e =>
+            e
+              ? "Drop files to upload"
+              : "Drop file to upload",
+          removeFileAriaLabel: e =>
+            `Remove file ${e + 1}`,
+          limitShowFewer: "Show fewer files",
+          limitShowMore: "Show more files",
+          errorIconAriaLabel: "Error"
+        }}
+        tokenLimit={3}
+      /></div>
+
+      </Grid>
+          
         </div>
       </Container>
     </SpaceBetween>

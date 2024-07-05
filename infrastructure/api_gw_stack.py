@@ -65,7 +65,9 @@ class ApiGw_Stack(Stack):
                                                     user_pool_client_name=f"rag-llm-user-pool-client-{env_name}",
                                                     generate_secret=False,
                                                     auth_flows=_cognito.AuthFlow(
-                                                       user_password=True
+                                                       user_password=True,
+                                                       # TODO validate this
+                                                       user_srp=True
                                                     ),
                                                     id_token_validity=_cdk.Duration.days(1)
                                                    )

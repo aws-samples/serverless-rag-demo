@@ -1,127 +1,115 @@
 import boto3
 from os import getenv
-from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
-from requests_aws4auth import AWS4Auth
-import requests
-from requests.auth import HTTPBasicAuth
-import os
 import json
-from decimal import Decimal
-import logging
-import base64
-import datetime
+from datetime import datetime
+from agent_executor_utils import upload_object_to_s3
 import csv
 import re
 import requests
 import subprocess
 import sys
-import json
-
-
-def install_package(package_name: str):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "geopy", "--target", "/tmp"])
-    sys.path.append('/tmp')
-
-
-bedrock_client = boto3.client('bedrock-runtime')
-credentials = boto3.Session().get_credentials()
-service = 'aoss'
-region = getenv("REGION", "us-east-1")
-model_id = getenv("CODE_GENERATOR_MODEL", "anthropic.claude-3-sonnet-20240229-v1:0")
-
 
 code_gen_agent_name = "Code Generator Agent"
-code_gen_agent_description = "This Tool consists of method to generate and execute pure python code" 
+# When to use this agent
+code_gen_agent_uses = f""" 
+Use the {code_gen_agent_name} if:
+   1. If the user wants to generate any kind of application or code.
+"""
 
-code_generation_step_rules = """
-                    Additional Code Generation Rules
-                    1. For charts or graphs use plotly library
-                    2. For presentations use python-pptx
-                """
+# Agent use examples
+code_gen_agent_use_examples = f"""
+How would I write a code to generate a fibonnaci series -> Use the {code_gen_agent_name} to generate the javascript html single page code
+How would I create my own calculator -> Use the {code_gen_agent_name} to generate the javascript html single page code
+How would I create a class that generates prime numbers -> Use the {code_gen_agent_name} to generate the javascript html single page code
+Plot this chart ->  Use the {code_gen_agent_name} to generate the javascript html single page code
+"""
+
+# Agent success criteria
+code_gen_agent_stop_condition = f"""
+  This {code_gen_agent_name} agent successfully generates the javascript code
+"""
 
 code_gen_specs = f"""\
 <agent_name>{code_gen_agent_name}</agent_name>
-<agent_description>{code_gen_agent_description}</agent_description>
 <tool_set>
 	<instructions>
-    1. You will only generate and execute python code.
-    2. You will also pip install any missing dependencies before code execution using
-       the install_package method provided in this tool set.
-    3. You will always generate syntactically correct python code compatible with python 3.10 .
+    1. You will generate the javascript html single page code.
+    2. For other requirements, you could use other Javascript libraries as needed.
    </instructions>
-	<tool_description>
-		<tool_usage>This tool is used to generate pure python code</tool_usage>
-		<tool_name>install_package</tool_name>
-		<parameters>
-			<parameter>
-				<name>package_name</name>
-				<type>string</type>
-				<description>Enter the package name you want to install</description>
-			</parameter>
-		</parameters>
-	</tool_description>
-	<tool_description>
+	
+    <tool_description>
 		<tool_usage>This tool is used to generate structured python code</tool_usage>
-		<tool_name>generate_and_execute_python_code</tool_name>
+		<tool_name>generate_HTML</tool_name>
 		<parameters>
 			<parameter>
 				<name>user_query</name>
 				<type>string</type>
 				<description>Enter the user query based on which python code will be generated</description>
 			</parameter>
-		</parameters>
-	</tool_description>
-	<tool_description>
-		<tool_usage>Store any artifacts generated from the execute method on S3 bucket for easier access</tool_usage>
-		<tool_name>upload_to_s3</tool_name>
-		<parameters>
-			<parameter>
-				<name>file</name>
-				<type>file</type>
-				<description>Upload any artifacts generated from the execute method on S3 bucket for easier access</description>
-			</parameter>
-		</parameters>
-	</tool_description>
-	<tool_description>
-		<tool_usage>Store any artifacts generated from the execute method on a local file path</tool_usage>
-		<tool_name>get_file</tool_name>
-		<parameters>
-			<parameter>
-				<name>file</name>
+            <parameter>
+				<name>additional_data_points</name>
+				<type>string</type>
+				<description>Raw data points in the chat history that may be useful to create the HTML code</description>
 			</parameter>
 		</parameters>
 	</tool_description>
 	</tool_set>
 """
 
+bedrock_client = boto3.client('bedrock-runtime')
+model_id = getenv("CODE_GENERATOR_MODEL", "anthropic.claude-3-sonnet-20240229-v1:0")
 
-def generate_and_execute_python_code(user_query: str):
-    system_prompt = """You will generate structured syntactially correct python code only.
-                    You will not generate any text or tags. 
-                    You will only generate python code based on user query.
-                    You will install missing packages before importing them by calling the install_package(package_name) method.
-                    You will use the return_me variable to return the result of your code execution.
-                    Example 1:
-                        install_package("geopy")
-                        import geopy
 
-                    Example 2:
-                        install_package("python-pptx")
-                        from pptx import Presentation
-                   
-                    You will only return python code and no other text or tags
-            """
+def generate_HTML(user_query: str, additional_data_points: str =""):
+    system_prompt = """You will generate structured syntactially correct HTML code only based on User query.
+                    You will always generate syntactically correct single page HTML/Javascript/JQuery/CSS code.
+                    The CSS/HTML/Javascript code should be part of a single file within the <html></html> tags.
+                    <instructions>
+                    1. You will generate the javascript html single page code.
+                    2. For JQuery follow the process mentioned in <jq_steps> tags
+                    <jq_steps>
+                        a. Use JQuery by importing the below javascript. Do not use any other version of JQuery
+                        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+                    </jq_steps>
+                    3. For CSS styling follow the process mentioned in <css_steps> tags
+                    <css_steps>
+                    a. Use Bootstrap by importing the below css
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+                    </css_steps>
+                    4.  For generating PDFs follow the process mentioned in <pdf_steps> tags.
+                    <pdf_steps>
+                    a. Use jsPDF by importing the below javascript. Do not use any other version of jsPDF
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.4/jspdf.min.js"></script>
+                    </pdf_steps>
+                    5. For icons follow the process mentioned in <icon_steps> tags
+                    <icon_steps>
+                    a. Use font-awesome by importing the below css
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+                    </icon_steps>
+                    6. For other requirements, you could use other Javascript libraries as needed.
+                    </instructions>
+                """
     
+    user_prompt = user_query
+    
+    if additional_data_points != "":
+        user_prompt = f"""The following context was provided by the user:
+                        <context>
+                        {additional_data_points} </context> 
+                        <instructions>
+                        When creating the HTML code you should consider the context available in <context></context> tags
+                        You should generate a well formatted accurate presentation HTML
+                        <instructions>  + {user_query}"""
     query_list = [
         {
             "role": "user",
-            "content": user_query
+            "content": user_prompt
         }
     ]
 
     prompt_template= {
                         "anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 10000,
+                        "max_tokens": 20000,
                         "system": system_prompt,
                         "messages": query_list
                     }
@@ -134,23 +122,14 @@ def generate_and_execute_python_code(user_query: str):
                 accept='application/json',
                 contentType='application/json'
     )
+
     llm_output = json.loads(response['body'].read())
-    python_code = ''
-    data = ''
+    html_code = ''
     if 'content' in llm_output:
-        python_code = llm_output['content'][0]['text']
-        data = execute_python_code(python_code)
-    print(f'Code Gen -> Python Code {python_code}')
-    return data
-
-
-def execute_python_code(function_str: str):
-    print(f'execute code function_str -> {function_str}')
-    try:
-        loc = {}
-        exec(function_str, globals(), loc)
-        return_workaround = loc['return_me']
-        return f"Code executed successfully {return_workaround}"
-    except Exception as e:
-        return f"Error executing the code : {str(e)}"
-    
+        html_code = llm_output['content'][0]['text']
+        is_upload, upload_location = upload_object_to_s3(html_code, "html", "text/html")
+    print(f'Code Gen -> HTML Code {html_code}')
+    if(is_upload):
+        return f"HTML Code created successfully at location <location>{upload_location}</location>"
+    else:
+        return f"HTML code generation failed {upload_location}"

@@ -7,15 +7,14 @@ import boto3
 import inspect
 
 # Import Agents
-from agents.retriever_agent import retriever_specs, retreiver_agent_name, retriever_agent_description, fetch_data, query_rewrite, query_translation, retriever_step_rules
-from agents.casual_conversations_agent import casual_agent_name, casual_agent_description, casual_agent_specs, casual_agent_uses, casual_agent_examples, casual_conversations, casual_agent_stop_conditions
-from agents.code_generator_agent  import code_gen_specs, code_gen_agent_name, code_gen_agent_description, generate_and_execute_python_code, execute_python_code, install_package
-from agents.weather_agent import weather_agent_name, weather_agent_description, weather_agent_uses, weather_agent_examples, weather_specs, get_weather, get_lat_long, weather_agent_stop_conditions
-from agents.web_search_agent import ws_agent_name, ws_agent_description, web_search_specs, ws_agent_uses, ws_agent_use_examples, scrape, rewrite_user_query, ws_agent_stop_conditions
-from agents.ppt_generator_agent import ppt_agent_name, ppt_specs, ppt_agent_description, ppt_agent_uses, ppt_agent_use_examples, generate_ppt, ppt_agent_stop_condition
+from agents.casual_conversations_agent import casual_agent_name, casual_agent_specs, casual_agent_uses, casual_agent_examples, casual_conversations, casual_agent_stop_conditions
+from agents.code_generator_agent  import code_gen_specs, code_gen_agent_name, code_gen_agent_uses, code_gen_agent_stop_condition, code_gen_agent_use_examples, generate_HTML
+from agents.weather_agent import weather_agent_name, weather_agent_uses, weather_agent_examples, weather_specs, get_weather, get_lat_long, weather_agent_stop_conditions
+from agents.web_search_agent import ws_agent_name, web_search_specs, ws_agent_uses, ws_agent_use_examples, scrape, rewrite_user_query, ws_agent_stop_conditions
+from agents.ppt_generator_agent import ppt_agent_name, ppt_specs, ppt_agent_uses, ppt_agent_use_examples, generate_ppt, ppt_agent_stop_condition
 
 ADVANCED_AGENT_TEMPLATE = """\
-Your job as an assistant is to solve a problem to a given user question based on the instructions and tool sets below.
+Your role as an Orchestrator Agent is to solve a problem to a given user question based on the instructions and other agents available below.
 
 <instructions>
 1. In this environment you have access to a set of Agents namely {agent_names} that you will always use to answer the question.
@@ -28,18 +27,19 @@ Your job as an assistant is to solve a problem to a given user question based on
 7. Once you truly know the final answer to the question only then place the answer in <answer></answer> tags within a step. Make sure to answer in a full sentence which is friendly.
 8. Remember not to unnecessarily add the <answer> tags while listing down steps to solve the problem.
 9. If none of the tools at your disposable can answer the question, then wrap your response within <unanswered></unanswered> tags.
-10. The Agents will help you solve the following queries: {agent_description}
-11. If you need to ask a question to the user, then use the <question></question> tags
-12. Here are the tag responsibilities.
+10. The agents should be used in the following manner {agent_collaboration_rules}
+11. Here are some examples to use the Agent {agent_use_examples}.
+12. If you need to ask a question to the user, then use the <question></question> tags
+13. Here are the tag responsibilities.
     <function_call></function_call> : This tag is used to call a function
     <answer></answer> : This tag is used to wrap the final answer
     <question></question> : This tag is used to ask a question to the user, its also used to make recommendations to the user.
     <unanswered></unanswered> : If you cannot answer the question with the available set of tools place it in <unanswered></unanswered> tags
-13. If the user query is not related to the agents available, then respond with <unanswered></unanswered> tags.
-14. Never reveal the functions your using to achieve the results.
-15. Do not reflect on the quality of the returned search results in your response
-16. Below are the success criteria's for every agent, you should stop calling this agent consecutively in your plan after the success conditions are met
-    {agent_success_conditions}
+14. If the user query is not related to the agents available, then respond with <unanswered></unanswered> tags.
+15. Never reveal the functions your using to achieve the results.
+16. Do not reflect on the quality of the returned search results in your response
+17. Below are the success criteria for every Agent. You must not call the Agents function consecutively once the success criteria is met
+    {agent_stop_conditions}
 </instructions>
 
 Below is the Sample XML Schema of a step wise execution strategy in <schema-example> tags
@@ -116,66 +116,85 @@ AGENT_PROMPT = PromptTemplate.from_template(ADVANCED_AGENT_TEMPLATE)
 
 # Some agents dont need a multi-step execution so we must exclude the loop for such agents
 EXCLUDE_MULTI_STEP_EXECUTION = [casual_agent_name]
+RESERVED_TAGS=['<location>', '</location>']
 SHARE_CHAT_HISTORY = [casual_agent_name, ws_agent_name]
 
 AGENT_MAP = {
-    casual_agent_name: {"description": casual_agent_description, "specs": casual_agent_specs,
-                        "uses": casual_agent_uses, "examples": casual_agent_examples},
-    weather_agent_name: {"description": weather_agent_description, "specs": weather_specs,
-                        "uses": weather_agent_uses, "examples": weather_agent_examples},
-    ws_agent_name: {"description": ws_agent_description, "specs": web_search_specs,
-                    "uses": ws_agent_uses,"examples": ws_agent_use_examples},
-    ppt_agent_name: {"description": ppt_agent_description, "specs": ppt_specs,
-                    "uses": ppt_agent_uses,"examples": ppt_agent_use_examples, "stop_condition": ppt_agent_stop_condition}
-}
+    casual_agent_name: {"specs": casual_agent_specs, "uses": casual_agent_uses, "examples": casual_agent_examples},
+    weather_agent_name: {"specs": weather_specs, "uses": weather_agent_uses, "examples": weather_agent_examples},
+    ws_agent_name: {"specs": web_search_specs, "uses": ws_agent_uses,"examples": ws_agent_use_examples},
+    code_gen_agent_name: {"specs": code_gen_specs, "uses": code_gen_agent_uses,"examples": code_gen_agent_use_examples, "stop_condition": code_gen_agent_stop_condition},
+    ppt_agent_name: { "specs": ppt_specs, "uses": ppt_agent_uses,"examples": ppt_agent_use_examples, "stop_condition": ppt_agent_stop_condition}
+    }
 
 def get_classification_prompt(agent_type: str) -> tuple[str, str, str]:
-    agent_specs, agent_names, agent_descriptions, agent_uses, agent_use_examples, agent_stop_conditions = get_agent_tool_details(agent_type)
+    agent_specs, agent_names, agent_uses, agent_use_examples, agent_stop_conditions = get_agent_tool_details(agent_type)
     return f"""
     Your role is to classify the User input to determine which is the agent that can solve it. 
-    Available Agents: {agent_names}
+    
     <instructions>
-      {agent_uses}
+       You will never attempt to solve a user query yourself. You will only classify the problem to find the agent that can solve it.
+       You must respond with the name of the agent specified in the <available_agents></available_agents> tags that can solve the problem.
+       Below is how different agents can be used. This will help you identify the right agent to resolve the problem
+        {agent_uses}
     </instructions>
+    <available_agents>{agent_names}</available_agents>
     <examples>{agent_use_examples}</examples>""", "agent_name", "<agent_name></agent_name>"
+
+def get_can_the_orchestrator_answer_prompt():
+    return """
+    Your role is to determine if the Orchestrator Agent can answer the question based on the available chat history.
+    <instructions>
+      If you can answer the question with the context available in chat history, then respond by placing your answer in <can_answer></can_answer> tags.
+      Do not miss out on Code locations/File locations mentioned in the chat history.
+      If you cannot answer the question based on the available context, then respond with <cannot_answer></cannot_answer> tags.
+      You will have either can_answer or cannot_answer tags in your response never both.
+      You will never reveal or share method names, function details, internal tools details in the <can_answer> tags
+    </instructions>
+    <examples>
+      <can_answer>$ANSWER </can_answer>
+      <cannot_answer> The orchestrator cannot answer the question </cannot_answer>
+    </examples>"""
 
 def get_agent_tool_details(agent_type: str):
     list_of_agent_specs = []
     agent_names = []
-    agent_descriptions = []
     agent_uses = []
     agent_use_examples = []
     agent_stop_conditions = []
     
+    # Used to classify the request
     if agent_type == 'advanced-agent':
-        # Web Search Agent
-        agent_names.extend([ws_agent_name, casual_agent_name, weather_agent_name, ppt_agent_name])
-        list_of_agent_specs.extend([web_search_specs, casual_agent_specs, weather_specs, ppt_specs])
-        agent_descriptions.extend([ws_agent_description, casual_agent_description, weather_agent_description, ppt_agent_description])
-        agent_uses.extend([ws_agent_uses, casual_agent_uses, weather_agent_uses, ppt_agent_uses])
-        agent_use_examples.extend([ws_agent_use_examples, casual_agent_examples, weather_agent_examples, ppt_agent_use_examples])
-        agent_stop_conditions.extend([ppt_agent_stop_condition, weather_agent_stop_conditions, ws_agent_stop_conditions, casual_agent_stop_conditions])
-    
+        for agent in AGENT_MAP.keys():
+            agent_names.append(agent)
+            list_of_agent_specs.append(AGENT_MAP[agent]['specs'])
+            agent_uses.append(AGENT_MAP[agent]['uses'])
+            agent_use_examples.append(AGENT_MAP[agent]['examples'])
+            if 'stop_condition' in AGENT_MAP[agent]:
+                agent_stop_conditions.append(AGENT_MAP[agent]['stop_condition'])
+    # Used to call a tool assosciated with the agent
     elif agent_type in AGENT_MAP:
         agent_names.append(agent_type)
         list_of_agent_specs.append(AGENT_MAP[agent_type]['specs'])
-        agent_descriptions.append(AGENT_MAP[agent_type]['description'])
         agent_uses.append(AGENT_MAP[agent_type]['uses'])
         agent_use_examples.append(AGENT_MAP[agent_type]['examples'])
+        if 'stop_condition' in AGENT_MAP[agent_type]:
+            agent_stop_conditions.append(AGENT_MAP[agent_type]['stop_condition'])
 
     agent_names_str = ', '.join(agent_names)
     agent_specs = ' \n '.join(list_of_agent_specs)
-    agent_descriptions_str=', '.join(agent_descriptions)
     agent_uses_str = '\n'.join(agent_uses) 
     agent_use_examples = '\n'.join(agent_use_examples)
     agent_stop_conditions = '\n'.join(agent_stop_conditions)
 
-    return agent_specs, agent_names_str, agent_descriptions_str, agent_uses_str, agent_use_examples, agent_stop_conditions
+    return agent_specs, agent_names_str, agent_uses_str, agent_use_examples, agent_stop_conditions
 
 # Only one Agent is injected at a time based on what the classifier decides
 def get_system_prompt(agent_type):
-    agent_specs, agent_names_str, agent_descriptions_str, agent_uses_str, agent_use_examples, agent_stop_conditions = get_agent_tool_details(agent_type)
-    return AGENT_PROMPT.format(agent_specs=agent_specs, agent_names=agent_names_str, agent_description=agent_descriptions_str, agent_success_conditions=agent_stop_conditions)
+    agent_specs, agent_names_str, agent_uses_str, agent_use_examples, agent_stop_conditions = get_agent_tool_details(agent_type)
+    return AGENT_PROMPT.format(agent_specs=agent_specs, agent_names=agent_names_str, agent_collaboration_rules=agent_uses_str, agent_stop_conditions=agent_stop_conditions,
+                            agent_use_examples=agent_use_examples
+                            )
 
 def call_function(tool_name, parameters):
     func = globals()[tool_name]
@@ -193,79 +212,89 @@ def call_function(tool_name, parameters):
     return output
 
 def agent_execution_step(step_id, output, chat_history):
-    assistant_prompt = []
-    human_prompt = []
-    step = output
-    agent_name = ''
-    func_response_str = ''
-    done = False
-    # first check if the model has answered the question
-    # parse the output for any 
-    if f'<step_{step_id}>' in output:
-        step = output.split(f'<step_{step_id}>')[1]
-        step = step.split(f'</step_{step_id}>')[0]
-    if '<agent_name>' in step and '</agent_name>' in step:
-        agent_name = step.split('<agent_name>')[1]
-        agent_name = agent_name.split('</agent_name>')[0]
-    if '<unanswered>' in step:
-        unanswered = step.split('<unanswered>')[1]
-        unanswered = unanswered.split('</unanswered>')[0]
-        done = True
-        assistant_prompt.append({"type":"text", "text": unanswered})
-        return done, None, assistant_prompt, agent_name
+    try:
+        assistant_prompt = []
+        human_prompt = []
+        step = output
+        agent_name = ''
+        func_response_str = ''
+        done = False
+        # first check if the model has answered the question
+        # parse the output for any 
+        if f'<step_{step_id}>' in output:
+            step = output.split(f'<step_{step_id}>')[1]
+            step = step.split(f'</step_{step_id}>')[0]
+            
+        if '<agent_name>' in step and '</agent_name>' in step:
+            agent_name = step.split('<agent_name>')[1]
+            agent_name = agent_name.split('</agent_name>')[0]
     
-    elif '<question>' in step:
-        question = step.split('<question>')[1]
-        question = question.split('</question>')[0]
-        done = True
-        assistant_prompt.append({"type":"text", "text": question})
-        return done, None, assistant_prompt, agent_name
-    
-    elif '<answer>' in step:
-        answer = step.split('<answer>')[1]
-        answer = answer.split('</answer>')[0]
-        done = True
-        assistant_prompt.append({"type":"text", "text": answer})
-        return done, None, assistant_prompt, agent_name
-    
-    # if the model has not answered the question, go execute a function
-    elif '<function_call>' in step:
-        function_xml = step.split('<function_call>')[1]
-        function_xml = function_xml.split('</function_call>')[0]
-        function_dict = xmltodict.parse(function_xml)
-        func_name = function_dict['invoke']['tool_name']
-        parameters={}
-        if 'parameters' in function_dict['invoke']:
-            parameters = function_dict['invoke']['parameters']
-
-        print(f"agent_execution_step:: func_name={func_name}::params={parameters}::function_dict={function_dict}::")
-        # call the function which was parsed
-        func_response = None
-        try:
-            if agent_name in SHARE_CHAT_HISTORY:
-                for key in parameters.keys():
-                    if isinstance(parameters[key], str):
-                        parameters[key] = json.dumps(chat_history)
-
-            func_response = call_function(func_name, parameters)
-        except Exception as e:
-            func_response = f"Exception {e} {dir(e)} occured when executing function {func_name}. "
-            print(f'Function call error {e}, {dir(e)}')
-        print(f"agent_execution_step after function call :: func_response={func_response}")
-        # create the next human input
-        func_response_str = f"""\n\n Ok we have executed step {step_id}. Here is the result from your function call on tool {func_name} \n\n"""
-        if agent_name in EXCLUDE_MULTI_STEP_EXECUTION:
-            assistant_prompt.append({"type":"text", "text": f" {func_response} " })
+        if '<unanswered>' in step:
+            unanswered = step.split('<unanswered>')[1]
+            unanswered = unanswered.split('</unanswered>')[0]
             done = True
+            assistant_prompt.append({"type":"text", "text": unanswered})
+            return done, None, assistant_prompt, agent_name, False
+        
+        elif '<question>' in step:
+            question = step.split('<question>')[1]
+            question = question.split('</question>')[0]
+            done = True
+            assistant_prompt.append({"type":"text", "text": question})
+            return done, None, assistant_prompt, agent_name, False
+        
+        elif '<answer>' in step:
+            answer = step.split('<answer>')[1]
+            answer = answer.split('</answer>')[0]
+            done = True
+            assistant_prompt.append({"type":"text", "text": answer})
+            return done, None, assistant_prompt, agent_name, False
+        
+        # if the model has not answered the question, go execute a function
+        elif '<function_call>' in step:
+            function_xml = step.split('<function_call>')[1]
+            function_xml = function_xml.split('</function_call>')[0]
+            function_dict = xmltodict.parse(function_xml)
+            func_name = function_dict['invoke']['tool_name']
+            parameters={}
+            if 'parameters' in function_dict['invoke']:
+                parameters = function_dict['invoke']['parameters']
+    
+            print(f"agent_execution_step:: func_name={func_name}::params={parameters}::function_dict={function_dict}::")
+            # call the function which was parsed
+            func_response = None
+            try:
+                if agent_name in SHARE_CHAT_HISTORY:
+                    for key in parameters.keys():
+                        if isinstance(parameters[key], str):
+                            parameters[key] = json.dumps(chat_history)
+    
+                func_response = call_function(func_name, parameters)
+            except Exception as e:
+                func_response = f"Exception {e} {dir(e)} occured when executing function {func_name}. "
+                print(f'Function call error {e}, {dir(e)}')
+            print(f"agent_execution_step after function call :: func_response={func_response}")
+            # create the next human input
+            func_response_str = f"""\n\n Ok {agent_name} has executed the step {step_id} by calling function {func_name}. Here is the result from your function call on tool {func_name} \n\n"""
+            if agent_name in EXCLUDE_MULTI_STEP_EXECUTION:
+                assistant_prompt.append({"type":"text", "text": f" {func_response} " })
+                done = True
+            elif any(ele in func_response for ele in RESERVED_TAGS):
+                done = True
+                assistant_prompt.append({"type":"text", "text": func_response})            
+                return done, None, assistant_prompt, agent_name, True
+            else:
+                func_response_str = func_response_str + f'<function_result>{func_response}</function_result>'
+                assistant_prompt.append({"type":"text", "text": f' Please call this tool {func_name} to execute step {step_id}: {step}' })
+                human_prompt.append({ "type": "text", "text": f" {func_response_str} "})
         else:
-            func_response_str = func_response_str + f'<function_result>{func_response}</function_result>'
-            assistant_prompt.append({"type":"text", "text": f' Please call this tool {func_name} to execute step {step_id}: {step}' })
-            human_prompt.append({ "type": "text", "text": f" {func_response_str} "})
-    else:
-        # When none of the tags are present. Erratic Behaviours. Exit loop
-        assistant_prompt.append({"type": "text", "text": output})
-        done = True
-    return done, human_prompt, assistant_prompt, agent_name
+            # When none of the tags are present. Erratic Behaviours. Exit loop
+            assistant_prompt.append({"type": "text", "text": output})
+            done = True
+        return done, human_prompt, assistant_prompt, agent_name, False
+    except Exception as e:
+        print(f'Step execution error occured. Error {e}')
+        return False, [{"type": "text", "text": f'Step execution error occured. Error {e}. Create a correct step plan'}], [{"type": "text", "text": f'Step execution error occured. Error {e} '}], None, False
 
 
 rag_chat_bot_prompt = """You are a Chatbot designed to assist users with their questions.
