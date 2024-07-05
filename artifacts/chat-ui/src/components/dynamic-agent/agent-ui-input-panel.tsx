@@ -2,19 +2,17 @@ import {
   Button,
   Container,
   SpaceBetween,
-  Spinner,
+  Spinner, Textarea, Grid
 } from "@cloudscape-design/components";
 import { useEffect, useLayoutEffect, useState } from "react";
-import TextareaAutosize from "react-textarea-autosize";
 import { ChatScrollState } from "./agent-ui";
 import { ChatMessage, ChatMessageType } from "./types";
-import styles from "../../styles/chat-ui.module.scss";
 import config from "../../config.json";
 
-var ws = null; 
+var ws = null;
 var agent_prompt_flow = []
 
-export interface ChatUIInputPanelProps {
+export interface AgentChatUIInputPanelProps {
   inputPlaceholderText?: string;
   sendButtonText?: string;
   running?: boolean;
@@ -22,11 +20,11 @@ export interface ChatUIInputPanelProps {
   onSendMessage?: (message: string, type: string) => void;
 }
 
-export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
+export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
   const socketUrl = config.websocketUrl;
   const [message, setMessage] = useState('');
-  
+
   useEffect(() => {
     const onWindowScroll = () => {
       if (ChatScrollState.skipNextScrollEvent) {
@@ -37,8 +35,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       const isScrollToTheEnd =
         Math.abs(
           window.innerHeight +
-            window.scrollY -
-            document.documentElement.scrollHeight
+          window.scrollY -
+          document.documentElement.scrollHeight
         ) <= 10;
 
       if (!isScrollToTheEnd) {
@@ -76,26 +74,25 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     setInputText("");
 
     const access_token = sessionStorage.getItem('accessToken');
-    
+
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
-        agent_prompt_flow.push({ 'role': 'user', 'content': [{"type": "text", "text": inputText}] })
-        if(ws==null || ws.readyState==3 || ws.readyState==2) {
-          
+        agent_prompt_flow.push({ 'role': 'user', 'content': [{ "type": "text", "text": inputText }] })
+        if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
+
           ws = new WebSocket(socketUrl);
           ws.onerror = function (event) {
             console.log(event);
           }
         } else {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)) , behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
-          
-       }
-        
+          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
+        }
+
         ws.onopen = () => {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
-          
+          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
+
         };
         var messages = ''
         var thought = ''
@@ -103,11 +100,13 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           if (event.data.includes('message')) {
             var evt_json = JSON.parse(event.data)
             props.onSendMessage?.(evt_json['message'], ChatMessageType.AI);
-          } 
+          }
           else {
             var response_details = JSON.parse(atob(event.data))
+            console.log(response_details);
             if ('intermediate_execution' in response_details) {
               props.onSendMessage?.(response_details['intermediate_execution'], ChatMessageType.AI);
+              //props.onSendMessage?.("", ChatMessageType.AI);
             }
             else if ('prompt_flow' in response_details) {
               var is_done = Boolean(response_details['done'])
@@ -125,7 +124,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
                   }
                   agent_prompt_flow.push({ "role": response_details['prompt_flow'][k]['role'], "content": content })
                 }
-  
+
                 for (var i = 0; i < response_details['prompt_flow'].length; i++) {
                   if ('content' in response_details['prompt_flow'][i]) {
                     var content_list = response_details['prompt_flow'][i]['content']
@@ -133,7 +132,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
                       if ('text' in content_list[j]) {
                         thought = thought + capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]['text']
                       } else {
-                        thought = thought +  capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]
+                        thought = thought + capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]
                       }
                     }
                   }
@@ -142,7 +141,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
                 props.onSendMessage?.(messages, ChatMessageType.AI);
               } else {
                 if (response_details['prompt_flow'].length > 0) {
-                  
+
                   var last_element = response_details['prompt_flow'][response_details['prompt_flow'].length - 1]
                   if ('content' in last_element) {
                     var content_list = last_element['content']
@@ -157,14 +156,14 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
                       }
                     }
                     agent_prompt_flow.push({ "role": last_element['role'], "content": content })
-                    
+
                     messages = thought.replace('ack-end-of-msg', '')
-                    
+
                     props.onSendMessage?.(messages, ChatMessageType.AI);
                   }
                 }
               }
-  
+
             }
 
           }
@@ -186,50 +185,38 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     return val.charAt(0).toUpperCase() + val.slice(1);
   }
 
-  const onTextareaKeyDown = (
-    event: React.KeyboardEvent<HTMLTextAreaElement>
-  ) => {
-    if (!props.running && event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
+  const OnTextareaKeyDown = (event) => {
+    if (!props.running && event.detail.key === "Enter" && !event.detail.shiftKey) {
+      event.preventDefault()
       onSendMessage();
     }
-  };
-
-  return (
-    <SpaceBetween direction="vertical" size="l">
-      <Container>
-        <div className={styles.input_textarea_container}>
-          <TextareaAutosize
-            className={styles.input_textarea}
-            maxRows={6}
-            minRows={1}
-            spellCheck={true}
-            autoFocus
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={onTextareaKeyDown}
-            value={inputText}
-            placeholder={props.inputPlaceholderText ?? "Send a message"}
-          />
-          <div style={{ marginLeft: "8px" }}>
-            <Button
-              disabled={props.running || inputText.trim().length === 0}
-              onClick={onSendMessage}
-              iconAlign="right"
-              iconName={!props.running ? "angle-right-double" : undefined}
-              variant="primary"
-            >
-              {props.running ? (
-                <>
-                  Loading&nbsp;&nbsp;
-                  <Spinner />
-                </>
-              ) : (
-                <>{props.sendButtonText ?? "Send"}</>
-              )}
-            </Button>
-          </div>
-        </div>
-      </Container>
-    </SpaceBetween>
-  );
+  }
+  return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
+      <Grid gridDefinition={[{ colspan: 11 }, { colspan: 1 }]} >
+        <Textarea
+          spellcheck={true}
+          rows={3}
+          autoFocus
+          onKeyDown={(event) => OnTextareaKeyDown(event)}
+          onChange={({ detail }) => setInputText(detail.value)}
+          value={inputText}
+          placeholder={props.inputPlaceholderText ?? "Send a message"}
+        />
+        <Button
+          disabled={props.running || inputText.trim().length === 0}
+          onClick={onSendMessage}
+          iconAlign="right"
+          iconName={!props.running ? "angle-right-double" : undefined}
+          variant="primary" >
+          {props.running ? (
+            <>
+              Loading&nbsp;&nbsp;
+              <Spinner />
+            </>
+          ) : (
+            <>{props.sendButtonText ?? "Send"}</>
+          )}
+        </Button>
+      </Grid>
+  </Container>);
 }

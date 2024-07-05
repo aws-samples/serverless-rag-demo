@@ -1,7 +1,0 @@
-{
-    "region": "xxxxxx",
-    "userPoolId": "xxxxxxxxxxxxxxxxxxxxxxxx",
-    "clientId": "xxxxxxxxxxxxxxxxxxxxx",
-    "apiUrl": "xxxxxxxxxxxxxxxxxxxxx",
-    "websocketUrl": "xxxxxxxxxxxxxxxxxxxxx"
-}

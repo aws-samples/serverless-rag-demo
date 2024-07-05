@@ -1,19 +1,25 @@
 import { SpaceBetween } from "@cloudscape-design/components";
 import { ChatMessage } from "./types";
-import ChatUIMessage from "./agent-message";
+import AgentChatUIMessage from "./agent-message";
+import { useEffect } from "react";
 
-export interface ChatUIMessageListProps {
+export interface AgentChatUIMessageListProps {
   messages?: ChatMessage[];
   showCopyButton?: boolean;
+  onRenderComplete?: () => void;
 }
 
-export default function ChatUIMessageList(props: ChatUIMessageListProps) {
+export default function AgentChatUIMessageList(props: AgentChatUIMessageListProps) {
   const messages = props.messages || [];
-
+  useEffect(() => {
+    if (props.onRenderComplete) {
+      props.onRenderComplete();
+    }
+  })
   return (
     <SpaceBetween direction="vertical" size="m">
       {messages.map((message, idx) => (
-        <ChatUIMessage
+        <AgentChatUIMessage
           key={idx}
           message={message}
           showCopyButton={props.showCopyButton}

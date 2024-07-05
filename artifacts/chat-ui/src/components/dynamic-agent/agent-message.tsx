@@ -1,23 +1,15 @@
-import {
-  Box,
-  Button,
-  Container,
-  Popover,
-  Spinner,
-  StatusIndicator,
-  TextContent,
-} from "@cloudscape-design/components";
+import { Box, Button, Container, Popover, Spinner, StatusIndicator, TextContent} from "@cloudscape-design/components";
 import remarkGfm from "remark-gfm";
 import ReactMarkdown from "react-markdown";
 import { ChatMessage, ChatMessageType } from "./types";
-import styles from "../../styles/chat-ui.module.scss";
-
-export interface ChatUIMessageProps {
+import AgentChatFileReader from "./agent-file-reader";
+export interface AgentChatUIMessageProps {
   message: ChatMessage;
   showCopyButton?: boolean;
 }
 
-export default function ChatUIMessage(props: ChatUIMessageProps) {
+const regex = /<location>(.+?)<\/location>/;           
+export default function AgentChatUIMessage(props: AgentChatUIMessageProps) {
   return (
     <div>
       {props.message?.type === ChatMessageType.AI && (
@@ -29,7 +21,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
           ) : null}
           {props.message.content.length > 0 &&
           props.showCopyButton !== false ? (
-            <div className={styles.btn_chabot_message_copy}>
+            <div>
               <Popover
                 size="medium"
                 position="top"
@@ -45,20 +37,26 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
                   variant="inline-icon"
                   iconName="copy"
                   onClick={() => {
-                    navigator.clipboard.writeText(props.message.content);
+                    if(props.message.content.includes('<location>')){
+                      const match = props.message.content.match(regex);
+                      const url = match[1];
+                      navigator.clipboard.writeText(url);
+                    }
+                    else
+                      navigator.clipboard.writeText(props.message.content);
                   }}
                 />
               </Popover>
             </div>
           ) : null}
-          <ReactMarkdown
+          {props.message.content.includes('<location>') ? (<AgentChatFileReader content={props.message.content}/>) : (<ReactMarkdown
             children={props.message.content}
             remarkPlugins={[remarkGfm]}
             components={{
               pre(props) {
                 const { children, ...rest } = props;
                 return (
-                  <pre {...rest} className={styles.codeMarkdown}>
+                  <pre {...rest}>
                     {children}
                   </pre>
                 );
@@ -66,7 +64,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
               table(props) {
                 const { children, ...rest } = props;
                 return (
-                  <table {...rest} className={styles.markdownTable}>
+                  <table {...rest}>
                     {children}
                   </table>
                 );
@@ -74,7 +72,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
               th(props) {
                 const { children, ...rest } = props;
                 return (
-                  <th {...rest} className={styles.markdownTableCell}>
+                  <th {...rest}>
                     {children}
                   </th>
                 );
@@ -82,13 +80,14 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
               td(props) {
                 const { children, ...rest } = props;
                 return (
-                  <td {...rest} className={styles.markdownTableCell}>
+                  <td {...rest} >
                     {children}
                   </td>
                 );
               },
             }}
-          />
+          />)}
+          
         </Container>
       )}
       {props.message?.type === ChatMessageType.Human && (

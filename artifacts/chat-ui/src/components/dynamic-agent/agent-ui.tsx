@@ -1,13 +1,12 @@
-import { StatusIndicator } from "@cloudscape-design/components";
+import { useEffect , useState} from "react";
 import { ChatMessage } from "./types";
-import ChatUIInputPanel from "./agent-ui-input-panel";
-import { useEffect } from "react";
-import ChatUIMessageList from "./agent-ui-message-list";
-import styles from "../../styles/chat-ui.module.scss";
-import ButtonDropdown from "@cloudscape-design/components/button-dropdown";
-import ColumnLayout from "@cloudscape-design/components/column-layout";
-import Toggle from "@cloudscape-design/components/toggle";
-import * as React from "react";
+import AgentChatUIInputPanel from "./agent-ui-input-panel";
+import AgentChatUIMessageList from "./agent-ui-message-list";
+import style from "../../styles/agent-ui.module.scss";
+
+import {
+  Container,
+} from "@cloudscape-design/components";
 
 export interface ChatUIProps {
   loading?: boolean;
@@ -27,95 +26,18 @@ export abstract class ChatScrollState {
 }
 
 export function AgentUI(props: ChatUIProps) {
-  const [checked, setChecked] = React.useState(false);
-  useEffect(() => {
-    const onWindowScroll = () => {
-      if (ChatScrollState.skipNextScrollEvent) {
-        ChatScrollState.skipNextScrollEvent = false;
-        return;
-      }
-
-      const isScrollToTheEnd =
-        Math.abs(
-          window.innerHeight +
-          window.scrollY -
-          document.documentElement.scrollHeight
-        ) <= 10;
-
-      if (!isScrollToTheEnd) {
-        ChatScrollState.userHasScrolled = true;
-      } else {
-        ChatScrollState.userHasScrolled = false;
-      }
-    };
-
-    window.addEventListener("scroll", onWindowScroll);
-
-    return () => {
-      window.removeEventListener("scroll", onWindowScroll);
-    };
-  }, []);
-
-  return (
-    <div className={styles.chat_container}>
-      <ColumnLayout columns={4}>
-        <div><ButtonDropdown
-          items={[
-            { text: "Claude 3 Haiku", id: "claude-3-haiku", disabled: false },
-            { text: "Claude 3 Sonnet", id: "claude-3-sonnet", disabled: false },
-            { text: "Claude 3 Opus", id: "claude-3-opus", disabled: true },
-          ]}
-        >
-          Models
-        </ButtonDropdown></div>
-
-
-        <div> <ButtonDropdown
-          items={[
-            { text: "English", id: "english", disabled: false },
-            { text: "Hindi", id: "hindi", disabled: false },
-            { text: "Thai", id: "thai", disabled: false },
-            { text: "French", id: "french", disabled: false },
-            { text: "Arabic", id: "arabic", disabled: false },
-            { text: "Gujarati", id: "gujarati", disabled: false },
-          ]}
-        >
-          Language
-        </ButtonDropdown></div>
-
-        <div>
-          <Toggle
-            onChange={({ detail }) =>
-              setChecked(detail.checked)
-            }
-            checked={checked}
-          >
-            Query Vector Store
-          </Toggle>
-        </div>
-
-
-
-      </ColumnLayout>
-
-
-      <ChatUIMessageList
-        messages={props.messages}
-        showCopyButton={props.showCopyButton}
-      />
-      <div className={styles.welcome_text}>
-        {props.messages?.length === 0 && !props.loading && (
-          <center>{props.welcomeText ?? "ChatBot"}</center>
-        )}
-        {props.loading && (
-          <center>
-            <StatusIndicator type="loading">Loading</StatusIndicator>
-          </center>
-        )}
-      </div>
-      <div className={styles.input_container}>
-        <ChatUIInputPanel {...props} />
-      </div>
+  const onRenderComplete = () => {
+    const element = document.getElementById(style.agent_ui_chat_panel);
+    element.scroll(0, element.scrollHeight);
+  }
+  return (<Container
+    fitHeight
+    variant="embed"
+    footer={<AgentChatUIInputPanel {...props} />}
+  >
+    <div id={style.agent_ui_chat_panel} className={style.agent_ui_chat_panel}>
+      <AgentChatUIMessageList messages={props.messages} showCopyButton={props.showCopyButton} onRenderComplete={onRenderComplete}/>
     </div>
-  );
+  </Container>)
+
 }

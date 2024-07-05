@@ -10,7 +10,7 @@ import {
 import remarkGfm from "remark-gfm";
 import ReactMarkdown from "react-markdown";
 import { ChatMessage, ChatMessageType } from "./types";
-import styles from "../../styles/chat-ui.module.scss";
+
 
 export interface ChatUIMessageProps {
   message: ChatMessage;

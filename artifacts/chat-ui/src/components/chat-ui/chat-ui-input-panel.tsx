@@ -3,7 +3,6 @@ import {
   Container,
   FileUpload,
   Grid,
-  Icon,
   SpaceBetween,
   Spinner,
 } from "@cloudscape-design/components";
@@ -13,7 +12,6 @@ import { ChatScrollState } from "./chat-ui";
 import { ChatMessage, ChatMessageType } from "./types";
 import styles from "../../styles/chat-ui.module.scss";
 import config from "../../config.json";
-import * as React from "react";
 
 var ws = null; 
 var agent_prompt_flow = []
@@ -25,11 +23,12 @@ export interface ChatUIInputPanelProps {
   running?: boolean;
   messages?: ChatMessage[];
   onSendMessage?: (message: string, type: string) => void;
+  userinfo?: any;
 }
 
 export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
-  const [value, setValue] = React.useState<File[]>([]);
+  const [value, setValue] = useState<File[]>([]);
   const socketUrl = config.websocketUrl;
   
   useEffect(() => {
@@ -80,7 +79,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     props.onSendMessage?.(inputText, ChatMessageType.Human);
     setInputText("");
 
-    const access_token = sessionStorage.getItem('accessToken');
+    const access_token = props.userinfo.tokens.accessToken.toString();
     
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
