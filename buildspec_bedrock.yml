@@ -13,7 +13,7 @@ phases:
       - git clone https://github.com/aws-samples/serverless-rag-demo.git
       - ls
       - cd serverless-rag-demo
-      - git checkout feature-v1.1.0
+      - git checkout feature-v1.1.0-integrate-ui-v1.1.0
       - echo Build aws4auth xmldict Boto3 Opensearchpy lambda layer
       - mkdir python
       - python3 -m pip install requests-aws4auth xmltodict boto3 opensearch-py  -t python/
