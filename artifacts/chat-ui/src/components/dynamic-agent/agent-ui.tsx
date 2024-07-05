@@ -1,8 +1,8 @@
+import { useEffect , useState} from "react";
 import { ChatMessage } from "./types";
-import ChatUIInputPanel from "./agent-ui-input-panel";
-import { useEffect } from "react";
-import ChatUIMessageList from "./agent-ui-message-list";
-import * as React from "react";
+import AgentChatUIInputPanel from "./agent-ui-input-panel";
+import AgentChatUIMessageList from "./agent-ui-message-list";
+import style from "../../styles/agent-ui.module.scss";
 
 import {
   Container,
@@ -26,45 +26,17 @@ export abstract class ChatScrollState {
 }
 
 export function AgentUI(props: ChatUIProps) {
-  const [checked, setChecked] = React.useState(false);
-  useEffect(() => {
-    const onWindowScroll = () => {
-      if (ChatScrollState.skipNextScrollEvent) {
-        ChatScrollState.skipNextScrollEvent = false;
-        return;
-      }
-
-      const isScrollToTheEnd =
-        Math.abs(
-          window.innerHeight +
-          window.scrollY -
-          document.documentElement.scrollHeight
-        ) <= 10;
-
-      if (!isScrollToTheEnd) {
-        ChatScrollState.userHasScrolled = true;
-      } else {
-        ChatScrollState.userHasScrolled = false;
-      }
-    };
-
-    window.addEventListener("scroll", onWindowScroll);
-
-    return () => {
-      window.removeEventListener("scroll", onWindowScroll);
-    };
-  }, []);
-
+  const onRenderComplete = () => {
+    const element = document.getElementById(style.agent_ui_chat_panel);
+    element.scroll(0, element.scrollHeight);
+  }
   return (<Container
     fitHeight
     variant="embed"
-    footer={<ChatUIInputPanel {...props} />}
+    footer={<AgentChatUIInputPanel {...props} />}
   >
-    <div className="documentChatPanel">
-      <ChatUIMessageList
-        messages={props.messages}
-        showCopyButton={props.showCopyButton}
-      />
+    <div id={style.agent_ui_chat_panel} className={style.agent_ui_chat_panel}>
+      <AgentChatUIMessageList messages={props.messages} showCopyButton={props.showCopyButton} onRenderComplete={onRenderComplete}/>
     </div>
   </Container>)
 

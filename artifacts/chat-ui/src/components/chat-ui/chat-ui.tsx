@@ -1,9 +1,8 @@
+import { useEffect, useState } from "react";
 import { Container } from "@cloudscape-design/components";
 import { ChatMessage } from "./types";
 import ChatUIInputPanel from "./chat-ui-input-panel";
-import { useEffect } from "react";
 import ChatUIMessageList from "./chat-ui-message-list";
-import * as React from "react";
 
 export interface ChatUIProps {
   loading?: boolean;
@@ -24,7 +23,7 @@ export abstract class ChatScrollState {
 }
 
 export function ChatUI(props: ChatUIProps) {
-  const [checked, setChecked] = React.useState(false);
+  const [checked, setChecked] = useState(false);
   useEffect(() => {
     const onWindowScroll = () => {
       if (ChatScrollState.skipNextScrollEvent) {

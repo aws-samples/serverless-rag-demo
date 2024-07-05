@@ -1,9 +1,8 @@
-import DocViewer from "react-doc-viewer";
 export interface ChatFileReaderProps {
     content: string;
 }
 const regex = /<location>(.+?)<\/location>/; 
-export default function ChatFileReader(props: ChatFileReaderProps) {
+export default function AgentChatFileReader(props: ChatFileReaderProps) {
     
     const match = props.content.match(regex);
     const url = match[1];

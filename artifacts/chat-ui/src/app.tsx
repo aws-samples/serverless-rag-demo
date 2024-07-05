@@ -1,14 +1,11 @@
-import React from 'react';
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Routes, Route, HashRouter } from 'react-router-dom';
 import { AppLayout, TopNavigation, SideNavigation } from '@cloudscape-design/components';
-import '@aws-amplify/ui-react/styles.css';
-import "./styles/app.scss";
-import { AppContext } from "./common/context";
-import { NotFound, ChatPage, AgentPage, OcrPage, SentimentPage, HomePage } from './pages'
 import { Hub } from 'aws-amplify/utils';
 import { signOut } from 'aws-amplify/auth';
-import { AuthHelper } from "./common/helpers/auth-help"
+import { AppContext } from "./common/context";
+import { NotFound, ChatPage, AgentPage, OcrPage, SentimentPage, HomePage } from './pages'
+import '@aws-amplify/ui-react/styles.css';
 
 export default function App() {
   const [activeHref, setActiveHref] = useState("#/");
@@ -28,7 +25,6 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    console.log("appData",appData)
     if(appData.userinfo != null){
       setUtility([{
         type: "menu-dropdown",

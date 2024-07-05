@@ -44,20 +44,6 @@ function AgentPage(props: AppPage) {
       setRunning(false);
     }
 
-
-    // setTimeout(() => {
-    //   setMessages((prevMessages) => [
-    //     ...prevMessages.splice(0, prevMessages.length - 1),
-    //     {
-    //       type: ChatMessageType.AI,
-    //       content:
-    //         "I am a chatbot. Please try to connect me to Amazon Bedrock.",
-    //     },
-    //   ]);
-
-    //   setRunning(false);
-    // }, 1000);
-
   };
   return (
     <ContentLayout

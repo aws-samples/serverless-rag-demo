@@ -3,7 +3,6 @@ import {
   Container,
   FileUpload,
   Grid,
-  Icon,
   SpaceBetween,
   Spinner,
 } from "@cloudscape-design/components";
@@ -13,7 +12,6 @@ import { ChatScrollState } from "./chat-ui";
 import { ChatMessage, ChatMessageType } from "./types";
 import styles from "../../styles/chat-ui.module.scss";
 import config from "../../config.json";
-import * as React from "react";
 
 var ws = null; 
 var agent_prompt_flow = []
@@ -30,7 +28,7 @@ export interface ChatUIInputPanelProps {
 
 export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
-  const [value, setValue] = React.useState<File[]>([]);
+  const [value, setValue] = useState<File[]>([]);
   const socketUrl = config.websocketUrl;
   
   useEffect(() => {

@@ -1,14 +1,11 @@
-import * as React from "react";
-import FileUpload from "@cloudscape-design/components/file-upload";
-import FormField from "@cloudscape-design/components/form-field";
-import Button from "@cloudscape-design/components/button";
-import SpaceBetween from "@cloudscape-design/components/space-between";
+import { useState } from "react";
+import {FileUpload , FormField , Button , SpaceBetween}from "@cloudscape-design/components";
 import axios from "axios";
 import config from '../../config.json'
 import { StorageHelper } from "../../common/helpers/storage-helper";
 
 export function UploadUI() {
-  const [value, setValue] = React.useState<File[]>([]);
+  const [value, setValue] = useState<File[]>([]);
   
   function build_form_data(result, formdata) {
     if ('fields' in result) {
