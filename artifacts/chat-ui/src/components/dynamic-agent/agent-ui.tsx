@@ -1,9 +1,12 @@
-import { Container } from "@cloudscape-design/components";
 import { ChatMessage } from "./types";
-import ChatUIInputPanel from "./chat-ui-input-panel";
+import ChatUIInputPanel from "./agent-ui-input-panel";
 import { useEffect } from "react";
-import ChatUIMessageList from "./chat-ui-message-list";
+import ChatUIMessageList from "./agent-ui-message-list";
 import * as React from "react";
+
+import {
+  Container,
+} from "@cloudscape-design/components";
 
 export interface ChatUIProps {
   loading?: boolean;
@@ -14,7 +17,6 @@ export interface ChatUIProps {
   sendButtonText?: string;
   showCopyButton?: boolean;
   onSendMessage?: (message: string, type: string) => void;
-  userinfo?: any;
 }
 
 export abstract class ChatScrollState {
@@ -23,7 +25,7 @@ export abstract class ChatScrollState {
   static skipNextHistoryUpdate = false;
 }
 
-export function ChatUI(props: ChatUIProps) {
+export function AgentUI(props: ChatUIProps) {
   const [checked, setChecked] = React.useState(false);
   useEffect(() => {
     const onWindowScroll = () => {
@@ -53,18 +55,17 @@ export function ChatUI(props: ChatUIProps) {
     };
   }, []);
 
-  return (
-    <Container
-      fitHeight
-      variant="embed"
-      footer={<ChatUIInputPanel {...props} />}
-    >
-      <div className="documentChatPanel">
+  return (<Container
+    fitHeight
+    variant="embed"
+    footer={<ChatUIInputPanel {...props} />}
+  >
+    <div className="documentChatPanel">
       <ChatUIMessageList
         messages={props.messages}
         showCopyButton={props.showCopyButton}
       />
-      </div>
-    </Container>
-  );
+    </div>
+  </Container>)
+
 }

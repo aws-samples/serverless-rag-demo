@@ -11,12 +11,14 @@
     "format": "npx prettier --ignore-path .gitignore --write \"**/*.+(tsx|js|ts|json)\""
   },
   "dependencies": {
+    "@aws-amplify/ui-react": "^6.1.12",
     "@aws-sdk/client-cognito-identity-provider": "^3.533.0",
     "@cloudscape-design/components": "^3.0.611",
     "@cloudscape-design/design-tokens": "^3.0.35",
     "@cloudscape-design/global-styles": "^1.0.27",
     "axios": "^1.7.2",
     "react": "^18.2.0",
+    "react-doc-viewer": "^0.1.13",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.1",
     "react-router-dom": "^6.22.0",

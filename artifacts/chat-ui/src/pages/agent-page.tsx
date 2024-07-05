@@ -1,20 +1,18 @@
 import { useState, useEffect } from "react";
-import { ChatUI } from "../components/chat-ui/chat-ui";
-import { ChatMessage, ChatMessageType } from "../components/chat-ui/types";
+import { AgentUI } from "../components/dynamic-agent/agent-ui";
+import { ChatMessage, ChatMessageType } from "../components/dynamic-agent/types";
+import { AuthHelper } from "../common/helpers/auth-help";
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import {
   Container,
   ContentLayout,
   Header,
 } from "@cloudscape-design/components";
-
-import { AuthHelper } from "../common/helpers/auth-help";
 import { AppPage } from "../common/types";
 
-function ChatPage(props: AppPage) {
+function AgentPage(props: AppPage) {
   const [running, setRunning] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-
   useEffect(() => {
     const init = async () => {
       let userdata = await AuthHelper.getUserDetails();
@@ -61,7 +59,6 @@ function ChatPage(props: AppPage) {
     // }, 1000);
 
   };
-
   return (
     <ContentLayout
       defaultPadding
@@ -71,13 +68,13 @@ function ChatPage(props: AppPage) {
           variant="h1"
           description="App description will come here"
         >
-          Document Chat
+          Multi Agent
         </Header>
       }
     >
       <Container fitHeight
       >
-        <ChatUI
+        <AgentUI
           onSendMessage={sendMessage}
           messages={messages}
           running={running}
@@ -87,4 +84,5 @@ function ChatPage(props: AppPage) {
   );
 }
 
-export default withAuthenticator(ChatPage)
+
+export default withAuthenticator(AgentPage)

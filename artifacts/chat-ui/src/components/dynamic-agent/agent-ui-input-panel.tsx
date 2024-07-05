@@ -1,23 +1,18 @@
 import {
   Button,
   Container,
-  FileUpload,
-  Grid,
-  Icon,
   SpaceBetween,
   Spinner,
 } from "@cloudscape-design/components";
 import { useEffect, useLayoutEffect, useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
-import { ChatScrollState } from "./chat-ui";
+import { ChatScrollState } from "./agent-ui";
 import { ChatMessage, ChatMessageType } from "./types";
 import styles from "../../styles/chat-ui.module.scss";
 import config from "../../config.json";
-import * as React from "react";
 
 var ws = null; 
 var agent_prompt_flow = []
-var msgs = null
 
 export interface ChatUIInputPanelProps {
   inputPlaceholderText?: string;
@@ -25,13 +20,12 @@ export interface ChatUIInputPanelProps {
   running?: boolean;
   messages?: ChatMessage[];
   onSendMessage?: (message: string, type: string) => void;
-  userinfo?: any;
 }
 
 export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
-  const [value, setValue] = React.useState<File[]>([]);
   const socketUrl = config.websocketUrl;
+  const [message, setMessage] = useState('');
   
   useEffect(() => {
     const onWindowScroll = () => {
@@ -81,14 +75,10 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     props.onSendMessage?.(inputText, ChatMessageType.Human);
     setInputText("");
 
-    const access_token = props.userinfo.tokens.accessToken.toString();
+    const access_token = sessionStorage.getItem('accessToken');
     
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
-        if (msgs){
-          agent_prompt_flow.push({ 'role': 'assistant', 'content': [{"type": "text", "text": msgs}] }) 
-          msgs=null 
-        }
         agent_prompt_flow.push({ 'role': 'user', 'content': [{"type": "text", "text": inputText}] })
         if(ws==null || ws.readyState==3 || ws.readyState==2) {
           
@@ -98,40 +88,88 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           }
         } else {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: JSON.stringify(agent_prompt_flow) , behaviour: 'advanced-rag-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
+          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)) , behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
           
        }
         
         ws.onopen = () => {
           // query_vectordb allowed values -> yes/no
-          ws.send(JSON.stringify({ query: JSON.stringify(agent_prompt_flow), behaviour: 'advanced-rag-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
+          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'}));
           
         };
-        
-        ws.onmessage = (event) => { 
+        var messages = ''
+        var thought = ''
+        ws.onmessage = (event) => {
           if (event.data.includes('message')) {
             var evt_json = JSON.parse(event.data)
             props.onSendMessage?.(evt_json['message'], ChatMessageType.AI);
           } 
           else {
-            var chat_output = JSON.parse(atob(event.data))
-          if ('text' in chat_output) {
-            if (msgs) {
-              msgs += chat_output['text']
-            } else {
-              msgs = chat_output['text']
+            var response_details = JSON.parse(atob(event.data))
+            console.log(response_details);
+            if ('intermediate_execution' in response_details) {
+              //props.onSendMessage?.(response_details['intermediate_execution'], ChatMessageType.AI);
+              props.onSendMessage?.("", ChatMessageType.AI);
             }
-            
-            if (msgs.endsWith('ack-end-of-msg')) {
-              msgs = msgs.replace('ack-end-of-msg', '')
+            else if ('prompt_flow' in response_details) {
+              var is_done = Boolean(response_details['done'])
+              if (!is_done) {
+                agent_prompt_flow = []
+                for (var k = 0; k < response_details['prompt_flow'].length; k++) {
+                  var prompt_content_list = response_details['prompt_flow'][k]['content']
+                  var content = []
+                  for (var j = 0; j < prompt_content_list.length; j++) {
+                    if ('text' in prompt_content_list[j]) {
+                      content.push({ "type": "text", "text": prompt_content_list[j]['text'] })
+                    } else {
+                      content.push(prompt_content_list[j])
+                    }
+                  }
+                  agent_prompt_flow.push({ "role": response_details['prompt_flow'][k]['role'], "content": content })
+                }
+  
+                for (var i = 0; i < response_details['prompt_flow'].length; i++) {
+                  if ('content' in response_details['prompt_flow'][i]) {
+                    var content_list = response_details['prompt_flow'][i]['content']
+                    for (var j = 0; j < content_list.length; j++) {
+                      if ('text' in content_list[j]) {
+                        thought = thought + capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]['text']
+                      } else {
+                        thought = thought +  capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]
+                      }
+                    }
+                  }
+                }
+                messages = thought.replace('ack-end-of-string', '')
+                props.onSendMessage?.(messages, ChatMessageType.AI);
+              } else {
+                if (response_details['prompt_flow'].length > 0) {
+                  
+                  var last_element = response_details['prompt_flow'][response_details['prompt_flow'].length - 1]
+                  if ('content' in last_element) {
+                    var content_list = last_element['content']
+                    var content = []
+                    for (var j = 0; j < content_list.length; j++) {
+                      if ('text' in content_list[j]) {
+                        content.push({ "type": "text", "text": content_list[j]['text'] })
+                        thought = thought + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]['text']
+                      } else {
+                        content.push(content_list[j])
+                        thought = thought + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]
+                      }
+                    }
+                    agent_prompt_flow.push({ "role": last_element['role'], "content": content })
+                    
+                    messages = thought.replace('ack-end-of-msg', '')
+                    
+                    props.onSendMessage?.(messages, ChatMessageType.AI);
+                  }
+                }
+              }
+  
             }
-            props.onSendMessage?.(msgs, ChatMessageType.AI);
-          } else {
-            // Display errors
-            props.onSendMessage?.(chat_output, ChatMessageType.AI);
+
           }
-          }
-          
         };
 
         ws.onclose = () => {
@@ -163,10 +201,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     <SpaceBetween direction="vertical" size="l">
       <Container>
         <div className={styles.input_textarea_container}>
-        <Grid
-      gridDefinition={[{ colspan: 6 }, { colspan: 1.5 }, { colspan: 4}]}
-      >
-        <div><TextareaAutosize
+          <TextareaAutosize
             className={styles.input_textarea}
             maxRows={6}
             minRows={1}
@@ -176,8 +211,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
             onKeyDown={onTextareaKeyDown}
             value={inputText}
             placeholder={props.inputPlaceholderText ?? "Send a message"}
-          /></div>
-          {/* <div contentEditable="true" style={{"height": "10vh", border: "1px solid, #ccc"}}></div> */}
+          />
           <div style={{ marginLeft: "8px" }}>
             <Button
               disabled={props.running || inputText.trim().length === 0}
@@ -196,29 +230,6 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
               )}
             </Button>
           </div>
-          <div><FileUpload
-        onChange={({ detail }) => {
-          setValue(detail.value);
-        }}
-        value={value}
-        i18nStrings={{
-          uploadButtonText: e =>
-            e ? "Choose files" : "",
-          dropzoneText: e =>
-            e
-              ? "Drop files to upload"
-              : "Drop file to upload",
-          removeFileAriaLabel: e =>
-            `Remove file ${e + 1}`,
-          limitShowFewer: "Show fewer files",
-          limitShowMore: "Show more files",
-          errorIconAriaLabel: "Error"
-        }}
-        tokenLimit={3}
-      /></div>
-
-      </Grid>
-          
         </div>
       </Container>
     </SpaceBetween>
