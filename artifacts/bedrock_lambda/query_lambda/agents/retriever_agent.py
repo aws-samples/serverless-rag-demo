@@ -207,21 +207,25 @@ def classify_and_translation_request(user_query):
     system_prompt = """ You will classify the User query whether it needs to fetch data or is just a casual conversation:
                 a. If the user is exchanging pleasantries or engaging in casual conversation, then return CASUAL.
                 b. If the user query is asking for a specific file, data, or information retrieval then return RETRIEVAL 
+                c. If you can't classify the user query, then return RETRIEVAL
+                
                 You will also translate the query to english if its in any other language.
                 
                 You will then wrap your response in a json as below
-                {"QUERY_TYPE": "$QUERY_TYPE",
-                 "ORIGINAL_QUERY": "$ORIGINAL_QUERY",
-                 "TRANSLATED_QUERY": "$TRANSLATED_QUERY"
+                {
+                    "QUERY_TYPE": "$QUERY_TYPE",
+                    "ORIGINAL_QUERY": "$ORIGINAL_QUERY",
+                    "TRANSLATED_QUERY": "$TRANSLATED_QUERY"
                 }
                 $QUERY_TYPE can be either RETRIEVAL or CASUAL
                 $ORIGINAL_QUERY is the original query from the user
                 $TRANSLATED_QUERY is the translated query in english language
                 
                 Example:
-                  {"QUERY_TYPE": "RETRIEVAL",
-                   "ORIGINAL_QUERY": "What is the capital of France?",
-                   "TRANSLATED_QUERY": "What is the capital of France"
+                  {
+                    "QUERY_TYPE": "RETRIEVAL",
+                    "ORIGINAL_QUERY": "What is the capital of France?",
+                    "TRANSLATED_QUERY": "What is the capital of France"
                   }
 
                 Important: All JSON Keys are mandatory, if the query is in english, the query should still be part of TRANSLATED_QUERY

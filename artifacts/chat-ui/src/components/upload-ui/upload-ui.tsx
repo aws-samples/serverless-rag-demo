@@ -2,7 +2,7 @@ import { useState } from "react";
 import {FileUpload , FormField , Button , SpaceBetween}from "@cloudscape-design/components";
 import axios from "axios";
 import config from '../../config.json'
-import { StorageHelper } from "../../common/helpers/storage-helper";
+import { AuthHelper } from "../../common/helpers/auth-help";
 
 export function UploadUI() {
   const [value, setValue] = useState<File[]>([]);
@@ -28,7 +28,7 @@ export function UploadUI() {
       axios.get(config.apiUrl + '/rag/get-presigned-url', {
         params:{ "file_extension": fileExtension, "file_name": file_name_no_ext }, 
         headers: {
-          authorization: StorageHelper.getAuthToken(),
+          authorization: AuthHelper.getBearerToken()
         }
       }) // Handle the response from backend here
         .then(function(result){

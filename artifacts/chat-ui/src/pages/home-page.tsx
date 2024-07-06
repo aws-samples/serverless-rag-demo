@@ -54,11 +54,11 @@ export default function HomePage() {
           <ColumnLayout borders="vertical" columns={4}>
             <div>
               <Box variant="h3">Document Chat</Box>
-              <Box variant="p">A Retrieval Augmented Generation Solution</Box>
+              <Box variant="p">Retrieval Augmented Generation Solution</Box>
             </div>
             <div>
               <Box variant="h3">Multi Agent</Box>
-              <Box variant="p">A solution comprises of multiple-generative AI agents working in tandem to solve a user-problem</Box>
+              <Box variant="p">This solution comprises of multiple-generative AI agents working in tandem to solve a user-problem</Box>
             </div>
             <div>
               <Box variant="h3">Sentiment Analysis</Box>

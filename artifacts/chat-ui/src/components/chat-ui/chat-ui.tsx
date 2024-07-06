@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Container } from "@cloudscape-design/components";
 import { ChatMessage } from "./types";
 import ChatUIInputPanel from "./chat-ui-input-panel";
@@ -9,6 +8,9 @@ export interface ChatUIProps {
   loading?: boolean;
   running?: boolean;
   messages?: ChatMessage[];
+  selected_model_option?: string;
+  selected_language?: string;
+  check_vector_db?: boolean;
   welcomeText?: string;
   inputPlaceholderText?: string;
   sendButtonText?: string;

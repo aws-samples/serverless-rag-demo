@@ -52,7 +52,7 @@ function AgentPage(props: AppPage) {
       header={
         <Header
           variant="h1"
-          description="App description will come here"
+          description="Gen AI agents that assist with content writing/App generation/Presentations and much more"
         >
           Multi Agent
         </Header>

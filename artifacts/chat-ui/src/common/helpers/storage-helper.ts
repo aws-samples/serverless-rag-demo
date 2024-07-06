@@ -51,8 +51,4 @@ export abstract class StorageHelper {
     return newState;
   }
 
-  static getAuthToken() {
-    var idToken = sessionStorage.getItem('idToken');
-    return 'Bearer ' + idToken
-  }
 }

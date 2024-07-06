@@ -1,5 +1,6 @@
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
 
+
 export abstract class AuthHelper {
     static async getUserDetails() {
         let output = await Promise.all([getCurrentUser(), fetchAuthSession()]).then((res) => {
@@ -9,3 +10,4 @@ export abstract class AuthHelper {
         return output;
     }
 }
+

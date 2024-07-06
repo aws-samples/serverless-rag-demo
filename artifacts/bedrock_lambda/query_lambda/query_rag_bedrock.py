@@ -45,29 +45,35 @@ list_of_tools_specs = []
 tool_names = []
 tool_descriptions = []
 
-def query_rag_no_agent(user_input, connect_id):
+def query_rag_no_agent(user_input, query_vector_db, model_id, connect_id):
     global rag_chat_bot_prompt
     final_prompt = rag_chat_bot_prompt
     chat_input = json.loads(user_input)
     print(f'Chat history {chat_input}')
 
     if 'role' in chat_input[-1] and 'user' == chat_input[-1]['role']:
-        classify_translate_json = classify_and_translation_request(user_input)
-
         for text_inputs in chat_input[-1]['content']:
             if text_inputs['type'] == 'text':
+                classify_translate_json = classify_and_translation_request(text_inputs['text'])
                 if '<user-question>' not in text_inputs['text']:
                     text_inputs['text'] =  f'<user-question> {text_inputs["text"]} </user-question>'
                 if 'QUERY_TYPE' in  classify_translate_json and classify_translate_json['QUERY_TYPE'] == 'RETRIEVAL':
                     if 'TRANSLATED_QUERY' in classify_translate_json:
                         user_input = classify_translate_json['TRANSLATED_QUERY']
-                    context = fetch_data(user_input)
-                    text_inputs['text'] = f"""<context> {context} </context> 
+                    if query_vector_db == 'yes':
+                        context = fetch_data(user_input)
+                        text_inputs['text'] = f"""<context> {context} </context> 
                                               {text_inputs['text']} """
                 elif 'QUERY_TYPE' in  classify_translate_json and classify_translate_json['QUERY_TYPE'] == 'CASUAL':
                     final_prompt = rag_chat_bot_prompt + casual_prompt
                 break
-
+            elif text_inputs['type'] == 'image':
+                if 'source' in text_inputs and 'partial_s3_key' in text_inputs['source']:
+                    s3_key = f"bedrock/data/{text_inputs['source']['partial_s3_key']}"
+                    encoded_file = base64.b64encode(get_file_from_s3(s3_bucket_name, s3_key))
+                    del text_inputs['source']['partial_s3_key']
+                    text_inputs['source']['data'] = encoded_file.decode('utf-8')
+        
         prompt_template = {
                         "anthropic_version": "bedrock-2023-05-31",
                         "max_tokens": 10000,
@@ -75,7 +81,7 @@ def query_rag_no_agent(user_input, connect_id):
                         "messages": chat_input
         }
         print(f'chat prompt_template {prompt_template}')
-        invoke_model(0, prompt_template, connect_id, True)
+        invoke_model(0, prompt_template, connect_id, True, model_id)
                     
 
 def query_agents(agent_type, user_input, connect_id):
@@ -197,10 +203,8 @@ def master_orchestrator(agent_type: str, chat_input, connect_id):
 
 
 
-def invoke_model(step_id, prompt, connect_id, send_on_socket=False):
-    modelId = "anthropic.claude-3-sonnet-20240229-v1:0"
-    #modelId = "anthropic.claude-3-haiku-20240307-v1:0"
-    result = query_bedrock_claude3_model(step_id, modelId, prompt, connect_id, send_on_socket)
+def invoke_model(step_id, prompt, connect_id, send_on_socket=False, model_id = "anthropic.claude-3-sonnet-20240229-v1:0"):
+    result = query_bedrock_claude3_model(step_id, model_id, prompt, connect_id, send_on_socket)
     return ''.join(result)
 
 
@@ -267,7 +271,6 @@ def store_image_in_s3(event):
     s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
     return http_success_response({'file_extension': file_extension, 'file_id': content_id, 'message': 'stored successfully'})
 
-
 def extract_file_extension(base64_encoded_file):
     if base64_encoded_file.find(';') > -1:
         extension = base64_encoded_file.split(';')[0]
@@ -301,7 +304,12 @@ def handler(event, context):
                 if behaviour == 'advanced-agent':
                     query_agents(behaviour, query, connect_id)
                 else:
-                    query_rag_no_agent(query, connect_id)
+                    query_vector_db = 'no'
+                    if 'query_vectordb' in input_to_llm and input_to_llm['query_vectordb']=='yes':
+                        query_vector_db='yes' 
+                    if 'model_id' in input_to_llm:
+                        model_id = input_to_llm['model_id']
+                    query_rag_no_agent(query, query_vector_db, model_id, connect_id)
         elif routeKey == '$connect':
             # TODO Add authentication of access token
             return {'statusCode': '200', 'body': 'Bedrock says hello' }
