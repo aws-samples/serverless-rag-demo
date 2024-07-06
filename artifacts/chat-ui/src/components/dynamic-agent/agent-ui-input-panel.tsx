@@ -103,10 +103,8 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
           }
           else {
             var response_details = JSON.parse(atob(event.data))
-            console.log(response_details);
             if ('intermediate_execution' in response_details) {
               props.onSendMessage?.(response_details['intermediate_execution'], ChatMessageType.AI);
-              //props.onSendMessage?.("", ChatMessageType.AI);
             }
             else if ('prompt_flow' in response_details) {
               var is_done = Boolean(response_details['done'])
@@ -192,7 +190,9 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
     }
   }
   return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
-      <Grid gridDefinition={[{ colspan: 11 }, { colspan: 1 }]} >
+      <Grid gridDefinition={[
+        { colspan: { xxs:6, xs:8, s:8, m:10, l:10, xl:10} } ,
+        { colspan: { xxs:6, xs:4, s:4, m:2, l:2, xl:2} } ]} >
         <Textarea
           spellcheck={true}
           rows={3}

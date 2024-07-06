@@ -29,7 +29,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
           ) : null}
           {props.message.content.length > 0 &&
           props.showCopyButton !== false ? (
-            <div className={styles.btn_chabot_message_copy}>
+            <div>
               <Popover
                 size="medium"
                 position="top"
@@ -58,7 +58,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
               pre(props) {
                 const { children, ...rest } = props;
                 return (
-                  <pre {...rest} className={styles.codeMarkdown}>
+                  <pre {...rest}>
                     {children}
                   </pre>
                 );
@@ -66,7 +66,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
               table(props) {
                 const { children, ...rest } = props;
                 return (
-                  <table {...rest} className={styles.markdownTable}>
+                  <table {...rest}>
                     {children}
                   </table>
                 );
@@ -74,7 +74,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
               th(props) {
                 const { children, ...rest } = props;
                 return (
-                  <th {...rest} className={styles.markdownTableCell}>
+                  <th {...rest}>
                     {children}
                   </th>
                 );
@@ -82,7 +82,7 @@ export default function ChatUIMessage(props: ChatUIMessageProps) {
               td(props) {
                 const { children, ...rest } = props;
                 return (
-                  <td {...rest} className={styles.markdownTableCell}>
+                  <td {...rest}>
                     {children}
                   </td>
                 );

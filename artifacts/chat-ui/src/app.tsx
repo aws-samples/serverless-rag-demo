@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, HashRouter } from 'react-router-dom';
-import { AppLayout, TopNavigation, SideNavigation } from '@cloudscape-design/components';
+import { AppLayout, TopNavigation, SideNavigation , Badge, Alert } from '@cloudscape-design/components';
 import { Hub } from 'aws-amplify/utils';
 import { signOut } from 'aws-amplify/auth';
 import { AppContext } from "./common/context";
@@ -11,11 +11,14 @@ export default function App() {
   const [activeHref, setActiveHref] = useState("#/");
   const [utility, setUtility] = useState([])
   const [appData , setAppData] = useState({ userinfo: null})
+  const [notificationVisible,setNotificationVisible] = useState(false);
+  const [notificationMsg, setNotificationMsg] = useState("");
   const Router = HashRouter;
 
   useEffect(() => {
     Hub.listen("auth", (data) => {
-      console.log(data)
+      setNotificationVisible(true);
+      setNotificationMsg("Validating Authentication")
       switch (data.payload.event) {
         case "signedOut":
           setAppData({ userinfo: null  })
@@ -67,6 +70,7 @@ export default function App() {
         disableContentPaddings
         headerSelector='#custom-main-header'
         toolsHide
+        notifications={(notificationVisible)? <Alert dismissible statusIconAriaLabel="Warning" type="warning" onDismiss={()=> setNotificationVisible(false)}>{notificationMsg}</Alert> : ""}
         navigation={<SideNavigation
           activeHref={activeHref}
           header={{ href: "#/", text: "Apps" }}
@@ -78,8 +82,8 @@ export default function App() {
           items={[
             { type: "link", text: "Document Chat", href: "#/document-chat" },
             { type: "link", text: "Multi-Agent", href: "#/multi-agent" },
-            { type: "link", text: "Sentiment Analysis", href: "#/sentiment-analysis" },
-            { type: "link", text: "OCR", href: "#/ocr" },
+            { type: "link", text: "Sentiment Analysis", href: "#/sentiment-analysis" , info: <Badge color="blue">Coming Soon</Badge>},
+            { type: "link", text: "OCR", href: "#/ocr", info: <Badge color="blue">Coming Soon</Badge> },
           ]}
         />}
         content={

@@ -4,13 +4,11 @@ import {
   FileUpload,
   Grid,
   SpaceBetween,
-  Spinner,
+  Spinner,Textarea
 } from "@cloudscape-design/components";
 import { useEffect, useLayoutEffect, useState } from "react";
-import TextareaAutosize from "react-textarea-autosize";
 import { ChatScrollState } from "./chat-ui";
 import { ChatMessage, ChatMessageType } from "./types";
-import styles from "../../styles/chat-ui.module.scss";
 import config from "../../config.json";
 
 var ws = null; 
@@ -79,7 +77,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     props.onSendMessage?.(inputText, ChatMessageType.Human);
     setInputText("");
 
-    const access_token = props.userinfo.tokens.accessToken.toString();
+    //const access_token = props.userinfo.tokens.accessToken.toString();
     
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
@@ -148,77 +146,41 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     return val.charAt(0).toUpperCase() + val.slice(1);
   }
 
-  const onTextareaKeyDown = (
-    event: React.KeyboardEvent<HTMLTextAreaElement>
-  ) => {
-    if (!props.running && event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
+  const OnTextareaKeyDown = (event) => {
+    if (!props.running && event.detail.key === "Enter" && !event.detail.shiftKey) {
+      event.preventDefault()
       onSendMessage();
     }
-  };
+  }
 
-  return (
-    <SpaceBetween direction="vertical" size="l">
-      <Container>
-        <div className={styles.input_textarea_container}>
-        <Grid
-      gridDefinition={[{ colspan: 6 }, { colspan: 1.5 }, { colspan: 4}]}
-      >
-        <div><TextareaAutosize
-            className={styles.input_textarea}
-            maxRows={6}
-            minRows={1}
-            spellCheck={true}
-            autoFocus
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={onTextareaKeyDown}
-            value={inputText}
-            placeholder={props.inputPlaceholderText ?? "Send a message"}
-          /></div>
-          {/* <div contentEditable="true" style={{"height": "10vh", border: "1px solid, #ccc"}}></div> */}
-          <div style={{ marginLeft: "8px" }}>
-            <Button
-              disabled={props.running || inputText.trim().length === 0}
-              onClick={onSendMessage}
-              iconAlign="right"
-              iconName={!props.running ? "angle-right-double" : undefined}
-              variant="primary"
-            >
-              {props.running ? (
-                <>
-                  Loading&nbsp;&nbsp;
-                  <Spinner />
-                </>
-              ) : (
-                <>{props.sendButtonText ?? "Send"}</>
-              )}
-            </Button>
-          </div>
-          <div><FileUpload
-        onChange={({ detail }) => {
-          setValue(detail.value);
-        }}
-        value={value}
-        i18nStrings={{
-          uploadButtonText: e =>
-            e ? "Choose files" : "",
-          dropzoneText: e =>
-            e
-              ? "Drop files to upload"
-              : "Drop file to upload",
-          removeFileAriaLabel: e =>
-            `Remove file ${e + 1}`,
-          limitShowFewer: "Show fewer files",
-          limitShowMore: "Show more files",
-          errorIconAriaLabel: "Error"
-        }}
-        tokenLimit={3}
-      /></div>
-
+  return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
+      <Grid gridDefinition={[
+        { colspan: { xxs:6, xs:8, s:8, m:10, l:10, xl:10} } ,
+        { colspan: { xxs:6, xs:4, s:4, m:2, l:2, xl:2} }]} >
+        <Textarea
+          spellcheck={true}
+          rows={3}
+          autoFocus
+          onKeyDown={(event) => OnTextareaKeyDown(event)}
+          onChange={({ detail }) => setInputText(detail.value)}
+          value={inputText}
+          placeholder={props.inputPlaceholderText ?? "Send a message"}
+        />
+        <Button
+          disabled={props.running || inputText.trim().length === 0}
+          onClick={onSendMessage}
+          iconAlign="right"
+          iconName={!props.running ? "angle-right-double" : undefined}
+          variant="primary" >
+          {props.running ? (
+            <>
+              Loading&nbsp;&nbsp;
+              <Spinner />
+            </>
+          ) : (
+            <>{props.sendButtonText ?? "Send"}</>
+          )}
+        </Button>
       </Grid>
-          
-        </div>
-      </Container>
-    </SpaceBetween>
-  );
+  </Container>);
 }
