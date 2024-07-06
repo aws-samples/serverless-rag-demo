@@ -72,6 +72,7 @@ def query_rag_no_agent(user_input, query_vector_db, model_id, connect_id):
                     s3_key = f"bedrock/data/{text_inputs['source']['partial_s3_key']}"
                     encoded_file = base64.b64encode(get_file_from_s3(s3_bucket_name, s3_key))
                     del text_inputs['source']['partial_s3_key']
+                    del text_inputs['source']['file_extension']
                     text_inputs['source']['data'] = encoded_file.decode('utf-8')
         
         prompt_template = {
