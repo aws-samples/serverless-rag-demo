@@ -80,7 +80,12 @@ export default function App() {
             }
           }}
           items={[
-            { type: "link", text: "Document Chat", href: "#/document-chat" },
+            { 
+              type: "link-group", text: "Document Chat", href: "#/document-chat", 
+              items: [
+                { type: "link", text: "Manage Documents", href: "#/document-chat/manage-document" },
+              ]
+            },
             { type: "link", text: "Multi-Agent", href: "#/multi-agent" },
             { type: "link", text: "Sentiment Analysis", href: "#/sentiment-analysis" , info: <Badge color="blue">Coming Soon</Badge>},
             { type: "link", text: "OCR", href: "#/ocr", info: <Badge color="blue">Coming Soon</Badge> },
@@ -90,7 +95,8 @@ export default function App() {
           <Router>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/document-chat" element={<ChatPage setAppData={setAppData}/>} />
+              <Route path="/document-chat" element={<ChatPage setAppData={setAppData} manageDocument={false}/>} />
+              <Route path="/document-chat/manage-document" element={<ChatPage setAppData={setAppData} manageDocument={true}/>} />
               <Route path="/sentiment-analysis" element={<SentimentPage setAppData={setAppData}/>} />
               <Route path="/multi-agent" element={<AgentPage setAppData={setAppData}/>} />
               <Route path="/ocr" element={<OcrPage setAppData={setAppData}/>} />

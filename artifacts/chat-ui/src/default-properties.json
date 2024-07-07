@@ -1,0 +1,75 @@
+{
+    "document-chat": {
+        "config": {
+            "models": [
+                {
+                    "label": "Claude 3 Haiku",
+                    "value": "anthropic.claude-3-haiku-20240307-v1:0",
+                    "iconName": "keyboard",
+                    "description": "Text & vision model | Context size = up to 200k",
+                    "tags": [
+                        "Anthropic"
+                    ],
+                    "labelTag": "Text & Vision"
+                },
+                {
+                    "label": "Claude 3 Sonnet",
+                    "value": "anthropic.claude-3-sonnet-20240229-v1:0",
+                    "iconName": "keyboard",
+                    "description": "Text & vision model | Context size = up to 200k",
+                    "tags": [
+                        "Anthropic"
+                    ],
+                    "labelTag": "Text & Vision"
+                },
+                {
+                    "label": "Claude 3.5 Sonnet",
+                    "value": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                    "iconName": "keyboard",
+                    "description": "Text & vision model | Context size = up to 200k",
+                    "tags": [
+                        "Anthropic"
+                    ],
+                    "labelTag": "Text & Vision"
+                },
+                {
+                    "label": "Claude 3 Opus",
+                    "value": "anthropic.claude-3-opus-20240229-v1:0",
+                    "disabled": true,
+                    "iconName": "keyboard",
+                    "description": "Text & vision model | Context size = up to 200k",
+                    "tags": [
+                        "Anthropic"
+                    ],
+                    "labelTag": "Text & Vision"
+                }
+            ],
+            "languages": [
+                {
+                    "label": "English",
+                    "value": "english"
+                },
+                {
+                    "label": "Hindi",
+                    "value": "hindi"
+                },
+                {
+                    "label": "Thai",
+                    "value": "thai"
+                },
+                {
+                    "label": "French",
+                    "value": "french"
+                },
+                {
+                    "label": "Arabic",
+                    "value": "arabic"
+                },
+                {
+                    "label": "Gujarati",
+                    "value": "gujarati"
+                }
+            ]
+        }
+    }
+}

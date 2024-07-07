@@ -5,4 +5,5 @@ export interface NavigationPanelState {
 
 export interface AppPage {
   setAppData: any;
+  manageDocument?: boolean;
 }
