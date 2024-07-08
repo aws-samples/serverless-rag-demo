@@ -21,7 +21,7 @@ function ChatPage(props: AppPage) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
-  const [checkVectorDb, setCheckVectorDb] = useState(false);
+  const [checkVectorDb, setCheckVectorDb] = useState(true);
   const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
 
   useEffect(() => {
