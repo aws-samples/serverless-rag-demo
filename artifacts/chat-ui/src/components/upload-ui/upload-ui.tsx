@@ -1,13 +1,32 @@
-import { useContext, useState } from "react";
-import {FileUpload , FormField , Button , SpaceBetween}from "@cloudscape-design/components";
+import { useContext, useEffect, useState } from "react";
+import { FileUpload, Button, SpaceBetween, Container, Header, Modal, Box, Table } from "@cloudscape-design/components";
+import timeago from 'epoch-timeago';
+import { LoadingBar } from "@cloudscape-design/chat-components";
 import axios from "axios";
 import config from '../../config.json'
 import { AppContext } from "../../common/context";
 
 export function UploadUI() {
   const [value, setValue] = useState<File[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [userFiles, setUserFiles] = useState([]);
   const appData = useContext(AppContext);
-  
+
+  const refreshUserFileList = () => {
+    setIsLoading(true);
+    axios.get(`${config.apiUrl}get-indexed-files-by-user`, { headers: { authorization: appData.userinfo.tokens.idToken.toString() } })
+      .then((result) => {
+        setUserFiles(result.data.result)
+        setIsLoading(false);
+      })
+  }
+  useEffect(() => {
+    if (appData.userinfo) {
+      refreshUserFileList()
+    }
+  }, [appData])
+
   function build_form_data(result, formdata) {
     if ('fields' in result) {
       for (var key in result['fields']) {
@@ -18,7 +37,7 @@ export function UploadUI() {
   }
 
   const upload_file = (files: any) => {
-    console.log(files)
+    setIsLoading(true);
     for (var i = 0; i < value.length; i++) {
       // remove the words after the last dot
       var file_data = value[i]
@@ -27,69 +46,156 @@ export function UploadUI() {
       var file_name_no_ext = file_name.substring(0, period);
       var fileExtension = file_name.substring(period + 1);
       axios.get(config.apiUrl + 'get-presigned-url', {
-        params:{ "file_extension": fileExtension, "file_name": file_name_no_ext }, 
+        params: { "file_extension": fileExtension, "file_name": file_name_no_ext },
         headers: {
           authorization: appData.userinfo.tokens.idToken.toString()
         }
       }) // Handle the response from backend here
-        .then(function(result){
+        .then(function (result) {
           var formData = new FormData();
           formData = build_form_data(result['data']['result'], formData)
           formData.append('file', file_data);
           var upload_url = result['data']['result']['url']
           axios.post(upload_url, formData)
-          .then(function(result) {
-            console.log(`Upload Successful ${result}`)
-          })
-        }).catch(function(err) {
-            console.log(err)
+            .then(function (result) {
+              closeModalandRefresh();
+            })
+        }).catch(function (err) {
+          console.log(err)
 
         })
         // Catch errors if any
         .catch((err) => {
           console.log(err)
-         });
+        });
 
     }
   }
 
+  const closeModalandRefresh = () => {
+    setIsModalVisible(false);
+    refreshUserFileList();
+  }
+
+  const deleteByKey = (keyid) => {
+    if (confirm(`Are you sure to delete ${keyid}`)) {
+      setIsLoading(true);
+      axios.post(`${config.apiUrl}del-file`, { s3_key: keyid }, { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
+        .then((result) => {
+          refreshUserFileList();
+        })
+        .catch((err) => {
+          console.log(err)
+          refreshUserFileList()
+        })
+    }
+  }
+
   return (
-    <FormField
-      label="Form field label"
-      description="Description"
+    <Container
+      fitHeight
+      variant="embed"
+      header={<Header
+        actions={
+          <SpaceBetween direction="horizontal" size="s">
+            <Button iconName="refresh" onClick={() => refreshUserFileList()} disabled={isLoading}>Refesh</Button>
+            <Button onClick={() => setIsModalVisible(true)} disabled={isLoading}>Upload File</Button>
+            <Button variant="primary" iconName="delete-marker" disabled={isLoading}>Delete Index</Button>
+          </SpaceBetween>
+
+        }
+        variant="h2">Upload you documents to index</Header>}
     >
-      <FileUpload
-        onChange={({ detail }) => {
-          setValue(detail.value);
-        }}
-        value={value}
-        i18nStrings={{
-          uploadButtonText: e =>
-            e ? "Choose files" : "Choose file",
-          dropzoneText: e =>
-            e
-              ? "Drop files to upload"
-              : "Drop file to upload",
-          removeFileAriaLabel: e =>
-            `Remove file ${e + 1}`,
-          limitShowFewer: "Show fewer files",
-          limitShowMore: "Show more files",
-          errorIconAriaLabel: "Error"
-        }}
-        showFileLastModified
-        showFileSize
-        showFileThumbnail
-        tokenLimit={3}
-        constraintText="Hint text for file requirements"
+      {isLoading && <LoadingBar variant="gen-ai" />}
+      <Table
+        variant="full-page"
+        renderAriaLive={({
+          firstIndex,
+          lastIndex,
+          totalItemsCount
+        }) =>
+          `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
+        }
+        columnDefinitions={[
+          {
+            id: "file_id",
+            header: "File Name",
+            cell: item => item.file_id || "-",
+            sortingField: "file_id",
+            isRowHeader: true
+          },
+          {
+            id: "update_epoch",
+            header: "Upload Time",
+            cell: item => timeago(item.update_epoch * 1000) || "-",
+            sortingField: "update_epoch"
+          },
+          {
+            id: "action",
+            header: "Action",
+            cell: item => <Button iconName="delete-marker" onClick={() => deleteByKey(item.file_id)}>Delete</Button>
+          }
+        ]}
+        enableKeyboardNavigation
+        items={userFiles}
+        loadingText="Loading Files"
+        stickyHeader
+        stripedRows
+        sortingDisabled
+        empty={
+          <Box
+            margin={{ vertical: "xs" }}
+            textAlign="center"
+            color="inherit"
+          >
+            <SpaceBetween size="m">
+              <b>No Files</b>
+            </SpaceBetween>
+          </Box>
+        }
       />
-      <br /><br /><br /><br /><br /><br /><br /><br /><br />
-      <SpaceBetween direction="horizontal" size="xs">
-        <Button variant="primary" onClick={(event) => upload_file(event)}>Index Document</Button>
-        <Button>Delete All</Button>
-      </SpaceBetween>
-
-
-    </FormField>
+      <Modal
+        size="small"
+        onDismiss={() => {
+          if (!isLoading) {
+            setIsModalVisible(false)
+          }
+        }}
+        visible={isModalVisible}
+        footer={
+          <Box float="right">
+            <SpaceBetween direction="horizontal" size="xs">
+              <Button variant="link" onClick={() => setIsModalVisible(false)} disabled={isLoading}>Cancel</Button>
+              <Button variant="primary" onClick={(event) => upload_file(event)} disabled={isLoading}>Save</Button>
+            </SpaceBetween>
+          </Box>
+        }
+        header="Modal title"
+      >
+        <FileUpload
+          onChange={({ detail }) => {
+            setValue(detail.value);
+          }}
+          value={value}
+          i18nStrings={{
+            uploadButtonText: e =>
+              e ? "Choose files" : "Choose file",
+            dropzoneText: e =>
+              e
+                ? "Drop files to upload"
+                : "Drop file to upload",
+            removeFileAriaLabel: e =>
+              `Remove file ${e + 1}`,
+            limitShowFewer: "Show fewer files",
+            limitShowMore: "Show more files",
+            errorIconAriaLabel: "Error"
+          }}
+          showFileLastModified
+          showFileSize
+          showFileThumbnail
+        />
+      </Modal>
+    </Container>
   );
 
 
