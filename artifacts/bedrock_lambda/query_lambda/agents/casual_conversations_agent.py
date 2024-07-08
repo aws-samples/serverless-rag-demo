@@ -68,7 +68,9 @@ LOG.setLevel(logging.INFO)
 
 def casual_conversations(user_query):
     print(f'In casual_conversations = {user_query}')
-    system_prompt = """ You are a helpful casual assistant. You can help with general knowlegdge and creative writing.
+    system_prompt = """ You are a helpful casual assistant. You can help with general knowlegdge
+                        and creative writing.
+                        
                         Good Examples:
                           hello, how may I assist you today
                           What would you like to know

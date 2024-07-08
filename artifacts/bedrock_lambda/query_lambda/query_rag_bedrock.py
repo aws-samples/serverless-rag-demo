@@ -2,16 +2,10 @@ import boto3
 from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
-import requests
-from requests.auth import HTTPBasicAuth
-import os
 import json
 from decimal import Decimal
 import logging
 import base64
-import datetime
-import csv
-import re
 
 from agents.retriever_agent import fetch_data, classify_and_translation_request
 from prompt_utils import AGENT_MAP, get_system_prompt, agent_execution_step, rag_chat_bot_prompt, casual_prompt, get_classification_prompt, RESERVED_TAGS
@@ -22,8 +16,7 @@ bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
-endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT",
-                  "https://admin:P@@search-opsearch-public-24k5tlpsu5whuqmengkfpeypqu.us-east-1.es.amazonaws.com:443")
+endpoint = getenv("OPENSEARCH_VECTOR_ENDPOINT", "https://admin:P@@dummy-amazonaws.com:443")
 
 SAMPLE_DATA_DIR = getenv("SAMPLE_DATA_DIR", "/var/task")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
