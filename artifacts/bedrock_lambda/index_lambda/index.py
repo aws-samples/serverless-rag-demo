@@ -18,7 +18,7 @@ from prompt_builder import generate_claude_3_ocr_prompt, generate_claude_3_title
 import time
 from boto3.dynamodb.conditions import Key, Attr
 import time
-
+import re
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 # http endpoint for your cluster (opensearch required for vector index usage)
@@ -174,21 +174,51 @@ def delete_index(event):
 
 
 def delete_documents_by_s3_uri(s3_source: str):
-    delete_query= { 
+    REQUEST_TIMEOUT_VAL =300
+    delete_body = []
+    # AOSS doesnt support custom doc ID neither does it support delete_by_query
+    # Workaround -> Search for the docs and then delete_by_id
+    search_query= { 
         "query": { 
             "match": { 
                 "s3_source_uri": s3_source
                 }
-        }
+        },
+        "size": 50,
+        "_source": { "exclude": [ "*" ] }
     }
-    
-    try:
-        res = ops_client.indices.delete_by_query(index=INDEX_NAME, body=delete_query)
-        LOG.info(f"method=delete_documents_by_s3_uri, delete_response={res}")
-    except Exception as e:
-        LOG.error(f'method=delete_documents_by_s3_uri, delete_query={delete_query}')
-        LOG.error(f"method=delete_documents_by_s3_uri, error={e.info['error']['reason']}")
-        return failure_response(f'Error deleting by query. {e.info["error"]["reason"]}')
+
+    while True:
+        try:
+            search_response = ops_client.search( body=search_query, index=INDEX_NAME)
+            LOG.info(f"Response of {search_query} for {INDEX_NAME} is - {search_response}")
+            if search_response['hits']['total']['value'] == 0:
+                LOG.warn(f"No documents found for s3_source {s3_source}")
+                break
+            else:
+                for doc in search_response['hits']['hits']:
+                    _id = doc["_id"]
+                    _index = doc["_index"]
+                    action = {"delete": {"_index": _index, "_id": _id}}
+                    delete_body.append(action)
+        except Exception as e:
+            LOG.error(f"An exception occurred while processing the 'delete_by_query' request - {str(e)}")
+            break
+        if len(delete_body) > 0:
+            try:
+                response = ops_client.bulk(
+                    body=delete_body,
+                    index=INDEX_NAME,
+                    request_timeout=REQUEST_TIMEOUT_VAL
+                    )
+                LOG.info(f"method=delete_documents_by_s3_uri, delete_response={response}")
+            except Exception as e:
+                LOG.error(f'method=delete_documents_by_s3_uri, delete_query={delete_body}, error={e}')
+                
+            delete_body = []
+            time.sleep(30)
+            LOG.info('Sleep for 30 seconds')
+                                        
     return success_response(f'vectorized content for file {s3_source} deleted successfully')
 
 
@@ -209,6 +239,9 @@ def create_presigned_post(event):
     if 'file_extension' in query_params and 'file_name' in query_params:
         extension = query_params['file_extension']
         file_name = query_params['file_name']
+        # remove special characters from file name
+        file_name = re.sub(r'[^a-zA-Z0-9_\-\.]','',file_name)
+
         session = boto3.Session()
         s3_client = session.client('s3', region_name=region)
         file_name = file_name.replace(' ', '_')
@@ -245,11 +278,27 @@ def delete_file(event):
     # Delete the file from S3
     payload = json.loads(event['body'])
     if 's3_key' in payload:
-        s3_source = payload['s3_key']
+        s3_key = payload['s3_key']
+        s3_source = f'https://{s3_bucket_name}/{s3_key}'
         # delete a file from S3 by key and bucket name
         s3_client = boto3.client('s3')
-        s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_source)
-        LOG.info(f'method=delete_file, s3_key={s3_source}, message=complete')
+        metadata = get_file_attributes(s3_key)
+        email_id = 'no-id-set'
+        if 'email_id' in metadata and 'uploaded_at' in metadata:
+            email_id = metadata['email_id']
+            utc_now = metadata['uploaded_at']
+            index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._DELETED, utc_now, 'File deleted successfully')
+            s3_client.delete_object(Bucket=s3_bucket_name, Key=s3_key)
+        else:
+            LOG.error(f'UTC/Email not found in Metadata of file email: {email_id}, utc: {utc_now}')
+            return failure_response(f"UTC/Email not found in Metadata of file email: {email_id}, utc: {utc_now}")
+        
+        if 'email_id' in metadata and 'uploaded_at' in metadata:
+            email_id = metadata['email_id']
+            utc_now = metadata['uploaded_at']
+            index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INDEX_DELETE, utc_now, 'File index deleted successfully')
+        
+        LOG.info(f'method=delete_file, s3_key={s3_key}, message=complete')
         return success_response("deleted file successfully")
     else:
         return failure_response('Missing s3_key')
@@ -384,24 +433,9 @@ def process_file_upload(event):
                     s3_key = record['s3']['object']['key']
                     s3_bucket = record['s3']['bucket']['name']
                     s3_source = f'https://{s3_bucket}/{s3_key}'
-                    metadata = get_file_attributes(s3_key)
-                    email_id = 'no-id-set'
-                    if 'email_id' in metadata:
-                       email_id = metadata['email_id']
-                    elif 'userIdentity' in record:
-                        principal_id = record['userIdentity']['principalId']
-                        email_id = principal_id.replace('AWS:', '').replace(':', '-')
-                    if 'upload_utc' in metadata:
-                        utc_now = metadata['upload_utc']
-                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._DELETED, utc_now, 'File deleted successfully')
-                    else:
-                        LOG.error('UTC not found in Metadata of file')
-                        # Add another logic here to attempt to delete files
-                    
+                    LOG.info(f'Delete document from Index triggered for s3_key {s3_key}')
                     delete_documents_by_s3_uri(s3_source)
-                    if 'upload_utc' in metadata:
-                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INDEX_DELETE, utc_now, 'File index deleted successfully')
-    
+                       
     return success_response(f'File process complete for event {event}')
 
 def generate_title_and_index_doc(event, page_number, text_value, s3_source, email_id):
@@ -458,7 +492,7 @@ def get_file_attributes(s3_key):
         response = s3_client.head_object(
             Bucket=s3_bucket_name,
             Key=s3_key)
-        LOG.debug(f'method=get_file_attributes, bucket_key={s3_bucket_name}/{s3_key}, response={response}')
+        LOG.info(f'method=get_file_attributes, bucket_key={s3_bucket_name}/{s3_key}, response={response}')
         if 'Metadata' in response:
             return response['Metadata']
         else:
@@ -525,7 +559,7 @@ def index_audit_insert(email_id, s3_uri, file_id, utc_now, error_message='None')
     if all(key in record for key in ([INDEX_KEYS._EMAIL_ID, INDEX_KEYS._S3_SOURCE, INDEX_KEYS._FILE_ID, INDEX_KEYS._UPLOAD_TIMESTAMP, INDEX_KEYS._UPLOAD_STATUS])):
         try:
             record[INDEX_KEYS._PRIMARY_KEY]='INDEX'
-            record[INDEX_KEYS._SORT_KEY]=generate_sort_key(record[INDEX_KEYS._EMAIL_ID], record[INDEX_KEYS._UPLOAD_TIMESTAMP], record[INDEX_KEYS._FILE_ID])
+            record[INDEX_KEYS._SORT_KEY]=generate_sort_key(record[INDEX_KEYS._EMAIL_ID], record[INDEX_KEYS._FILE_ID])
             table.put_item(Item=record)
         except Exception as e:
             LOG.error(f'error=failed_to_store_index_audit, error={e}, record={record}')
@@ -543,7 +577,7 @@ def index_audit_update(email_id, s3_uri, file_id, file_index_status, utc_now, er
         table.update_item(
                     Key={
                         INDEX_KEYS._PRIMARY_KEY: 'INDEX',
-                        INDEX_KEYS._SORT_KEY: generate_sort_key(email_id, utc_now, file_id)
+                        INDEX_KEYS._SORT_KEY: generate_sort_key(email_id, file_id)
                     },
                     UpdateExpression=f"set {INDEX_KEYS._UPLOAD_STATUS}=:s, {INDEX_KEYS._ERROR_MESSAGE}=:errm ",
                     ExpressionAttributeValues={
@@ -588,8 +622,8 @@ def get_indexed_files_by_user(event):
 def get_sort_key_beginswith_user_id(email_id):
     return f'user-{email_id}-'
 
-def generate_sort_key(user_id, upload_timestamp, file_id):
-    return f'user-{user_id}-ts-{upload_timestamp}-fileid-{file_id}'
+def generate_sort_key(user_id, file_id):
+    return f'user-{user_id}-fileid-{file_id}'
 
 def sanitize_s3_key(s3_key):
     s3_key
