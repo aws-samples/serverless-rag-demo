@@ -482,7 +482,7 @@ def handler(event, context):
             'DELETE/rag/index-documents': lambda x: delete_index(x),
             'GET/rag/connect-tracker': lambda x: connect_tracker(x),
             'GET/rag/get-presigned-url': lambda x: create_presigned_post(x),
-            'POST/rag/del-file': lambda x: delete_file(x),
+            'GET/rag/del-file': lambda x: delete_file(x),
             'GET/rag/get-indexed-files-by-user': lambda x: get_indexed_files_by_user(x),
             'POSTs3-upload-file': lambda x: process_file_upload(x),
         }
