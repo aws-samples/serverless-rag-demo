@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import {FileUpload , FormField , Button , SpaceBetween}from "@cloudscape-design/components";
 import axios from "axios";
 import config from '../../config.json'
-import { AuthHelper } from "../../common/helpers/auth-help";
+import { AppContext } from "../../common/context";
 
 export function UploadUI() {
   const [value, setValue] = useState<File[]>([]);
+  const appData = useContext(AppContext);
   
   function build_form_data(result, formdata) {
     if ('fields' in result) {
@@ -25,10 +26,10 @@ export function UploadUI() {
       var period = file_name.lastIndexOf('.');
       var file_name_no_ext = file_name.substring(0, period);
       var fileExtension = file_name.substring(period + 1);
-      axios.get(config.apiUrl + '/rag/get-presigned-url', {
+      axios.get(config.apiUrl + 'get-presigned-url', {
         params:{ "file_extension": fileExtension, "file_name": file_name_no_ext }, 
         headers: {
-          authorization: AuthHelper.getBearerToken()
+          authorization: appData.userinfo.tokens.idToken.toString()
         }
       }) // Handle the response from backend here
         .then(function(result){
@@ -38,7 +39,7 @@ export function UploadUI() {
           var upload_url = result['data']['result']['url']
           axios.post(upload_url, formData)
           .then(function(result) {
-            console.log(result['data']['result']['s3_key'])
+            console.log(`Upload Successful ${result}`)
           })
         }).catch(function(err) {
             console.log(err)
