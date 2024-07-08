@@ -80,7 +80,7 @@ export function UploadUI() {
   const deleteByKey = (keyid) => {
     if (confirm(`Are you sure to delete ${keyid}`)) {
       setIsLoading(true);
-      axios.post(`${config.apiUrl}del-file`, { s3_key: keyid }, { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
+      axios.post(`${config.apiUrl}del-file`, JSON.stringify({ s3_key: keyid }), { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
         .then((result) => {
           refreshUserFileList();
         })

@@ -239,12 +239,12 @@ def create_presigned_post(event):
     else:
         return failure_response('Missing file_extension field cannot generate signed url')
 
-
+# Deletes single files from S3 triggering a deleting from Opensearch too
 def delete_file(event):
     LOG.debug(f'method=delete_file, event={event}')
     # Delete the file from S3
     payload = json.loads(event['body'])
-    if 's3_key' not in payload:
+    if 's3_key' in payload:
         s3_source = payload['s3_key']
         # delete a file from S3 by key and bucket name
         s3_client = boto3.client('s3')
