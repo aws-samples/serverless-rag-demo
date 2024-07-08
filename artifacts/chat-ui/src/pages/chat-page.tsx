@@ -1,32 +1,28 @@
 import { useState, useEffect } from "react";
 import { ChatUI } from "../components/chat-ui/chat-ui";
+import { UploadUI } from "../components/upload-ui/upload-ui";
 import { ChatMessage, ChatMessageType } from "../components/chat-ui/types";
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import Link from "@cloudscape-design/components/link";
 import {
   Container,
   ContentLayout,
-  Header, Button, Modal, Grid, SpaceBetween, Select, FormField, Toggle
+  Header, Button, Modal, SpaceBetween, Select, FormField, Toggle
 } from "@cloudscape-design/components";
 
 import { AuthHelper } from "../common/helpers/auth-help";
 import { AppPage } from "../common/types";
+import defaultConfig from "../default-properties.json";
 import style from "../styles/chat-ui.module.scss";
 
+const documentConfig = defaultConfig["document-chat"]["config"]
 function ChatPage(props: AppPage) {
   const [running, setRunning] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [modalVisible, setModalVisible] = useState(false)
-  const [selectedLanguage, setSelectedLanguage] = useState({ label: "English", value: "english" })
+  const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
   const [checkVectorDb, setCheckVectorDb] = useState(false);
-  const [selectedModelOption, setSelectedModelOption] = useState({
-    label: "Claude 3 Haiku",
-    value: "anthropic.claude-3-haiku-20240307-v1:0",
-    iconName: "keyboard",
-    description: "Text & vision model | Context size = up to 200k",
-    tags: ["Anthropic"],
-    labelTag: "Text & Vision"
-  });
+  const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
 
   useEffect(() => {
     const init = async () => {
@@ -75,106 +71,61 @@ function ChatPage(props: AppPage) {
     >
       <Container fitHeight
       >
-        <ChatUI
+        {
+          (props.manageDocument?<UploadUI/>:<ChatUI
           onSendMessage={sendMessage}
           messages={messages}
           running={running}
           selected_model_option={selectedModelOption.value}
           selected_language={selectedLanguage.value}
           check_vector_db={checkVectorDb}
-        />
+        />)
+        }
+        
         <Modal
-          size="large"
+          size="medium"
           onDismiss={() => setModalVisible(false)}
           visible={modalVisible}
-          header="Document Chat Configuration"
+          header="Preference"
         >
-          <hr />
-          <Grid gridDefinition={[
-            { colspan: { default: 12, xs: 6, s: 6 } },
-            { colspan: { default: 12, xs: 6, s: 6 } }]} >
-            <Container className={style.doc_ui_page_config_col}
-              fitHeight
-              header={<Header variant="h3">Preference</Header>}>
-              <SpaceBetween size="m">
-                <FormField label="Model">
-                  <Select
-                    selectedOption={selectedModelOption}
-                    onChange={({ detail }) =>
-                      setSelectedModelOption(detail.selectedOption)
-                    }
-                    options={[
-                      {
-                        label: "Claude 3 Haiku",
-                        value: "anthropic.claude-3-haiku-20240307-v1:0",
-                        iconName: "keyboard",
-                        description: "Text & vision model | Context size = up to 200k",
-                        tags: ["Anthropic"],
-                        labelTag: "Text & Vision"
-                      },
-                      {
-                        label: "Claude 3 Sonnet",
-                        value: "anthropic.claude-3-sonnet-20240229-v1:0",
-                        iconName: "keyboard",
-                        description: "Text & vision model | Context size = up to 200k",
-                        tags: ["Anthropic"],
-                        labelTag: "Text & Vision"
-                      },
-                      {
-                        label: "Claude 3.5 Sonnet",
-                        value: "anthropic.claude-3-5-sonnet-20240620-v1:0",
-                        iconName: "keyboard",
-                        description: "Text & vision model | Context size = up to 200k",
-                        tags: ["Anthropic"],
-                        labelTag: "Text & Vision"
-                      },
-                      {
-                        label: "Claude 3 Opus",
-                        value: "anthropic.claude-3-opus-20240229-v1:0",
-                        disabled: true,
-                        iconName: "keyboard",
-                        description: "Text & vision model | Context size = up to 200k",
-                        tags: ["Anthropic"],
-                        labelTag: "Text & Vision"
-                      }
-                    ]}
-                    expandToViewport
-                    triggerVariant="option"
-                  />
-                </FormField>
 
-                <FormField label="Language">
-                  <Select
-                    selectedOption={selectedLanguage}
-                    onChange={({ detail }) =>
-                      setSelectedLanguage(detail.selectedOption)
-                    }
-                    options={[
-                      { label: "English", value: "english" },
-                      { label: "Hindi", value: "hindi" },
-                      { label: "Thai", value: "thai" },
-                      { label: "French", value: "french" },
-                      { label: "Arabic", value: "arabic" },
-                      { label: "Gujarati", value: "gujarati" }
-                    ]}
-                    expandToViewport
-                  />
-                </FormField>
-
-                <Toggle
+          <Container
+            fitHeight>
+            <SpaceBetween size="m">
+              <FormField label="Model">
+                <Select
+                  selectedOption={selectedModelOption}
                   onChange={({ detail }) =>
-                    setCheckVectorDb(detail.checked)
+                    setSelectedModelOption(detail.selectedOption)
                   }
-                  checked={checkVectorDb}
-                >
-                  Query Vector Store
-                </Toggle>
+                  options={documentConfig["models"]}
+                  expandToViewport
+                  triggerVariant="option"
+                />
+              </FormField>
 
-              </SpaceBetween>
-            </Container>
-            <Container className={style.doc_ui_page_config_col} fitHeight header={<Header variant="h3">Documents</Header>}>
-            </Container>
-          </Grid>
+              <FormField label="Language">
+                <Select
+                  selectedOption={selectedLanguage}
+                  onChange={({ detail }) =>
+                    setSelectedLanguage(detail.selectedOption)
+                  }
+                  options={documentConfig["languages"]}
+                  expandToViewport
+                />
+              </FormField>
+
+              <Toggle
+                onChange={({ detail }) =>
+                  setCheckVectorDb(detail.checked)
+                }
+                checked={checkVectorDb}
+              >
+                Query Vector Store
+              </Toggle>
+
+            </SpaceBetween>
+          </Container>
         </Modal>
       </Container>
     </ContentLayout>

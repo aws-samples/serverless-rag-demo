@@ -7,15 +7,12 @@ import {
   SpaceBetween,
   Spinner, Textarea
 } from "@cloudscape-design/components";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useContext } from "react";
 import { ChatScrollState } from "./chat-ui";
 import { ChatMessage, ChatMessageType } from "./types";
-import config from "../../config.json";
-import { StorageHelper } from "../../common/helpers/storage-helper";
 import axios from "axios";
-import { AuthHelper } from "../../common/helpers/auth-help";
-import { Amplify } from 'aws-amplify';
-
+import config from "../../config.json";
+import { AppContext } from "../../common/context";
 
 var ws = null;
 var agent_prompt_flow = []
@@ -39,6 +36,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
   const [value, setValue] = useState<File[]>([]);
   const socketUrl = config.websocketUrl;
+  const appData = useContext(AppContext);
 
   useEffect(() => {
     const onWindowScroll = () => {
@@ -111,48 +109,42 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
         }
         // Images/docs are attached
         if (value.length > 0) {
-          AuthHelper.getUserDetails().then((output) => {
-            // Upload them to S3 and pass the S3 Key in the prompt
-            console.log(output.tokens.idToken.toString())
-            for (var i =0; i<value.length; i++) {
+          let idToken = appData.userinfo.tokens.idToken.toString();
+          for (var i = 0; i < value.length; i++) {
             var unique_id = crypto.randomUUID()
             axios.post(
               config.apiUrl + 'file_data',
               { "content": b64_content[i], "id": unique_id },
-              {headers: {authorization: "Bearer " + output.tokens.idToken.toString()}}
+              { headers: { authorization: "Bearer " + idToken } }
             ).then((result) => {
               console.log('Upload successful')
               // user_content.push({"type": "image", "source": { "type": "base64", "media_type": "image/png", "data": e.target.result }})
-             // Extract file extension from base64 content
+              // Extract file extension from base64 content
               var file_extension = result['data']['result']['file_extension']
-              var file_id =  result['data']['result']['file_id']
+              var file_id = result['data']['result']['file_id']
               var media_type = 'image/' + file_extension
-              var partial_s3_key = file_id+'.'+file_extension
-              user_content.push({ "type": "image", "source": { "type": "base64","media_type": media_type, "file_extension": file_extension, "partial_s3_key": partial_s3_key } })
-              if (i >= value.length-1) {
+              var partial_s3_key = file_id + '.' + file_extension
+              user_content.push({ "type": "image", "source": { "type": "base64", "media_type": media_type, "file_extension": file_extension, "partial_s3_key": partial_s3_key } })
+              if (i >= value.length - 1) {
                 user_content.push({ "type": "text", "text": inputText })
               }
               // Add user content to the agent prompt flow
-              agent_prompt_flow.push({ 'role': 'user', 'content': user_content})
-              if (i >= value.length-1) { 
+              agent_prompt_flow.push({ 'role': 'user', 'content': user_content })
+              if (i >= value.length - 1) {
                 send_over_socket();
               }
-            }).catch(function(err) {
+            }).catch(function (err) {
               console.log('Upload not successful')
               console.log(err)
             })
           }
-          }).catch((err) => {
-            console.log(err)
-          })
-          
         } else {
           user_content.push({ "type": "text", "text": inputText })
           // Add user content to the agent prompt flow
-          agent_prompt_flow.push({ 'role': 'user', 'content': user_content})
+          agent_prompt_flow.push({ 'role': 'user', 'content': user_content })
           send_over_socket();
         }
-        
+
       } else {
         console.log('WebSocket is not supported by your browser.');
         agent_prompt_flow = []
@@ -247,28 +239,24 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
 
   return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
     <Grid gridDefinition={[
-      { colspan: { xxs: 6, xs: 8, s: 8, m: 10, l: 10, xl: 10 } },
-      { colspan: { xxs: 2, xs: 2, s: 2, m: 1, l: 1, xl: 1 } },
-      { colspan: { xxs: 4, xs: 2, s: 2, m: 1, l: 1, xl: 1 } }]}
-      >
-      <Textarea
-        spellcheck={true}
-        rows={3}
-        autoFocus
-        onKeyDown={(event) => OnTextareaKeyDown(event)}
-        onChange={({ detail }) => setInputText(detail.value)}
-        value={inputText}
-        placeholder={props.inputPlaceholderText ?? "Send a message"}
-      />
-
-      <FormField label="" description="" >
+      { colspan: { xxs: 8, xs: 8, s: 8, m: 10, l: 10, xl: 10 } },
+      { colspan: { xxs: 4, xs: 4, s: 4, m: 1, l: 1, xl: 1 } }]}
+    >   <FormField label="" description="" >
+        <Textarea
+          spellcheck={true}
+          rows={2}
+          autoFocus
+          onKeyDown={(event) => OnTextareaKeyDown(event)}
+          onChange={({ detail }) => setInputText(detail.value)}
+          value={inputText}
+          placeholder={props.inputPlaceholderText ?? "Send a message"}
+        />
         <FileUpload
           onChange={({ detail }) => {
             setValue(detail.value)
             load_base64(detail.value)
-          
           }
-        }
+          }
           value={value}
           i18nStrings={{
             uploadButtonText: e =>
@@ -286,11 +274,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           showFileLastModified
           showFileSize
           showFileThumbnail
-          tokenLimit={3}
         />
       </FormField>
-
-
 
       <Button
         disabled={props.running || inputText.trim().length === 0}
