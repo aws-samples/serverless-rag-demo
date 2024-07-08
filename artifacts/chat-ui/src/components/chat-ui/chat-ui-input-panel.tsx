@@ -4,6 +4,7 @@ import {
   FileUpload,
   FormField,
   Grid,
+  SpaceBetween,
   Spinner, Textarea
 } from "@cloudscape-design/components";
 import { useEffect, useLayoutEffect, useState, useContext } from "react";
@@ -238,26 +239,22 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
 
   return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
     <Grid gridDefinition={[
-      { colspan: { xxs: 6, xs: 8, s: 8, m: 10, l: 10, xl: 10 } },
-      { colspan: { xxs: 2, xs: 2, s: 2, m: 1, l: 1, xl: 1 } },
-      { colspan: { xxs: 4, xs: 2, s: 2, m: 1, l: 1, xl: 1 } }]}
-    >
-      <Textarea
-        spellcheck={true}
-        rows={3}
-        autoFocus
-        onKeyDown={(event) => OnTextareaKeyDown(event)}
-        onChange={({ detail }) => setInputText(detail.value)}
-        value={inputText}
-        placeholder={props.inputPlaceholderText ?? "Send a message"}
-      />
-
-      <FormField label="" description="" >
+      { colspan: { xxs: 8, xs: 8, s: 8, m: 10, l: 10, xl: 10 } },
+      { colspan: { xxs: 4, xs: 4, s: 4, m: 1, l: 1, xl: 1 } }]}
+    >   <FormField label="" description="" >
+        <Textarea
+          spellcheck={true}
+          rows={2}
+          autoFocus
+          onKeyDown={(event) => OnTextareaKeyDown(event)}
+          onChange={({ detail }) => setInputText(detail.value)}
+          value={inputText}
+          placeholder={props.inputPlaceholderText ?? "Send a message"}
+        />
         <FileUpload
           onChange={({ detail }) => {
             setValue(detail.value)
             load_base64(detail.value)
-
           }
           }
           value={value}
@@ -277,11 +274,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           showFileLastModified
           showFileSize
           showFileThumbnail
-          tokenLimit={3}
         />
       </FormField>
-
-
 
       <Button
         disabled={props.running || inputText.trim().length === 0}
