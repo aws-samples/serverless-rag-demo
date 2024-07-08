@@ -74,7 +74,12 @@ export function UploadUI() {
 
   const closeModalandRefresh = () => {
     setIsModalVisible(false);
-    refreshUserFileList();
+    setIsLoading(true)
+    setTimeout(() => {
+      refreshUserFileList();
+      setIsLoading(false)
+    }, 5000)
+    
   }
 
   const deleteByKey = (keyid) => {
@@ -82,11 +87,16 @@ export function UploadUI() {
       setIsLoading(true);
       axios.post(`${config.apiUrl}del-file`, JSON.stringify({ s3_key: keyid }), { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
         .then((result) => {
-          refreshUserFileList();
+          setTimeout(() => {
+            refreshUserFileList();
+            setIsLoading(false);
+          }, 5000)
+          
         })
         .catch((err) => {
           console.log(err)
           refreshUserFileList()
+          setIsLoading(false);
         })
     }
   }
@@ -125,6 +135,13 @@ export function UploadUI() {
             isRowHeader: true
           },
           {
+            id: "file_index_status",
+            header: "Index Status",
+            cell: item => item.file_index_status || "-",
+            sortingField: "file_index_status",
+            isRowHeader: true
+          },
+          {
             id: "update_epoch",
             header: "Upload Time",
             cell: item => timeago(item.update_epoch * 1000) || "-",
@@ -133,7 +150,7 @@ export function UploadUI() {
           {
             id: "action",
             header: "Action",
-            cell: item => <Button iconName="delete-marker" onClick={() => deleteByKey(item.file_id)}>Delete</Button>
+            cell:  item => <Button iconName="delete-marker" onClick={() => deleteByKey(item.file_id)}>Delete</Button>
           }
         ]}
         enableKeyboardNavigation
