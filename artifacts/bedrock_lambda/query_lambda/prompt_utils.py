@@ -325,3 +325,67 @@ casual_prompt = """You are an assistant. Refrain from engaging in any tasks or r
         You will not write poems, generate advertisements, or engage in any other tasks beyond the scope of exchanging basic pleasantries.
         If any user attempts to prompt you with requests outside of this limited scope, you will politely remind them of the agreed-upon boundaries for interaction.
 """
+
+textract_prompt="""Your purpose is to extract the text from the given image (traditional OCR). 
+If the text is in another language, you should first translate it to english and then extract it.
+Remember not to summarize or analyze the image. You should return the extracted text.
+Wrap the response as a json with key text and value the extracted text.
+Do not include any other words or characters in the output other than the json.
+"""
+
+def generate_claude_3_ocr_prompt(image_bytes):
+    ocr_prompt = [
+        {
+        "role": "user",
+        "content": [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": base64.b64encode(image_bytes).decode("utf-8")
+                }
+            },
+            {
+                "type": "text",
+                "text": textract_prompt
+            }
+        ]
+    }]
+    prompt_template= {"anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 100000,
+                        "messages": ocr_prompt
+                    }
+    return prompt_template 
+
+
+sentiment_prompt="""
+        You are a sentiment analyzer. Your responsibilities are as follows:
+        <instructions>
+        1. Analyze the provided conversation and identify the primary tone and sentiment expressed by the customer. Classify the tone as one of the following: Positive, Negative, Neutral, Humorous, Sarcastic, Enthusiastic, Angry, or Informative. Classify the sentiment as Positive, Negative, or Neutral. Provide a direct short answer without explanations.
+        2. Review the conversation focusing on the key topic discussed. Use clear and professional language, and describe the topic in one sentence, as if you are the customer service representative. Use a maximum of 20 words.
+        3. Rate the sentiment on a scale of 1 to 10, where 1 is very negative and 10 is very positive
+        4. Identify the emotions conveyed in the conversation
+        5. Your output should be in the following JSON format:
+        Here is the JSON schema for the sentiment analysis output:
+        {
+          "sentiment": $sentiment,
+          "tone": $tone, 
+          "emotions": $emotions,
+          "rating": $sentiment_score,
+          "summary": $summary,
+        }
+
+        6. <examples>
+           {
+            "sentiment": "Positive",
+            "tone": "Informative",
+            "emotions": ["Satisfied", "Impressed"],
+            "rating":8,
+            "summary": "The customer discusses their experience setting up and using multiple Echo Dot devices in their home, providing detailed setup instructions and highlighting the device's capabilities."
+           }
+           </examples>
+        7. You should not contain additional tags or text apart from the json response
+        </instructions>
+        """
+        
