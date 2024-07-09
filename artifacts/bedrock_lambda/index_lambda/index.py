@@ -239,6 +239,10 @@ def create_presigned_post(event):
     if 'file_extension' in query_params and 'file_name' in query_params:
         extension = query_params['file_extension']
         file_name = query_params['file_name']
+        # Usecase could be index or ocr
+        usecase_type = 'index'
+        if 'type' in query_params and query_params['type'] in ['index', 'ocr']:
+            usecase_type = query_params['type']
         # remove special characters from file name
         file_name = re.sub(r'[^a-zA-Z0-9_\-\.]','',file_name)
 
@@ -247,9 +251,12 @@ def create_presigned_post(event):
         file_name = file_name.replace(' ', '_')
 
         # s3_client = boto3.client('s3')
-        now = datetime.now()
-        date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
-        s3_key = f"index/data/{file_name}_{date_time}.{extension}"
+        if usecase_type == 'index':
+            now = datetime.now()
+            date_time = now.strftime("%Y-%m-%d-%H-%M-%S")
+            s3_key = f"{usecase_type}/data/{file_name}_{date_time}.{extension}"
+        else:
+            s3_key = f"{usecase_type}/data/{file_name}.{extension}"
         # response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
         #                                       Key=s3_key,
         #                                       Fields=None,
@@ -345,7 +352,7 @@ def delete_file(event):
 def process_file_upload(event):
     if 'Records' in event:
         for record in event['Records']:
-            if record['eventName'] == 'ObjectCreated:Post':
+            if record['eventName'] == 'ObjectCreated:Post' and "index/" in record["s3"]["object"]["key"]:
                 s3_source=''
                 s3_key=''
                 file_extension = 'txt'
@@ -426,7 +433,7 @@ def process_file_upload(event):
                     index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now)
             
             
-            elif record['eventName'] == 'ObjectRemoved:Delete':
+            elif record['eventName'] == 'ObjectRemoved:Delete' and "index/" in record["s3"]["object"]["key"]:
                 s3_source=''
                 s3_key=''
                 if 's3' in record:

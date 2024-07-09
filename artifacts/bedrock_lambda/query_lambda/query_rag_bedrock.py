@@ -2,15 +2,19 @@ import boto3
 from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
+from io import BytesIO
 import json
 from decimal import Decimal
 import logging
 import base64
 
 from agents.retriever_agent import fetch_data, classify_and_translation_request
-from prompt_utils import AGENT_MAP, get_system_prompt, agent_execution_step, rag_chat_bot_prompt, casual_prompt, get_classification_prompt, RESERVED_TAGS
+from prompt_utils import AGENT_MAP, get_system_prompt, agent_execution_step, rag_chat_bot_prompt
+from prompt_utils import casual_prompt, get_classification_prompt, RESERVED_TAGS
 from prompt_utils import get_can_the_orchestrator_answer_prompt
+from prompt_utils import sentiment_prompt, generate_claude_3_ocr_prompt
 from agent_executor_utils import agent_executor
+from pypdf import PdfReader
 
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
@@ -38,6 +42,50 @@ list_of_tools_specs = []
 tool_names = []
 tool_descriptions = []
 
+def query_sentiment(user_input, model_id, connect_id):
+    prompt_template = {
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 10000,
+                        "system": sentiment_prompt,
+                        "messages": json.loads(user_input)
+    }
+    print(f'chat prompt_template {prompt_template}')
+    invoke_model(0, prompt_template, connect_id, True, model_id)
+    
+
+def perform_ocr(user_input, model_id, connect_id):
+    LOG.info(f'method=perform_ocr, user_input={user_input}, model_id={model_id}, connect_id={connect_id}')
+    user_input_json = json.loads(user_input)
+    for chat in user_input_json:
+        if 'role' in chat and chat['role'] == 'user':
+            for message in chat['content']:
+                if message['type'] == 'document' and 'file_name' in message:
+                    file_name = message['file_name']
+                    s3_key = f"ocr/data/{file_name}"
+                    file_extension = s3_key[s3_key.rindex('.')+1:]
+                    content = get_file_from_s3(s3_bucket_name, s3_key)
+                    if file_extension.lower() in ['pdf']:
+                        reader = PdfReader(BytesIO(content))
+                        LOG.debug(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
+                        for page in reader.pages:
+                            text_value = None
+                            # Read Text on Page
+                            text_value = page.extract_text()
+                            if text_value is not None:
+                                websocket_send(connect_id, {"text": text_value})
+                            LOG.debug(f'method=perform_ocr, file_type=pdf-text, content={text_value}')
+                            # Read Image on Page
+                            for image_file_object in page.images:
+                                # Extract through low cost LLM (Claude3-Haiku)
+                                ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
+                                LOG.debug(f'method=perform_ocr, file_type=pdf-image, content={ocr_prompt}')
+                                invoke_model(0, ocr_prompt, connect_id, True, model_id)
+                    elif file_extension.lower() in ['png', 'jpg']:
+                        ocr_prompt = generate_claude_3_ocr_prompt(content)
+                        LOG.debug(f'method=perform_ocr, file_type=png_jpg_image, content={ocr_prompt}')
+                        invoke_model(0, ocr_prompt, connect_id, True, model_id)   
+
+                    
 def query_rag_no_agent(user_input, query_vector_db, model_id, connect_id):
     global rag_chat_bot_prompt
     final_prompt = rag_chat_bot_prompt
@@ -297,6 +345,12 @@ def handler(event, context):
                 behaviour = input_to_llm['behaviour']
                 if behaviour == 'advanced-agent':
                     query_agents(behaviour, query, connect_id)
+                elif behaviour == 'sentiment':
+                    model_id = input_to_llm['model_id']
+                    query_sentiment(query, model_id, connect_id)
+                elif behaviour == 'ocr':
+                    model_id = input_to_llm['model_id']
+                    perform_ocr(query, model_id, connect_id)
                 else:
                     query_vector_db = 'no'
                     if 'query_vectordb' in input_to_llm and input_to_llm['query_vectordb']=='yes':

@@ -18,7 +18,9 @@ import config from "../config.json";
 import { AppContext } from "../common/context";
 
 var base64File = []
-
+var files = []
+var msgs = null
+var ws = null
 function OcrPage(props: AppPage) {
   const inputFileRef = React.useRef(null);
   const fileDisplayRef = React.useRef(null);
@@ -44,14 +46,14 @@ function OcrPage(props: AppPage) {
     base64File = []
     const allImg = fileDisplayRef.current.querySelectorAll('object');
     allImg.forEach(item => item.remove());
-    base64File = []
+    files = []
     fileDisplayRef.current.dataset.img = ''
     setShowHint(true)
   }
 
   const add_file = (event) => {
     const fileInput = event.target;
-    const files = fileInput.files;
+    files = fileInput.files;
     console.log(files);
     if (files.length > 0) {
       for (var i = 0; i < files.length; i++) {
@@ -76,40 +78,138 @@ function OcrPage(props: AppPage) {
     event.target.value=''
   }
 
-  const perform_ocr = () => {
-    var user_content = []
-    // Only 5 MB file we can transmit over the API-GW
-    let idToken = appData.userinfo.tokens.idToken.toString();
-    if (base64File.length > 0) {
-      var unique_id = crypto.randomUUID()
-      for (var i = 0; i < base64File.length; i++) {
-        axios.post(
-          config.apiUrl + 'file_data',
-          { "content": base64File[i], "id": unique_id },
-          { headers: { authorization: "Bearer " + idToken } }
-        ).then((result) => {
-          console.log('Upload successful')
-          var file_extension = result['data']['result']['file_extension']
-          var file_id = result['data']['result']['file_id']
-          var media_type = ""
-          if (file_extension == 'pdf') {
-            media_type="application/pdf"
-          } else {
-            media_type = 'image/' + file_extension
-          }
-          var partial_s3_key = file_id + '.' + file_extension
-          user_content.push({ "type": "image", "source": { "type": "base64", "media_type": media_type, "file_extension": file_extension, "partial_s3_key": partial_s3_key } })
-          if (i >= base64File.length - 1) {
-              user_content.push({ "type": "text", "text": "Extract the text from the given document" })
-          }
-        })
-      }
-      
-
-
+  const base64ToArrayBuffer = (base64) =>  {
+    var binaryString = atob(base64);
+    var bytes = new Uint8Array(binaryString.length);
+    for (var i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
+    // return bytes.buffer;
+    return new File([bytes], 'sample')
   }
 
+  
+  const perform_ocr = () => {
+    if ("WebSocket" in window) {
+      let idToken = appData.userinfo.tokens.idToken.toString();
+      for (var i = 0; i < base64File.length; i++) {
+            var content = base64File[i]
+            var file_extension = ''
+            var file_type = content.substring("data:".length,  content.indexOf(";base64"))
+            if (file_type.includes('/')) {
+              file_extension = file_type.split('/')[1]
+            } else {
+              file_extension = file_type
+            }
+            var content = content.replace(/^data:.+;base64,/, "")
+            var file_bytes = base64ToArrayBuffer(content)
+        
+        var unique_file_name = crypto.randomUUID()
+        axios.get(config.apiUrl + 'get-presigned-url', {
+          params: { "file_extension": file_extension, "file_name": unique_file_name, "type": "ocr" },
+          headers: {
+            authorization: appData.userinfo.tokens.idToken.toString()
+          }
+        }) // Handle the response from backend here
+          .then(function (result) {
+            var formData = new FormData();
+            formData = build_form_data(result['data']['result'], formData)
+            formData.append('file', file_bytes);
+            
+            var upload_url = result['data']['result']['url']
+            axios.post(upload_url, formData).then(function (result) {
+                send_over_socket(unique_file_name + '.' + file_extension)
+            })
+            console.log("Uploaded successfully")
+          }).catch(function (err) {
+            console.log(err)
+  
+          })
+          // Catch errors if any
+          .catch((err) => {
+            console.log(err)
+          });
+  
+      }
+    }
+
+  }
+
+  function send_over_socket(file_name) {
+    if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
+      ws = new WebSocket(config.websocketUrl + "?access_token=" + sessionStorage.getItem('idToken'));
+      ws.onerror = function (event) {
+        console.log(event);
+      };
+    } else {
+      // query_vectordb allowed values -> yes/no
+
+      ws.send(JSON.stringify({
+        query: JSON.stringify([{"role": "user", "content": [
+          {"type": "document", "file_name": file_name},
+          {"type": "text", "text": "extract the text from the given image"}]}]),
+          behaviour: 'ocr',
+          'query_vectordb': 'no',
+          'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
+          
+      }));
+      
+    }
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({
+        query: JSON.stringify([{"role": "user", "content": [
+          {"type": "document", "file_name": file_name},
+          {"type": "text", "text": "extract the text from the given image"}]}]),
+          behaviour: 'ocr',
+          'query_vectordb': 'no',
+          'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
+          
+      }));
+    };
+
+
+    ws.onmessage = (event) => {
+      if (event.data.includes('message')) {
+        var evt_json = JSON.parse(event.data);
+        setOcrOut(ocrOut + evt_json['message'])
+      }
+      else {
+      var chat_output = JSON.parse(atob(event.data));
+      if ('text' in chat_output) {
+        if (msgs) {
+          msgs += chat_output['text'];
+        } else {
+          msgs = chat_output['text'];
+        } 
+        
+        if (msgs.endsWith('ack-end-of-msg')) {
+          msgs = msgs.replace('ack-end-of-msg', '');
+          setOcrOut(msgs)
+          msgs=null
+        }
+        
+      } else {
+        // Display errors
+        setOcrOut(chat_output)
+      }
+    }
+
+  }
+
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
+  }
+
+  function build_form_data(result, formdata) {
+    if ('fields' in result) {
+      for (var key in result['fields']) {
+        formdata.append(key, result['fields'][key])
+      }
+    }
+    return formdata
+  }
 
   return (
     <ContentLayout

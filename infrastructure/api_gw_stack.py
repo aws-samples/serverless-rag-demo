@@ -190,8 +190,8 @@ class ApiGw_Stack(Stack):
                                             'EMBED_MODEL_ID': embed_model_id,
                                             'CONVERSATIONS_DYNAMO_TABLE_NAME': env_params['conversations_dynamo_table_name']
                               },
-                              memory_size=3000,
-                              layers= [addtional_libs_layer, agentic_libs_layer_name, langchainpy_layer]
+                              memory_size=4096,
+                              layers= [addtional_libs_layer, agentic_libs_layer_name, langchainpy_layer, pdfpy_layer]
                             )
         
         websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',
