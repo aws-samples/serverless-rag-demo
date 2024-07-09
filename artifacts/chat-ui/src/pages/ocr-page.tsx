@@ -118,6 +118,8 @@ function OcrPage(props: AppPage) {
             
             var upload_url = result['data']['result']['url']
             axios.post(upload_url, formData).then(function (result) {
+                setOcrOut("")
+                msgs = null
                 send_over_socket(unique_file_name + '.' + file_extension)
             })
             console.log("Uploaded successfully")
@@ -185,13 +187,18 @@ function OcrPage(props: AppPage) {
         
         if (msgs.endsWith('ack-end-of-msg')) {
           msgs = msgs.replace('ack-end-of-msg', '');
-          setOcrOut(msgs)
-          msgs=null
+          var out_message = ocrOut + msgs
+          setOcrOut(out_message)
         }
         
       } else {
-        // Display errors
-        setOcrOut(chat_output)
+        if (msgs) {
+          msgs += chat_output
+        } else {
+          msgs = chat_output
+        }
+        var out_message = ocrOut + msgs
+        setOcrOut(out_message)
       }
     }
 
