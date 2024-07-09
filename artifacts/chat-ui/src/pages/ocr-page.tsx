@@ -5,7 +5,7 @@ import {
   Button,
   ColumnLayout,
   SpaceBetween,
-  Textarea,Alert, Box
+  Textarea,Alert, Box, Spinner
 } from "@cloudscape-design/components";
 import { useState, useEffect, useContext, useRef } from "react";
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react';
@@ -24,9 +24,11 @@ var ws = null
 function OcrPage(props: AppPage) {
   const inputFileRef = useRef(null);
   const fileDisplayRef = useRef(null);
+  const ocrButtonRef = useRef(null);
   const [showHint, setShowHint] = useState(true);
   const [ocrOut, setOcrOut] = useState("");
   const appData = useContext(AppContext);
+  const [isRunning, setRunning] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -92,6 +94,7 @@ function OcrPage(props: AppPage) {
 
   const perform_ocr = () => {
     if ("WebSocket" in window) {
+      setRunning(true)
       let idToken = appData.userinfo.tokens.idToken.toString();
       for (var i = 0; i < base64File.length; i++) {
         var content = base64File[i]
@@ -122,15 +125,18 @@ function OcrPage(props: AppPage) {
               setOcrOut("")
               msgs = null
               send_over_socket(unique_file_name + '.' + file_extension)
+              
             })
             console.log("Uploaded successfully")
           }).catch(function (err) {
             console.log(err)
+            setRunning(false)
 
           })
           // Catch errors if any
           .catch((err) => {
             console.log(err)
+            setRunning(false)
           });
 
       }
@@ -177,6 +183,7 @@ function OcrPage(props: AppPage) {
 
 
     ws.onmessage = (event) => {
+      setRunning(false)
       if (event.data.includes('message')) {
         var evt_json = JSON.parse(event.data);
         setOcrOut(ocrOut + evt_json['message'])
@@ -211,8 +218,15 @@ function OcrPage(props: AppPage) {
 
     ws.onclose = () => {
       console.log('WebSocket connection closed');
+      setRunning(false)
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setRunning(false)
     };
   }
+
 
   function build_form_data(result, formdata) {
     if ('fields' in result) {
@@ -247,7 +261,16 @@ function OcrPage(props: AppPage) {
                 <input type="file" ref={inputFileRef} accept=".png, .jpg, .jpeg, .pdf" hidden onChange={add_file}></input>
                 <Button iconAlign="right" variant="normal" onClick={select_file}>Select File</Button>
                 <Button iconAlign="right" variant="normal" onClick={remove_file}>Remove File</Button>
-                <Button iconAlign="right" variant="primary" onClick={perform_ocr}>Perform OCR</Button>
+                <Button iconAlign="right" ref={ocrButtonRef} variant="primary" onClick={perform_ocr}>{isRunning ? (
+                <>
+                  Loading&nbsp;
+                  <Spinner />
+                </>
+              ) : (
+                <>{"Perform OCR"}</>
+              )}
+              </Button>
+                
               </SpaceBetween>
             }
           >

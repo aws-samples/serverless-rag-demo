@@ -328,9 +328,8 @@ casual_prompt = """You are an assistant. Refrain from engaging in any tasks or r
 
 textract_prompt="""Your purpose is to extract the text from the given image (traditional OCR). 
 If the text is in another language, you should first translate it to english and then extract it.
-Remember not to summarize or analyze the image. You should return the extracted text.
-Wrap the response as a json with key text and value the extracted text.
-Do not include any other words or characters in the output other than the json.
+Remember not to summarize or analyze the image. You should only return the extracted text.
+
 """
 
 def generate_claude_3_ocr_prompt(image_bytes):
