@@ -3,11 +3,11 @@ import {
   ContentLayout,
   Header,
   Button,
-  Grid,
+  ColumnLayout,
   SpaceBetween,
-  Textarea,
+  Textarea,Alert, Box
 } from "@cloudscape-design/components";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react';
 import { AppPage } from "../common/types";
 import { AuthHelper } from "../common/helpers/auth-help";
@@ -22,12 +22,12 @@ var files = []
 var msgs = null
 var ws = null
 function OcrPage(props: AppPage) {
-  const inputFileRef = React.useRef(null);
-  const fileDisplayRef = React.useRef(null);
+  const inputFileRef = useRef(null);
+  const fileDisplayRef = useRef(null);
   const [showHint, setShowHint] = useState(true);
   const [ocrOut, setOcrOut] = useState("");
   const appData = useContext(AppContext);
-  
+
   useEffect(() => {
     const init = async () => {
       let userdata = await AuthHelper.getUserDetails();
@@ -36,7 +36,7 @@ function OcrPage(props: AppPage) {
       })
     }
     init();
-  },[])
+  }, [])
 
   const select_file = () => {
     inputFileRef.current?.click();
@@ -49,16 +49,17 @@ function OcrPage(props: AppPage) {
     files = []
     fileDisplayRef.current.dataset.img = ''
     setShowHint(true)
+    setOcrOut("")
   }
 
   const add_file = (event) => {
     const fileInput = event.target;
     files = fileInput.files;
     console.log(files);
+    setShowHint(false)
     if (files.length > 0) {
       for (var i = 0; i < files.length; i++) {
         if (files[i].size < 50000000) {
-          setShowHint(false)
           var reader = new FileReader();
           reader.onload = function (e) {
             const imgUrl = reader.result;
@@ -75,10 +76,10 @@ function OcrPage(props: AppPage) {
       }
     }
     //hack: Triggers a change even when same file is added again
-    event.target.value=''
+    event.target.value = ''
   }
 
-  const base64ToArrayBuffer = (base64) =>  {
+  const base64ToArrayBuffer = (base64) => {
     var binaryString = atob(base64);
     var bytes = new Uint8Array(binaryString.length);
     for (var i = 0; i < binaryString.length; i++) {
@@ -88,22 +89,22 @@ function OcrPage(props: AppPage) {
     return new File([bytes], 'sample')
   }
 
-  
+
   const perform_ocr = () => {
     if ("WebSocket" in window) {
       let idToken = appData.userinfo.tokens.idToken.toString();
       for (var i = 0; i < base64File.length; i++) {
-            var content = base64File[i]
-            var file_extension = ''
-            var file_type = content.substring("data:".length,  content.indexOf(";base64"))
-            if (file_type.includes('/')) {
-              file_extension = file_type.split('/')[1]
-            } else {
-              file_extension = file_type
-            }
-            var content = content.replace(/^data:.+;base64,/, "")
-            var file_bytes = base64ToArrayBuffer(content)
-        
+        var content = base64File[i]
+        var file_extension = ''
+        var file_type = content.substring("data:".length, content.indexOf(";base64"))
+        if (file_type.includes('/')) {
+          file_extension = file_type.split('/')[1]
+        } else {
+          file_extension = file_type
+        }
+        var content = content.replace(/^data:.+;base64,/, "")
+        var file_bytes = base64ToArrayBuffer(content)
+
         var unique_file_name = crypto.randomUUID()
         axios.get(config.apiUrl + 'get-presigned-url', {
           params: { "file_extension": file_extension, "file_name": unique_file_name, "type": "ocr" },
@@ -115,23 +116,23 @@ function OcrPage(props: AppPage) {
             var formData = new FormData();
             formData = build_form_data(result['data']['result'], formData)
             formData.append('file', file_bytes);
-            
+
             var upload_url = result['data']['result']['url']
             axios.post(upload_url, formData).then(function (result) {
-                setOcrOut("")
-                msgs = null
-                send_over_socket(unique_file_name + '.' + file_extension)
+              setOcrOut("")
+              msgs = null
+              send_over_socket(unique_file_name + '.' + file_extension)
             })
             console.log("Uploaded successfully")
           }).catch(function (err) {
             console.log(err)
-  
+
           })
           // Catch errors if any
           .catch((err) => {
             console.log(err)
           });
-  
+
       }
     }
 
@@ -147,26 +148,30 @@ function OcrPage(props: AppPage) {
       // query_vectordb allowed values -> yes/no
 
       ws.send(JSON.stringify({
-        query: JSON.stringify([{"role": "user", "content": [
-          {"type": "document", "file_name": file_name},
-          {"type": "text", "text": "extract the text from the given image"}]}]),
-          behaviour: 'ocr',
-          'query_vectordb': 'no',
-          'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
-          
+        query: JSON.stringify([{
+          "role": "user", "content": [
+            { "type": "document", "file_name": file_name },
+            { "type": "text", "text": "extract the text from the given image" }]
+        }]),
+        behaviour: 'ocr',
+        'query_vectordb': 'no',
+        'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
+
       }));
-      
+
     }
 
     ws.onopen = () => {
       ws.send(JSON.stringify({
-        query: JSON.stringify([{"role": "user", "content": [
-          {"type": "document", "file_name": file_name},
-          {"type": "text", "text": "extract the text from the given image"}]}]),
-          behaviour: 'ocr',
-          'query_vectordb': 'no',
-          'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
-          
+        query: JSON.stringify([{
+          "role": "user", "content": [
+            { "type": "document", "file_name": file_name },
+            { "type": "text", "text": "extract the text from the given image" }]
+        }]),
+        behaviour: 'ocr',
+        'query_vectordb': 'no',
+        'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
+
       }));
     };
 
@@ -177,32 +182,32 @@ function OcrPage(props: AppPage) {
         setOcrOut(ocrOut + evt_json['message'])
       }
       else {
-      var chat_output = JSON.parse(atob(event.data));
-      if ('text' in chat_output) {
-        if (msgs) {
-          msgs += chat_output['text'];
+        var chat_output = JSON.parse(atob(event.data));
+        if ('text' in chat_output) {
+          if (msgs) {
+            msgs += chat_output['text'];
+          } else {
+            msgs = chat_output['text'];
+          }
+
+          if (msgs.endsWith('ack-end-of-msg')) {
+            msgs = msgs.replace('ack-end-of-msg', '');
+            var out_message = ocrOut + msgs
+            setOcrOut(out_message)
+          }
+
         } else {
-          msgs = chat_output['text'];
-        } 
-        
-        if (msgs.endsWith('ack-end-of-msg')) {
-          msgs = msgs.replace('ack-end-of-msg', '');
+          if (msgs) {
+            msgs += chat_output
+          } else {
+            msgs = chat_output
+          }
           var out_message = ocrOut + msgs
           setOcrOut(out_message)
         }
-        
-      } else {
-        if (msgs) {
-          msgs += chat_output
-        } else {
-          msgs = chat_output
-        }
-        var out_message = ocrOut + msgs
-        setOcrOut(out_message)
       }
-    }
 
-  }
+    }
 
     ws.onclose = () => {
       console.log('WebSocket connection closed');
@@ -234,43 +239,35 @@ function OcrPage(props: AppPage) {
       <Container
         fitHeight
       >
-                <Grid gridDefinition={[
-                  { colspan: { default: 6 } },
-                  { colspan: { default: 1 } },
-                  { colspan: { default: 5 } },
-                ]}> 
-
-                <div>
-                  <div><input type="file" ref={inputFileRef} 
-                        accept=".png, .jpg, .jpeg, .pdf"
-                        hidden onChange={add_file}></input></div>
-                       <div className={style.file_img_area} ref={fileDisplayRef} data-img=""></div>
-                  
-                      {showHint ? (
-                          <>
-                          <div>
-                          <i className='bx bxs-cloud-upload icon'></i>
-                          <h3>Supported file types:   pdf jpg png</h3>
-                          <p>File size must be less than <span>5 MB</span></p>
-                          </div>
-                      
-                          </>): null}
-                  <div>
-                      <Button iconAlign="right" variant="normal" onClick={select_file}>Select File</Button>
-                      <Button iconAlign="right" variant="normal" onClick={remove_file}>Remove File</Button>
-                      <Button iconAlign="right" variant="primary" onClick={perform_ocr}>Perform OCR</Button>
-                  </div> 
-                  </div>
-                  
-                  <div className={style.vertical_line}></div>
-                  
-                  <div>
-                     <Textarea value={ocrOut} placeholder="OCR Output" readOnly={true} rows={10}></Textarea>
-
-                  </div>
-              </Grid>
-              {/* Image viewer component ends */}
-
+        <Container variant="embed" fitHeight header={
+          <Header
+            variant="h3"
+            actions={
+              <SpaceBetween size="s" direction="horizontal">
+                <input type="file" ref={inputFileRef} accept=".png, .jpg, .jpeg, .pdf" hidden onChange={add_file}></input>
+                <Button iconAlign="right" variant="normal" onClick={select_file}>Select File</Button>
+                <Button iconAlign="right" variant="normal" onClick={remove_file}>Remove File</Button>
+                <Button iconAlign="right" variant="primary" onClick={perform_ocr}>Perform OCR</Button>
+              </SpaceBetween>
+            }
+          >
+            Upload Document
+          </Header>
+        }
+        >
+          <SpaceBetween size="s">
+          <ColumnLayout columns={2} variant="text-grid">
+            <div className={style.file_img_area} ref={fileDisplayRef} data-img=""></div>
+            <Textarea value={ocrOut} placeholder="OCR Output" readOnly={true} rows={10}></Textarea>
+          </ColumnLayout>
+          <Alert statusIconAriaLabel="Info" visible={showHint}> 
+          <Box>
+          <h3>Supported file types: pdf | jpg | png</h3>
+          <p>File size must be less than <span>5 MB</span></p>
+          </Box>
+          </Alert>
+          </SpaceBetween>
+        </Container>
       </Container>
     </ContentLayout>
   );

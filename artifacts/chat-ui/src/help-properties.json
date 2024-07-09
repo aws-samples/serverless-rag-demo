@@ -1,0 +1,30 @@
+{
+    "home": {
+        "title": "Help",
+        "description" : "<b>This is a sample content</b>"
+    },
+    "404": {
+        "title": "Not Found",
+        "description" : "<b>You have landed on wrong page</b>"
+    },
+    "doc-chat":{
+        "title":"Document Chat",
+        "description":"<b>Document Chat</b>"
+    },
+    "doc-chat-manage":{
+        "title":"Manage Document",
+        "description":"<b>Manage Document Chat</b>"
+    },
+    "sentiment": {
+        "title": "Sentiment Analysis",
+        "description" : "<b>Sentiment Analysis</b>"
+    },
+    "multi-agent": {
+        "title": "Multi Agent",
+        "description" : "<b>Multi Agent</b>"
+    },
+    "ocr": {
+        "title": "OCR",
+        "description" : "<b>ocr</b>"
+    }
+}

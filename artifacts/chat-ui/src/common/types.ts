@@ -7,3 +7,7 @@ export interface AppPage {
   setAppData: any;
   manageDocument?: boolean;
 }
+
+export interface HelpPage {
+  setPageId: string;
+}

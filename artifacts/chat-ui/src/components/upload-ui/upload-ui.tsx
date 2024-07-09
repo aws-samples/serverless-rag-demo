@@ -73,13 +73,14 @@ export function UploadUI() {
   }
 
   const closeModalandRefresh = () => {
+    setValue([]);
     setIsModalVisible(false);
     setIsLoading(true)
     setTimeout(() => {
       refreshUserFileList();
       setIsLoading(false)
     }, 5000)
-    
+
   }
 
   const deleteByKey = (keyid) => {
@@ -91,7 +92,7 @@ export function UploadUI() {
             refreshUserFileList();
             setIsLoading(false);
           }, 5000)
-          
+
         })
         .catch((err) => {
           console.log(err)
@@ -150,7 +151,12 @@ export function UploadUI() {
           {
             id: "action",
             header: "Action",
-            cell:  item => <Button iconName="delete-marker" onClick={() => deleteByKey(item.file_id)}>Delete</Button>
+            cell: item => {
+              if (item.file_index_status !== "success_index_delete")
+                return (<Button iconName="delete-marker" onClick={() => deleteByKey(item.file_id)}>Delete</Button>)
+              else
+                return null
+            }
           }
         ]}
         enableKeyboardNavigation

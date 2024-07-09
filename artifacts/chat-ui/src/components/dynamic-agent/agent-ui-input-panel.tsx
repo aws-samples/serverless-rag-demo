@@ -190,9 +190,7 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
     }
   }
   return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
-      <Grid gridDefinition={[
-        { colspan: { xxs:6, xs:8, s:8, m:10, l:10, xl:10} } ,
-        { colspan: { xxs:6, xs:4, s:4, m:2, l:2, xl:2} } ]} >
+      <SpaceBetween size="s">
         <Textarea
           spellcheck={true}
           rows={3}
@@ -217,6 +215,6 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
             <>{props.sendButtonText ?? "Send"}</>
           )}
         </Button>
-      </Grid>
+      </SpaceBetween>
   </Container>);
 }

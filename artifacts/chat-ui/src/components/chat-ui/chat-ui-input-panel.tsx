@@ -238,20 +238,18 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   }
 
   return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
-    <Grid gridDefinition={[
-      { colspan: { xxs: 8, xs: 8, s: 8, m: 10, l: 10, xl: 10 } },
-      { colspan: { xxs: 4, xs: 4, s: 4, m: 1, l: 1, xl: 1 } }]}
-    >   <FormField label="" description="" >
-        <Textarea
-          spellcheck={true}
-          rows={2}
-          autoFocus
-          onKeyDown={(event) => OnTextareaKeyDown(event)}
-          onChange={({ detail }) => setInputText(detail.value)}
-          value={inputText}
-          placeholder={props.inputPlaceholderText ?? "Send a message"}
-        />
-        <FileUpload
+    <SpaceBetween size="s">
+      <Textarea
+        spellcheck={true}
+        rows={2}
+        autoFocus
+        onKeyDown={(event) => OnTextareaKeyDown(event)}
+        onChange={({ detail }) => setInputText(detail.value)}
+        value={inputText}
+        placeholder={props.inputPlaceholderText ?? "Send a message"}
+      />
+      <SpaceBetween size="s" direction="horizontal">
+      <FileUpload
           onChange={({ detail }) => {
             setValue(detail.value)
             load_base64(detail.value)
@@ -275,23 +273,24 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           showFileSize
           showFileThumbnail
         />
-      </FormField>
+        <Button
+          disabled={props.running || inputText.trim().length === 0}
+          onClick={onSendMessage}
+          iconAlign="right"
+          iconName={!props.running ? "angle-right-double" : undefined}
+          variant="primary" >
+          {props.running ? (
+            <>
+              Loading&nbsp;&nbsp;
+              <Spinner />
+            </>
+          ) : (
+            <>{props.sendButtonText ?? "Send"}</>
+          )}
+        </Button>
 
-      <Button
-        disabled={props.running || inputText.trim().length === 0}
-        onClick={onSendMessage}
-        iconAlign="right"
-        iconName={!props.running ? "angle-right-double" : undefined}
-        variant="primary" >
-        {props.running ? (
-          <>
-            Loading&nbsp;&nbsp;
-            <Spinner />
-          </>
-        ) : (
-          <>{props.sendButtonText ?? "Send"}</>
-        )}
-      </Button>
-    </Grid>
+        
+      </SpaceBetween>
+    </SpaceBetween>
   </Container>);
 }

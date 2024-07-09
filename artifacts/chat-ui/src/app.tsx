@@ -1,17 +1,17 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, HashRouter } from 'react-router-dom';
-import { AppLayout, TopNavigation, SideNavigation , Badge, Alert } from '@cloudscape-design/components';
+import { AppLayout, TopNavigation, SideNavigation, Badge, Alert } from '@cloudscape-design/components';
 import { Hub } from 'aws-amplify/utils';
 import { signOut } from 'aws-amplify/auth';
 import { AppContext } from "./common/context";
-import { NotFound, ChatPage, AgentPage, OcrPage, SentimentPage, HomePage } from './pages'
+import { NotFound, ChatPage, AgentPage, OcrPage, SentimentPage, HomePage, Help } from './pages'
 import '@aws-amplify/ui-react/styles.css';
 
 export default function App() {
   const [activeHref, setActiveHref] = useState("#/");
   const [utility, setUtility] = useState([])
-  const [appData , setAppData] = useState({ userinfo: null})
-  const [notificationVisible,setNotificationVisible] = useState(false);
+  const [appData, setAppData] = useState({ userinfo: null })
+  const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationMsg, setNotificationMsg] = useState("");
   const Router = HashRouter;
 
@@ -21,32 +21,32 @@ export default function App() {
       setNotificationMsg("Validating Authentication")
       switch (data.payload.event) {
         case "signedOut":
-          setAppData({ userinfo: null  })
+          setAppData({ userinfo: null })
           break;
       }
     })
   }, [])
 
   useEffect(() => {
-    if(appData.userinfo != null){
+    if (appData.userinfo != null) {
       setUtility([{
         type: "menu-dropdown",
         text: "Profile",
         description: appData.userinfo.signInDetails.loginId,
         iconName: "user-profile",
-        onItemClick: (e) => { 
-          if (e.detail.id == 'signout') { signOut({ global: true })} 
+        onItemClick: (e) => {
+          if (e.detail.id == 'signout') { signOut({ global: true }) }
         },
         items: [
           { id: "signout", text: "Sign out" }
         ]
       }])
-    }else{
+    } else {
       setUtility([])
     }
-  },[appData])
+  }, [appData])
 
-  
+
   return (
     <AppContext.Provider value={appData}>
       <div id="custom-main-header" style={{ position: 'sticky', top: 0, zIndex: 1002 }}><TopNavigation
@@ -69,8 +69,21 @@ export default function App() {
       <AppLayout
         disableContentPaddings
         headerSelector='#custom-main-header'
-        toolsHide
-        notifications={(notificationVisible)? <Alert dismissible statusIconAriaLabel="Warning" type="warning" onDismiss={()=> setNotificationVisible(false)}>{notificationMsg}</Alert> : ""}
+        toolsHide={false}
+        tools={
+          <Router>
+            <Routes>
+              <Route path="/" element={<Help setPageId="home" />} />
+              <Route path="/document-chat" element={<Help setPageId="doc-chat" />} />
+              <Route path="/document-chat/manage-document" element={<Help setPageId="doc-chat-manage" />} />
+              <Route path="/sentiment-analysis" element={<Help setPageId="sentiment" />} />
+              <Route path="/multi-agent" element={<Help setPageId="multi-agent" />} />
+              <Route path="/ocr" element={<Help setPageId="ocr" />} />
+              <Route path="*" element={<Help setPageId="404" />} />
+            </Routes>
+          </Router>
+        }
+        notifications={(notificationVisible) ? <Alert dismissible statusIconAriaLabel="Warning" type="warning" onDismiss={() => setNotificationVisible(false)}>{notificationMsg}</Alert> : ""}
         navigation={<SideNavigation
           activeHref={activeHref}
           header={{ href: "#/", text: "Apps" }}
@@ -80,26 +93,26 @@ export default function App() {
             }
           }}
           items={[
-            { 
-              type: "link-group", text: "Document Chat", href: "#/document-chat", 
+            {
+              type: "link-group", text: "Document Chat", href: "#/document-chat",
               items: [
                 { type: "link", text: "Manage Documents", href: "#/document-chat/manage-document" },
               ]
             },
             { type: "link", text: "Multi-Agent", href: "#/multi-agent" },
-            { type: "link", text: "Sentiment Analysis", href: "#/sentiment-analysis" , info: <Badge color="blue">Coming Soon</Badge>},
-            { type: "link", text: "OCR", href: "#/ocr", info: <Badge color="blue">Coming Soon</Badge> },
+            { type: "link", text: "Sentiment Analysis", href: "#/sentiment-analysis" },
+            { type: "link", text: "OCR", href: "#/ocr" },
           ]}
         />}
         content={
           <Router>
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/document-chat" element={<ChatPage setAppData={setAppData} manageDocument={false}/>} />
-              <Route path="/document-chat/manage-document" element={<ChatPage setAppData={setAppData} manageDocument={true}/>} />
-              <Route path="/sentiment-analysis" element={<SentimentPage setAppData={setAppData}/>} />
-              <Route path="/multi-agent" element={<AgentPage setAppData={setAppData}/>} />
-              <Route path="/ocr" element={<OcrPage setAppData={setAppData}/>} />
+              <Route path="/document-chat" element={<ChatPage setAppData={setAppData} manageDocument={false} />} />
+              <Route path="/document-chat/manage-document" element={<ChatPage setAppData={setAppData} manageDocument={true} />} />
+              <Route path="/sentiment-analysis" element={<SentimentPage setAppData={setAppData} />} />
+              <Route path="/multi-agent" element={<AgentPage setAppData={setAppData} />} />
+              <Route path="/ocr" element={<OcrPage setAppData={setAppData} />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>
