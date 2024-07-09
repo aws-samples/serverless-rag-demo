@@ -1,0 +1,71 @@
+.file_img_area {
+    height: 42vh;
+    position: relative;
+    background: #c8effb;
+    /* margin-bottom: 30px; */
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .file_img_area .icon,.img_area .icon {
+    font-size: 100px;
+  }
+
+  .file_img_area h3,.img_area h3 {
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .file_img_area p,.img_area p {
+    color: #999;
+  }
+
+  .file_img_area p span,.img_area p span {
+    font-weight: 200;
+  }
+
+  .file_img_area object,.img_area object {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+  }
+
+  .file_img_area::before,.img_area::before {
+    content: attr(data-img);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* background: rgba(0, 0, 0, .5); */
+    color: #232523;
+    font-size: 30px;
+    font-weight: 600;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+    /* opacity: 0; */
+    transition: all .3s ease;
+    z-index: 200;
+  }
+
+  .vertical_line { 
+    width: 0px; 
+    border-left: 1px solid #000; 
+    height: 100%; 
+    float: left; 
+  }
