@@ -404,6 +404,8 @@ class ApiGw_Stack(Stack):
         connect_tracker_api.add_method(
                 "GET",
                 bedrock_index_lambda_integration,
+                authorizer=cognito_authorizer,
+                authorization_type=_cdk.aws_apigateway.AuthorizationType.COGNITO,
                 operation_name="Websocket rate limiter",
                 method_responses=method_responses,
                 api_key_required=False

@@ -1,4 +1,4 @@
-import { Button, Container, Grid } from "@cloudscape-design/components";
+import { Alert, Button, Container, Grid } from "@cloudscape-design/components";
 import { ChatMessage } from "./types";
 import ChatUIInputPanel from "./chat-ui-input-panel";
 import ChatUIMessageList from "./chat-ui-message-list";
@@ -18,6 +18,7 @@ export interface ChatUIProps {
   showCopyButton?: boolean;
   onSendMessage?: (message: string, type: string) => void;
   userinfo?: any;
+  notify_parent?: (message: string, notify_type: string) => void;
 }
 
 export abstract class ChatScrollState {

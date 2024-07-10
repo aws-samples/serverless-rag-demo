@@ -25,10 +25,14 @@ function OcrPage(props: AppPage) {
   const inputFileRef = useRef(null);
   const fileDisplayRef = useRef(null);
   const [is_disabled, setDisabled] = useState(false);
+  const [performOcrDisabled, setPerformOCRDisabled] = useState(true)
   const [showHint, setShowHint] = useState(true);
   const [ocrOut, setOcrOut] = useState("");
   const appData = useContext(AppContext);
   const [isRunning, setRunning] = useState(false);
+  const [showAlert, setShowAlert] = useState(false)
+  const [alertMsg, setAlertMsg] = useState("")
+  const [alertType, setAlertType] = useState("error")
 
   useEffect(() => {
     const init = async () => {
@@ -45,6 +49,7 @@ function OcrPage(props: AppPage) {
   }
 
   const remove_file = (event) => {
+    setPerformOCRDisabled(true)
     base64File = []
     const allImg = fileDisplayRef.current.querySelectorAll('object');
     allImg.forEach(item => item.remove());
@@ -61,7 +66,8 @@ function OcrPage(props: AppPage) {
     setShowHint(false)
     if (files.length > 0) {
       for (var i = 0; i < files.length; i++) {
-        if (files[i].size < 50000000) {
+        if (files[i].size < 10000000) {
+          setPerformOCRDisabled(false)
           var reader = new FileReader();
           reader.onload = function (e) {
             const imgUrl = reader.result;
@@ -73,7 +79,9 @@ function OcrPage(props: AppPage) {
           };
           reader.readAsDataURL(files[i]);
         } else {
-          alert("File size must be less than 5MB");
+            setAlertMsg("File size must be less than 10MB");
+            setAlertType("error")
+            setShowAlert(true)
         }
       }
     }
@@ -96,6 +104,7 @@ function OcrPage(props: AppPage) {
     if ("WebSocket" in window) {
       setRunning(true)
       setDisabled(true)
+      setPerformOCRDisabled(true)
       let idToken = appData.userinfo.tokens.idToken.toString();
       for (var i = 0; i < base64File.length; i++) {
         var content = base64File[i]
@@ -125,6 +134,9 @@ function OcrPage(props: AppPage) {
             axios.post(upload_url, formData).then(function (result) {
               setOcrOut("")
               msgs = null
+              setShowAlert(true)
+              setAlertMsg("File uploaded successfully. Extracting text from document")
+              setAlertType("info")
               send_over_socket(unique_file_name + '.' + file_extension)
               
             })
@@ -132,12 +144,16 @@ function OcrPage(props: AppPage) {
           }).catch(function (err) {
             console.log(err)
             setRunning(false)
+            setDisabled(false)
+            setPerformOCRDisabled(false)
 
           })
           // Catch errors if any
           .catch((err) => {
             console.log(err)
             setRunning(false)
+            setDisabled(false)
+            setPerformOCRDisabled(false)
           });
 
       }
@@ -147,11 +163,14 @@ function OcrPage(props: AppPage) {
 
   function send_over_socket(file_name) {
     if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-      ws = new WebSocket(config.websocketUrl + "?access_token=" + sessionStorage.getItem('idToken'));
+      var idToken = appData.userinfo.tokens.idToken.toString()
+      ws = new WebSocket(config.websocketUrl + "?access_token=" + idToken);
+      
       ws.onerror = function (event) {
         console.log(event);
         setDisabled(false);
         setRunning(false);
+        setPerformOCRDisabled(false)
       };
     } else {
       // query_vectordb allowed values -> yes/no
@@ -205,6 +224,7 @@ function OcrPage(props: AppPage) {
             setOcrOut(out_message)
             setDisabled(false);
             setRunning(false);
+            setPerformOCRDisabled(false)
           }
 
         } else {
@@ -224,12 +244,14 @@ function OcrPage(props: AppPage) {
       console.log('WebSocket connection closed');
       setRunning(false)
       setDisabled(false)
+      setPerformOCRDisabled(false)
     };
 
     ws.onerror = function (event) {
       console.log(event);
       setDisabled(false);
       setRunning(false);
+      setPerformOCRDisabled(false)
     };
   }
 
@@ -256,6 +278,10 @@ function OcrPage(props: AppPage) {
         </Header>
       }
     >
+      {(showAlert && alertType=='error') ? <Alert dismissible statusIconAriaLabel="Error" type='error' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
+      {(showAlert && alertType=='success') ? <Alert dismissible statusIconAriaLabel="Success" type='success' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
+      {(showAlert && alertType=='warning') ? <Alert dismissible statusIconAriaLabel="Warning" type='warning' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
+      {(showAlert && alertType=='info') ? <Alert dismissible statusIconAriaLabel="Info" type='info' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
       <Container
         fitHeight
       >
@@ -267,7 +293,7 @@ function OcrPage(props: AppPage) {
                 <input type="file" ref={inputFileRef} accept=".png, .jpg, .jpeg, .pdf" hidden onChange={add_file}></input>
                 <Button iconAlign="right" disabled={is_disabled} variant="normal" onClick={select_file}>Select File</Button>
                 <Button iconAlign="right" disabled={is_disabled} variant="normal" onClick={remove_file}>Remove File</Button>
-                <Button iconAlign="right" disabled={is_disabled}  variant="primary" onClick={perform_ocr}>{isRunning ? (
+                <Button iconAlign="right" disabled={performOcrDisabled}  variant="primary" onClick={perform_ocr}>{isRunning ? (
                 <>
                   Loading&nbsp;
                   <Spinner />

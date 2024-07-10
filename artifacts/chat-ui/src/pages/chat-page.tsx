@@ -7,7 +7,7 @@ import Link from "@cloudscape-design/components/link";
 import {
   Container,
   ContentLayout,
-  Header, Button, Modal, SpaceBetween, Select, FormField, Toggle
+  Header, Button, Modal, SpaceBetween, Select, FormField, Toggle, Alert
 } from "@cloudscape-design/components";
 
 import { AuthHelper } from "../common/helpers/auth-help";
@@ -23,6 +23,9 @@ function ChatPage(props: AppPage) {
   const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
   const [checkVectorDb, setCheckVectorDb] = useState(true);
   const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
+  const [showAlert, setShowAlert] = useState(false)
+  const [alertMsg, setAlertMsg] = useState("")
+  const [alertType, setAlertType] = useState("error")
 
   useEffect(() => {
     const init = async () => {
@@ -56,6 +59,12 @@ function ChatPage(props: AppPage) {
     }
   };
 
+  const handle_notifications = (message, notify_type) => {
+    setAlertMsg(message)
+    setAlertType(notify_type)
+    setShowAlert(true)
+  }
+
   return (
     <ContentLayout
       defaultPadding
@@ -71,9 +80,14 @@ function ChatPage(props: AppPage) {
     >
       <Container fitHeight
       >
+      {(showAlert && alertType=='error') ? <Alert dismissible statusIconAriaLabel="Error" type='error' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
+      {(showAlert && alertType=='success') ? <Alert dismissible statusIconAriaLabel="Success" type='success' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
+      {(showAlert && alertType=='warning') ? <Alert dismissible statusIconAriaLabel="Warning" type='warning' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
+      {(showAlert && alertType=='info') ? <Alert dismissible statusIconAriaLabel="Info" type='info' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
         {
           (props.manageDocument?<UploadUI/>:<ChatUI
           onSendMessage={sendMessage}
+          notify_parent={handle_notifications} 
           messages={messages}
           running={running}
           selected_model_option={selectedModelOption.value}

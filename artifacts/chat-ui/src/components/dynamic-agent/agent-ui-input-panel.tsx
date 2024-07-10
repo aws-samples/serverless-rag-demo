@@ -4,10 +4,11 @@ import {
   SpaceBetween,
   Spinner, Textarea, Grid
 } from "@cloudscape-design/components";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useState } from "react";
 import { ChatScrollState } from "./agent-ui";
 import { ChatMessage, ChatMessageType } from "./types";
 import config from "../../config.json";
+import { AppContext } from "../../common/context";
 
 var ws = null;
 var agent_prompt_flow = []
@@ -26,6 +27,7 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
   const socketUrl = config.websocketUrl;
   const [message, setMessage] = useState('');
   const [isDisabled, setDisabled] = useState(false)
+  const appData = useContext(AppContext);
 
   useEffect(() => {
     const onWindowScroll = () => {
@@ -82,16 +84,13 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
     ChatScrollState.userHasScrolled = false;
     props.onSendMessage?.(inputText, ChatMessageType.Human);
     setInputText("");
-
-    const access_token = sessionStorage.getItem('accessToken');
-
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
         setDisabled(true)
         agent_prompt_flow.push({ 'role': 'user', 'content': [{ "type": "text", "text": inputText }] })
         if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-
-          ws = new WebSocket(socketUrl);
+          var idToken = appData.userinfo.tokens.idToken.toString()
+          ws = new WebSocket(socketUrl + "?access_token=" + idToken);
           ws.onerror = function (event) {
             console.log(event);
             setDisabled(false);

@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Container,
   FileUpload,
@@ -31,6 +32,7 @@ export interface ChatUIInputPanelProps {
   clear_socket?: boolean;
   onSendMessage?: (message: string, type: string) => void;
   userinfo?: any;
+  notify_parent?: (message: string, notify_type: string) => void;
 }
 
 export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
@@ -38,7 +40,6 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [value, setValue] = useState<File[]>([]);
   const socketUrl = config.websocketUrl;
   const appData = useContext(AppContext);
-  
   const [isDisabled, setDisabled] = useState(false);
 
   useEffect(() => {
@@ -109,6 +110,10 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     }
   }
 
+  const notify = (message, notify_type) => {
+    props.notify_parent?.(message, notify_type);
+  }
+
   const onSendMessage = () => {
     ChatScrollState.userHasScrolled = false;
     props.onSendMessage?.(inputText, ChatMessageType.Human);
@@ -134,6 +139,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
               { headers: { authorization: "Bearer " + idToken } }
             ).then((result) => {
               console.log('Upload successful')
+              notify("File uploaded successfully", "info")
               // user_content.push({"type": "image", "source": { "type": "base64", "media_type": "image/png", "data": e.target.result }})
               // Extract file extension from base64 content
               var file_extension = result['data']['result']['file_extension']
@@ -150,8 +156,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
                 send_over_socket();
               }
             }).catch(function (err) {
-              console.log('Upload not successful')
-              console.log(err)
+              notify("File upload error" + String(err), "error")
             })
           }
         } else {
@@ -162,7 +167,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
         }
 
       } else {
-        console.log('WebSocket is not supported by your browser.');
+        notify("WebSocket is not supported by your browser.", "error")
         agent_prompt_flow = []
       }
     }
@@ -171,9 +176,11 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   function send_over_socket() {
     if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
 
-      ws = new WebSocket(socketUrl + "?access_token=" + sessionStorage.getItem('idToken'));
+      var idToken = appData.userinfo.tokens.idToken.toString()
+      ws = new WebSocket(socketUrl + "?access_token=" + idToken);
       ws.onerror = function (event) {
         console.log(event);
+        notify("Websocket error" + String(event), "error")
         setDisabled(false);
       };
     } else {
@@ -252,6 +259,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     };
     ws.onerror = function (event) {
       console.log(event);
+      notify("Websocket error" + String(event), "error")
       setDisabled(false);
     };
   }

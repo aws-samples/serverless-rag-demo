@@ -3,6 +3,7 @@ from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
 from io import BytesIO
+import requests
 import json
 from decimal import Decimal
 import logging
@@ -80,6 +81,7 @@ def perform_ocr(user_input, model_id, connect_id):
                                 ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
                                 LOG.debug(f'method=perform_ocr, file_type=pdf-image, content={ocr_prompt}')
                                 invoke_model(0, ocr_prompt, connect_id, True, model_id)
+                        websocket_send(connect_id, { "text": "ack-end-of-msg" } )
                     elif file_extension.lower() in ['png', 'jpg']:
                         ocr_prompt = generate_claude_3_ocr_prompt(content)
                         LOG.debug(f'method=perform_ocr, file_type=png_jpg_image, content={ocr_prompt}')
@@ -360,7 +362,16 @@ def handler(event, context):
                     query_rag_no_agent(query, query_vector_db, model_id, connect_id)
         elif routeKey == '$connect':
             # TODO Add authentication of access token
-            return {'statusCode': '200', 'body': 'Bedrock says hello' }
+            if 'access_token' in event['queryStringParameters']:
+                headers = {'Content-Type': 'application/json', 'Authorization': event['queryStringParameters']['access_token'] }
+                response = requests.get(f'{rest_api_url}connect-tracker', headers=headers, verify=False)
+                if response.status_code == 200:
+                    return {'statusCode': '200', 'body': 'Bedrock says hello' }
+                else:
+                    LOG.error(f'Response Error status_code: {response.status_code}, reason: {response.reason}')
+                    return {'statusCode': f'{response.status_code}', 'body': f'Forbidden, {response.reason}' }
+            return {'statusCode': 400, 'body': f'Forbidden, cant establish secure socket connection' }
+                
             
     elif 'httpMethod' in event:
         api_map = {
