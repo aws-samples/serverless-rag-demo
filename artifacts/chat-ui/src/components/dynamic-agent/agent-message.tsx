@@ -6,6 +6,7 @@ import AgentChatFileReader from "./agent-file-reader";
 export interface AgentChatUIMessageProps {
   message: ChatMessage;
   showCopyButton?: boolean;
+  clearSocket?: boolean;
 }
 
 const regex = /<location>(.+?)<\/location>/;           

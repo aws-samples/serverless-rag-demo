@@ -28,6 +28,7 @@ export interface ChatUIInputPanelProps {
   selected_model_option?: string;
   selected_language?: string;
   check_vector_db?: boolean;
+  clear_socket?: boolean;
   onSendMessage?: (message: string, type: string) => void;
   userinfo?: any;
 }
@@ -37,6 +38,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   const [value, setValue] = useState<File[]>([]);
   const socketUrl = config.websocketUrl;
   const appData = useContext(AppContext);
+  
+  const [isDisabled, setDisabled] = useState(false);
 
   useEffect(() => {
     const onWindowScroll = () => {
@@ -65,6 +68,18 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       window.removeEventListener("scroll", onWindowScroll);
     };
   }, []);
+
+  useEffect(() => {
+    if (props.clear_socket) {
+      ws=null;
+      agent_prompt_flow=[]
+      setDisabled(false)
+      msgs = null
+      b64_content = []
+      user_content = []
+    }
+  }, [props.clear_socket]);
+
 
   useLayoutEffect(() => {
     if (ChatScrollState.skipNextHistoryUpdate) {
@@ -103,6 +118,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
 
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
+        setDisabled(true)
         if (msgs) {
           agent_prompt_flow.push({ 'role': 'assistant', 'content': [{ "type": "text", "text": msgs }] })
           msgs = null
@@ -158,6 +174,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       ws = new WebSocket(socketUrl + "?access_token=" + sessionStorage.getItem('idToken'));
       ws.onerror = function (event) {
         console.log(event);
+        setDisabled(false);
       };
     } else {
       var query_vector_db = 'no';
@@ -197,6 +214,9 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     ws.onmessage = (event) => {
       if (event.data.includes('message')) {
         var evt_json = JSON.parse(event.data);
+        if (evt_json['message'].includes('Endpoint')) {
+          evt_json['message'] = 'Hang in there'
+        }
         props.onSendMessage?.(evt_json['message'], ChatMessageType.AI);
       }
       else {
@@ -210,11 +230,16 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
 
           if (msgs.endsWith('ack-end-of-msg')) {
             msgs = msgs.replace('ack-end-of-msg', '');
+            setTimeout(()=> {
+              setDisabled(false);
+            },3000)
+            
           }
           props.onSendMessage?.(msgs, ChatMessageType.AI);
         } else {
           // Display errors
           props.onSendMessage?.(chat_output, ChatMessageType.AI);
+          setDisabled(false);
         }
       }
 
@@ -223,6 +248,11 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     ws.onclose = () => {
       console.log('WebSocket connection closed');
       agent_prompt_flow = [];
+      setDisabled(false);
+    };
+    ws.onerror = function (event) {
+      console.log(event);
+      setDisabled(false);
     };
   }
 
@@ -274,7 +304,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
           showFileThumbnail
         />
         <Button
-          disabled={props.running || inputText.trim().length === 0}
+          disabled={props.running || isDisabled || inputText.trim().length === 0}
           onClick={onSendMessage}
           iconAlign="right"
           iconName={!props.running ? "angle-right-double" : undefined}

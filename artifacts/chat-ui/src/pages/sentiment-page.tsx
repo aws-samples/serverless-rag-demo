@@ -5,6 +5,7 @@ import {
   Header,
   Button, Modal, Toggle, FormField, Select,Link,
   SpaceBetween,
+  Spinner,
 } from "@cloudscape-design/components";
 import { withAuthenticator } from '@aws-amplify/ui-react';
 import { AppPage } from "../common/types";
@@ -26,6 +27,8 @@ function SentimentPage(props: AppPage) {
   const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
   const [checkVectorDb, setCheckVectorDb] = useState(true);
   const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
+  const [isRunning, setRunning] = useState(false);
+  const [isDisabled, setDisabled] = useState(false);
   const [out, setOut] = React.useState("");
   const appData = React.useContext(AppContext);
   const socketUrl = config.websocketUrl;
@@ -42,6 +45,8 @@ function SentimentPage(props: AppPage) {
   const onSubmitReview = () => {
     if ("WebSocket" in window) {
       if (value.length > 0) {
+        setRunning(true)
+        setDisabled(true)
         setOut("")
         msgs = null
         send_over_socket()
@@ -55,6 +60,8 @@ function SentimentPage(props: AppPage) {
       ws = new WebSocket(socketUrl + "?access_token=" + idToken);
       ws.onerror = function (event) {
         console.log(event);
+        setRunning(false)
+        setDisabled(false)
       };
     } else {
 
@@ -75,6 +82,16 @@ function SentimentPage(props: AppPage) {
       }));
 
     };
+    ws.onerror = function (event) {
+      console.log(event);
+      setRunning(false)
+      setDisabled(false)
+    };
+
+    ws.onclose = function(event) {
+      setRunning(false)
+      setDisabled(false)
+    };
 
     ws.onmessage = (event) => {
       if (event.data.includes('message')) {
@@ -94,11 +111,15 @@ function SentimentPage(props: AppPage) {
             msgs = msgs.replace('ack-end-of-msg', '');
             setOut(msgs)
             msgs = null
+            setRunning(false)
+            setDisabled(false)
           }
 
         } else {
           // Display errors
           setOut(chat_output)
+          setRunning(false)
+          setDisabled(false)
         }
       }
 
@@ -123,7 +144,17 @@ function SentimentPage(props: AppPage) {
         <Container variant="embed"
           header={
             <Header variant="h3"
-              actions={<Button iconAlign="right" onClick={onSubmitReview} variant="primary" >Submit </Button>}>
+              actions={<Button iconAlign="right" disabled={isDisabled} onClick={onSubmitReview} variant="primary" >
+                {isRunning ? (
+                <>
+                  Loading&nbsp;
+                  <Spinner />
+                </>
+              ) : (
+                <>{"Submit"}</>
+              )}
+                
+                 </Button>}>
               Customer Review
             </Header>
           }>
@@ -160,26 +191,6 @@ function SentimentPage(props: AppPage) {
                   triggerVariant="option"
                 />
               </FormField>
-
-              <FormField label="Language">
-                <Select
-                  selectedOption={selectedLanguage}
-                  onChange={({ detail }) =>
-                    setSelectedLanguage(detail.selectedOption)
-                  }
-                  options={documentConfig["languages"]}
-                  expandToViewport
-                />
-              </FormField>
-
-              <Toggle
-                onChange={({ detail }) =>
-                  setCheckVectorDb(detail.checked)
-                }
-                checked={checkVectorDb}
-              >
-                Query Vector Store
-              </Toggle>
 
             </SpaceBetween>
           </Container>

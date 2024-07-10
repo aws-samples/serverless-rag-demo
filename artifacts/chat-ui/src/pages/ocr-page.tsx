@@ -24,7 +24,7 @@ var ws = null
 function OcrPage(props: AppPage) {
   const inputFileRef = useRef(null);
   const fileDisplayRef = useRef(null);
-  const ocrButtonRef = useRef(null);
+  const [is_disabled, setDisabled] = useState(false);
   const [showHint, setShowHint] = useState(true);
   const [ocrOut, setOcrOut] = useState("");
   const appData = useContext(AppContext);
@@ -95,6 +95,7 @@ function OcrPage(props: AppPage) {
   const perform_ocr = () => {
     if ("WebSocket" in window) {
       setRunning(true)
+      setDisabled(true)
       let idToken = appData.userinfo.tokens.idToken.toString();
       for (var i = 0; i < base64File.length; i++) {
         var content = base64File[i]
@@ -149,6 +150,8 @@ function OcrPage(props: AppPage) {
       ws = new WebSocket(config.websocketUrl + "?access_token=" + sessionStorage.getItem('idToken'));
       ws.onerror = function (event) {
         console.log(event);
+        setDisabled(false);
+        setRunning(false);
       };
     } else {
       // query_vectordb allowed values -> yes/no
@@ -183,7 +186,6 @@ function OcrPage(props: AppPage) {
 
 
     ws.onmessage = (event) => {
-      setRunning(false)
       if (event.data.includes('message')) {
         var evt_json = JSON.parse(event.data);
         setOcrOut(ocrOut + evt_json['message'])
@@ -201,6 +203,8 @@ function OcrPage(props: AppPage) {
             msgs = msgs.replace('ack-end-of-msg', '');
             var out_message = ocrOut + msgs
             setOcrOut(out_message)
+            setDisabled(false);
+            setRunning(false);
           }
 
         } else {
@@ -219,11 +223,13 @@ function OcrPage(props: AppPage) {
     ws.onclose = () => {
       console.log('WebSocket connection closed');
       setRunning(false)
+      setDisabled(false)
     };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      setRunning(false)
+    ws.onerror = function (event) {
+      console.log(event);
+      setDisabled(false);
+      setRunning(false);
     };
   }
 
@@ -259,9 +265,9 @@ function OcrPage(props: AppPage) {
             actions={
               <SpaceBetween size="s" direction="horizontal">
                 <input type="file" ref={inputFileRef} accept=".png, .jpg, .jpeg, .pdf" hidden onChange={add_file}></input>
-                <Button iconAlign="right" variant="normal" onClick={select_file}>Select File</Button>
-                <Button iconAlign="right" variant="normal" onClick={remove_file}>Remove File</Button>
-                <Button iconAlign="right" ref={ocrButtonRef} variant="primary" onClick={perform_ocr}>{isRunning ? (
+                <Button iconAlign="right" disabled={is_disabled} variant="normal" onClick={select_file}>Select File</Button>
+                <Button iconAlign="right" disabled={is_disabled} variant="normal" onClick={remove_file}>Remove File</Button>
+                <Button iconAlign="right" disabled={is_disabled}  variant="primary" onClick={perform_ocr}>{isRunning ? (
                 <>
                   Loading&nbsp;
                   <Spinner />

@@ -7,6 +7,7 @@ export interface ChatUIMessageListProps {
   messages?: ChatMessage[];
   showCopyButton?: boolean;
   onRenderComplete?: () => void;
+  clear_socket?: boolean;
 }
 
 export default function ChatUIMessageList(props: ChatUIMessageListProps) {
@@ -16,6 +17,11 @@ export default function ChatUIMessageList(props: ChatUIMessageListProps) {
       props.onRenderComplete();
     }
   })
+  useEffect(() => {
+    if (props.clear_socket) {
+      messages.splice(0, messages.length)
+    }
+  }, [props.clear_socket]);
   return (
     <SpaceBetween direction="vertical" size="m">
       {messages.map((message, idx) => (

@@ -17,6 +17,7 @@ export interface AgentChatUIInputPanelProps {
   sendButtonText?: string;
   running?: boolean;
   messages?: ChatMessage[];
+  clear_socket?: boolean;
   onSendMessage?: (message: string, type: string) => void;
 }
 
@@ -24,6 +25,7 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
   const [inputText, setInputText] = useState("");
   const socketUrl = config.websocketUrl;
   const [message, setMessage] = useState('');
+  const [isDisabled, setDisabled] = useState(false)
 
   useEffect(() => {
     const onWindowScroll = () => {
@@ -31,8 +33,8 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
         ChatScrollState.skipNextScrollEvent = false;
         return;
       }
-
-      const isScrollToTheEnd =
+    
+    const isScrollToTheEnd =
         Math.abs(
           window.innerHeight +
           window.scrollY -
@@ -52,6 +54,14 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
       window.removeEventListener("scroll", onWindowScroll);
     };
   }, []);
+
+  useEffect(() => {
+    if (props.clear_socket) {
+      ws=null;
+      agent_prompt_flow=[]
+      setDisabled(false)
+    }
+  }, [props.clear_socket]);
 
   useLayoutEffect(() => {
     if (ChatScrollState.skipNextHistoryUpdate) {
@@ -77,12 +87,14 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
 
     if (inputText.trim() !== '') {
       if ("WebSocket" in window) {
+        setDisabled(true)
         agent_prompt_flow.push({ 'role': 'user', 'content': [{ "type": "text", "text": inputText }] })
         if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
 
           ws = new WebSocket(socketUrl);
           ws.onerror = function (event) {
             console.log(event);
+            setDisabled(false);
           }
         } else {
           // query_vectordb allowed values -> yes/no
@@ -100,6 +112,7 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
           if (event.data.includes('message')) {
             var evt_json = JSON.parse(event.data)
             props.onSendMessage?.(evt_json['message'], ChatMessageType.AI);
+            setDisabled(false);
           }
           else {
             var response_details = JSON.parse(atob(event.data))
@@ -154,10 +167,11 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
                       }
                     }
                     agent_prompt_flow.push({ "role": last_element['role'], "content": content })
-
                     messages = thought.replace('ack-end-of-msg', '')
-
                     props.onSendMessage?.(messages, ChatMessageType.AI);
+                    setTimeout(() => {
+                      setDisabled(false);
+                    }, 2000)
                   }
                 }
               }
@@ -201,7 +215,7 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
           placeholder={props.inputPlaceholderText ?? "Send a message"}
         />
         <Button
-          disabled={props.running || inputText.trim().length === 0}
+          disabled={props.running || isDisabled || inputText.trim().length === 0}
           onClick={onSendMessage}
           iconAlign="right"
           iconName={!props.running ? "angle-right-double" : undefined}
