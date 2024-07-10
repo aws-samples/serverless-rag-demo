@@ -54,19 +54,19 @@ export default function HomePage() {
           <ColumnLayout borders="vertical" columns={4}>
             <div>
               <Box variant="h3">Document Chat</Box>
-              <Box variant="p">Retrieval Augmented Generation Solution</Box>
+              {/* <Box variant="p">Retrieval Augmented Generation Solution</Box> */}
             </div>
             <div>
               <Box variant="h3">Multi Agent</Box>
-              <Box variant="p">This solution comprises of multiple-generative AI agents working in tandem to solve a user-problem</Box>
+              {/* <Box variant="p">This solution comprises of multiple-generative AI agents working in tandem to solve a user-problem</Box> */}
             </div>
             <div>
               <Box variant="h3">Sentiment Analysis</Box>
-              <Box variant="p"></Box>
+              {/* <Box variant="p"></Box> */}
             </div>
             <div>
               <Box variant="h3">OCR</Box>
-              <Box variant="p"></Box>
+              {/* <Box variant="p"></Box> */}
             </div>
           </ColumnLayout>
         </Container>
@@ -92,11 +92,7 @@ export default function HomePage() {
           </Box>
         </SpaceBetween>
         <Box variant="p">
-          This is a paragraph. Lorem ipsum dolor sit amet,
-          consectetur adipiscing elit. Ut luctus tempor
-          dolor ac accumsan. This is a paragraph. Lorem
-          ipsum dolor sit amet, consectetur adipiscing
-          elit. Ut luctus tempor dolor ac accumsan.
+        Document Chat is an application that allows users to have natural language conversations with an AI assistant while leveraging information from a corpus of documents. RAG plays a crucial role in enabling the AI assistant to provide relevant and informative responses based on the context of the conversation and the available document corpus.
         </Box>
       </SpaceBetween>
     </Container>
@@ -123,11 +119,8 @@ export default function HomePage() {
           </Box>
         </SpaceBetween>
         <Box variant="p">
-          This is a paragraph. Lorem ipsum dolor sit amet,
-          consectetur adipiscing elit. Ut luctus tempor
-          dolor ac accumsan. This is a paragraph. Lorem
-          ipsum dolor sit amet, consectetur adipiscing
-          elit. Ut luctus tempor dolor ac accumsan.
+        The Multi-Agent application demonstrates how complex problems can be tackled through the collaborative efforts of multiple generative AI agents.
+        You could generate applications such as calculators/games/presentations/web-searches through multiple generative AI agents
         </Box>
       </SpaceBetween>
     </Container>
@@ -155,11 +148,7 @@ export default function HomePage() {
           </Box>
         </SpaceBetween>
         <Box variant="p">
-          This is a paragraph. Lorem ipsum dolor sit amet,
-          consectetur adipiscing elit. Ut luctus tempor
-          dolor ac accumsan. This is a paragraph. Lorem
-          ipsum dolor sit amet, consectetur adipiscing
-          elit. Ut luctus tempor dolor ac accumsan.
+          Analyze sentiments of a customer review/tweet/Facebook post through foundation models. The model detects the emotion expressed in the review, rates the review on a scale of 1-10.
         </Box>
       </SpaceBetween>
     </Container>
@@ -187,11 +176,7 @@ export default function HomePage() {
           </Box>
         </SpaceBetween>
         <Box variant="p">
-          This is a paragraph. Lorem ipsum dolor sit amet,
-          consectetur adipiscing elit. Ut luctus tempor
-          dolor ac accumsan. This is a paragraph. Lorem
-          ipsum dolor sit amet, consectetur adipiscing
-          elit. Ut luctus tempor dolor ac accumsan.
+          Perform OCR on PDFs/Images through foundation models.
         </Box>
       </SpaceBetween>
     </Container>
