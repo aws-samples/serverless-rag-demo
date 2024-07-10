@@ -193,9 +193,10 @@ export function UploadUI() {
             </SpaceBetween>
           </Box>
         }
-        header="Modal title"
+        header="Upload file"
       >
         <FileUpload
+          accept=".pdf,.png,.jpg"
           onChange={({ detail }) => {
             setValue(detail.value);
           }}

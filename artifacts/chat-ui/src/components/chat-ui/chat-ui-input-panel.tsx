@@ -288,6 +288,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       />
       <SpaceBetween size="s" direction="horizontal">
       <FileUpload
+          accept=".pdf,.png,.jpg"
           onChange={({ detail }) => {
             setValue(detail.value)
             load_base64(detail.value)
