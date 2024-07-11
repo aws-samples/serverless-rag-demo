@@ -95,16 +95,16 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 6. The UI is hosted on AppRunner the link to AppRunner could be found in CloudShell once the script execution is complete, or you could also go to the AppRunner service on the AWS Console and obtain the https url. The UI is authenticated through Amazon Cognito hence the very first time you would have to sign-up and then sign-in to login to the application
  ![AppRunnerUI](media/AppRunner_UI.png)
+
 </details>
 
 
-
-
-### (ADVANCED) Using an existing Bedrock Knowledge base
-
 <details>
-> [!IMPORTANT]
-> You could query your existing Knowledge base created on Amazon Bedrock provided it uses Amazon Opensearch Serverless service. 
+  
+   <summary><b>(ADVANCED) Using an existing Bedrock Knowledge base</b></summary>
+
+   > [!IMPORTANT]
+   > You could query your existing Knowledge base created on Amazon Bedrock provided it uses Amazon Opensearch Serverless service. 
 
 #### Steps
 1. Get the Collection ARN and the embedding model used by your Knowledge base on Bedrock
@@ -124,6 +124,6 @@ Widespread AI adoption is being driven by generative AI models that can generate
    ![Lambda-Access-AOSS](media/Add-lambda-arn-to-dataaccess.png)
 7. Now try Document Chat on the UI, it should query from your Amazon Bedrock Knowledge base.
 
-> [!IMPORTANT]
-> We do not support indexing to an existing Knowledge base. That can be done through the Amazon Bedrock Console.
+   > [!IMPORTANT]
+   > We do not support indexing to an existing Knowledge base. That can be done through the Amazon Bedrock Console.
 </details>
