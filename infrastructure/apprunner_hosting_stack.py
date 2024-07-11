@@ -83,8 +83,8 @@ class AppRunnerHostingStack(Stack):
         function = _lambda.Function.from_function_arn(self, f's3-notify-lambda-{env_name}', lambda_arn)
         # create s3 notification for lambda function
         notification = _s3_notifications.LambdaDestination(function)
-        self.images_bucket.add_event_notification(_s3.EventType.OBJECT_CREATED, notification, prefix="index/data/*")
-        self.images_bucket.add_event_notification(_s3.EventType.OBJECT_REMOVED_DELETE, notification, prefix="index/data/*")
+        self.images_bucket.add_event_notification(_s3.EventType.OBJECT_CREATED, notification)
+        self.images_bucket.add_event_notification(_s3.EventType.OBJECT_REMOVED_DELETE, notification)
         
         _cdk.CfnOutput(self, f"rag-llm-ecr-service-output-{env_name}", value=app_runner_ui.attr_service_url,
                        export_name="ServiceUrl"
