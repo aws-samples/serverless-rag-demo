@@ -81,6 +81,8 @@ def generate_HTML(user_query: str, additional_data_points: str =""):
                     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
                     </icon_steps>
                     6. For other requirements, you could use other Javascript libraries as needed.
+                    7. When generating Javascript code, you should not use any alert boxes that could freeze the UI.
+                    8. Use the <html></html> tags to enclose the generated code.
                     </instructions>
                 """
     
