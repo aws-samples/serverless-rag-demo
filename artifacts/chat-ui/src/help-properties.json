@@ -26,5 +26,9 @@
     "ocr": {
         "title": "OCR",
         "description" : "Extract text from images or PDFs all through foundation models on Amazon Bedrock"
+    },
+    "pii": {
+        "title": "PII",
+        "description" : "Redact PII data"
     }
 }

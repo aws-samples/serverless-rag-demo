@@ -188,6 +188,7 @@ class ApiGw_Stack(Stack):
                                             'IS_RAG_ENABLED': is_opensearch,
                                             'S3_BUCKET_NAME': bucket_name,
                                             'EMBED_MODEL_ID': embed_model_id,
+                                            'IS_BEDROCK_KB': 'no',
                                             'CONVERSATIONS_DYNAMO_TABLE_NAME': env_params['conversations_dynamo_table_name']
                               },
                               memory_size=4096,

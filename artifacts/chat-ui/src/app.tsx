@@ -79,6 +79,7 @@ export default function App() {
               <Route path="/sentiment-analysis" element={<Help setPageId="sentiment" />} />
               <Route path="/multi-agent" element={<Help setPageId="multi-agent" />} />
               <Route path="/ocr" element={<Help setPageId="ocr" />} />
+              <Route path="/pii" element={<Help setPageId="pii" />} />
               <Route path="*" element={<Help setPageId="404" />} />
             </Routes>
           </Router>

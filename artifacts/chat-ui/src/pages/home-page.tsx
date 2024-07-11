@@ -51,7 +51,7 @@ export default function HomePage() {
       <SpaceBetween size="xxl">
         <Box>&nbsp;</Box>
         <Container>
-          <ColumnLayout borders="vertical" columns={6}>
+          <ColumnLayout borders="vertical" columns={5}>
             <div>
               <Box padding="l" variant="h3">Document Chat</Box>
               {/* <Box variant="p">Retrieval Augmented Generation Solution</Box> */}
@@ -65,11 +65,11 @@ export default function HomePage() {
               {/* <Box variant="p"></Box> */}
             </div>
             <div>
-              <Box padding="l" variant="h3">PII Redaction</Box>
+              <Box padding="l" variant="h3">OCR</Box>
               {/* <Box variant="p"></Box> */}
             </div>
             <div>
-              <Box padding="l" variant="h3">OCR</Box>
+              <Box padding="l" variant="h3">PII Redaction</Box>
               {/* <Box variant="p"></Box> */}
             </div>
 

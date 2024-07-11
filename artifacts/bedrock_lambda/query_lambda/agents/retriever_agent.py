@@ -100,7 +100,8 @@ awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
 embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
 model_id = getenv("RETRIEVER_MODEL", "anthropic.claude-3-haiku-20240307-v1:0")
-
+is_bedrock_kb = getenv("IS_BEDROCK_KB", "no")
+bedrock_embedding_key_name = getenv("BEDROCK_EMBED_KEY_NAME", "bedrock-knowledge-base-default-vector")
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 
@@ -274,6 +275,7 @@ def classify_and_translation_request(user_query):
 
 
 def fetch_data(user_query):
+    global INDEX_NAME
     print(f'In Fetch Data = {user_query}')
     context = ''
     embeddings_key="embedding"
@@ -289,22 +291,38 @@ def fetch_data(user_query):
         print(f'Embed Error {finish_reason}')
     embedded_search = result.get(embeddings_key)
 
+    TEXT_CHUNK_FIELD = 'text'
+    DOC_TYPE_FIELD = 'doc_type'
     vector_query = {
                 "size": 10,
                 "query": {"knn": {"embedding": {"vector": embedded_search, "k": 5}}},
                 "_source": False,
-                "fields": ["text", "doc_type"]
+                "fields": [TEXT_CHUNK_FIELD, DOC_TYPE_FIELD]
     }
+
+    if is_bedrock_kb == 'yes':
+        LOG.info('Connecting to Bedrock KB')
+        TEXT_CHUNK_FIELD="AMAZON_BEDROCK_TEXT_CHUNK"
+        if not INDEX_NAME.startswith('bedrock'):
+            INDEX_NAME = 'bedrock-knowledge-base*'
+            vector_query = {
+                "size": 10,
+                "query": {"knn": {bedrock_embedding_key_name: {"vector": embedded_search, "k": 5}}},
+                "_source": False,
+                "fields": [TEXT_CHUNK_FIELD]
+            }
+        LOG.info(f'Bedrock KB Query {vector_query}')
+        
 
     try:
         response = ops_client.search(body=vector_query, index=INDEX_NAME)
-        print(f'Opensearch response {response}')
+        LOG.info(f'Opensearch response {response}')
         for data in response["hits"]["hits"]:
             if context == '':
-                context = data['fields']['text'][0]
+                context = data['fields'][TEXT_CHUNK_FIELD][0]
             else:
-                context = context + ' ' + data['fields']['text'][0]
+                context = context + ' ' + data['fields'][TEXT_CHUNK_FIELD][0]
     except Exception as e:
-                print('Vector Index does not exist. Please index some documents')
+                LOG.error(f'Vector Index query error {e}')
     return context
 
