@@ -4,7 +4,7 @@ import { AppLayout, TopNavigation, SideNavigation, Badge, Alert } from '@cloudsc
 import { Hub } from 'aws-amplify/utils';
 import { signOut } from 'aws-amplify/auth';
 import { AppContext } from "./common/context";
-import { NotFound, ChatPage, AgentPage, OcrPage, SentimentPage, HomePage, Help } from './pages'
+import { NotFound, ChatPage, AgentPage, OcrPage, SentimentPage, HomePage, Help, PIIPage } from './pages'
 import '@aws-amplify/ui-react/styles.css';
 
 export default function App() {
@@ -102,6 +102,7 @@ export default function App() {
             { type: "link", text: "Multi-Agent", href: "#/multi-agent" },
             { type: "link", text: "Sentiment Analysis", href: "#/sentiment-analysis" },
             { type: "link", text: "OCR", href: "#/ocr" },
+            { type: "link", text: "PII Identification", href: "#/pii" },
           ]}
         />}
         content={
@@ -113,6 +114,7 @@ export default function App() {
               <Route path="/sentiment-analysis" element={<SentimentPage setAppData={setAppData} />} />
               <Route path="/multi-agent" element={<AgentPage setAppData={setAppData} />} />
               <Route path="/ocr" element={<OcrPage setAppData={setAppData} />} />
+              <Route path="/pii" element={<PIIPage setAppData={setAppData} />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>

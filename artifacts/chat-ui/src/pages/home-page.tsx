@@ -51,23 +51,29 @@ export default function HomePage() {
       <SpaceBetween size="xxl">
         <Box>&nbsp;</Box>
         <Container>
-          <ColumnLayout borders="vertical" columns={4}>
+          <ColumnLayout borders="vertical" columns={6}>
             <div>
-              <Box variant="h3">Document Chat</Box>
+              <Box padding="l" variant="h3">Document Chat</Box>
               {/* <Box variant="p">Retrieval Augmented Generation Solution</Box> */}
             </div>
             <div>
-              <Box variant="h3">Multi Agent</Box>
+              <Box padding="l" variant="h3">Multi Agent</Box>
               {/* <Box variant="p">This solution comprises of multiple-generative AI agents working in tandem to solve a user-problem</Box> */}
             </div>
             <div>
-              <Box variant="h3">Sentiment Analysis</Box>
+              <Box padding="l" variant="h3">Sentiment Analysis</Box>
               {/* <Box variant="p"></Box> */}
             </div>
             <div>
-              <Box variant="h3">OCR</Box>
+              <Box padding="l" variant="h3">PII Redaction</Box>
               {/* <Box variant="p"></Box> */}
             </div>
+            <div>
+              <Box padding="l" variant="h3">OCR</Box>
+              {/* <Box variant="p"></Box> */}
+            </div>
+
+            
           </ColumnLayout>
         </Container>
 
@@ -177,6 +183,32 @@ export default function HomePage() {
         </SpaceBetween>
         <Box variant="p">
           Perform OCR on PDFs/Images through foundation models.
+        </Box>
+      </SpaceBetween>
+    </Container>
+
+    <Container
+      media={{
+        content: (
+          <img
+            src="/images/ocr.png"
+            alt="placeholder"
+          />
+        ),
+        position: "side",
+        width: "14%"
+      }}
+    >
+      <SpaceBetween direction="vertical" size="s">
+        <SpaceBetween direction="vertical" size="xxs">
+          <Box variant="h2">
+            <Link fontSize="heading-m" href="#/pii">
+              PII Redaction
+            </Link>
+          </Box>
+        </SpaceBetween>
+        <Box variant="p">
+          Identify and Redact PII(Personally Identifiable Information) through foundation models.
         </Box>
       </SpaceBetween>
     </Container>

@@ -14,6 +14,7 @@ from prompt_utils import AGENT_MAP, get_system_prompt, agent_execution_step, rag
 from prompt_utils import casual_prompt, get_classification_prompt, RESERVED_TAGS
 from prompt_utils import get_can_the_orchestrator_answer_prompt
 from prompt_utils import sentiment_prompt, generate_claude_3_ocr_prompt
+from prompt_utils import pii_redact_prompt
 from agent_executor_utils import agent_executor
 from pypdf import PdfReader
 
@@ -42,6 +43,16 @@ awsauth = AWS4Auth(credentials.access_key, credentials.secret_key,
 list_of_tools_specs = []
 tool_names = []
 tool_descriptions = []
+
+def pii_redact(user_input, model_id, connect_id):
+    prompt_template = {
+                        "anthropic_version": "bedrock-2023-05-31",
+                        "max_tokens": 10000,
+                        "system": pii_redact_prompt,
+                        "messages": json.loads(user_input)
+    }
+    LOG.debug(f'Sentiment prompt_template {prompt_template}')
+    invoke_model(0, prompt_template, connect_id, True, model_id)
 
 def query_sentiment(user_input, model_id, connect_id):
     prompt_template = {
@@ -367,6 +378,9 @@ def handler(event, context):
                 elif behaviour == 'ocr':
                     model_id = input_to_llm['model_id']
                     perform_ocr(query, model_id, connect_id)
+                elif behaviour == 'pii':
+                    model_id = input_to_llm['model_id']
+                    pii_redact(query, model_id, connect_id)
                 else:
                     query_vector_db = 'no'
                     if 'query_vectordb' in input_to_llm and input_to_llm['query_vectordb']=='yes':

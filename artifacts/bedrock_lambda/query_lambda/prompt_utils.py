@@ -357,6 +357,25 @@ def generate_claude_3_ocr_prompt(image_bytes):
                     }
     return prompt_template 
 
+pii_redact_prompt="""You are a document redactor. Your responsibilities are as follows:
+                        1. Redact Personally Identifiable Information (PII) from a given text based on provided instructions.
+                        2. Ensure that the redacted text does not contain any PII.
+                        3. Your output should be in the following JSON format:
+                        Here is the JSON schema for the redaction output:
+                        {
+                          "redacted_text": $redacted_text,
+                          "redaction_summary": $summary,
+                        }
+
+                        4. <examples>
+                        {
+                            "redacted_text": "The customer's phone number is 000000000000.",
+                            "redaction_summary": "Removed 1 PII token."
+                        }
+                        </examples>
+                        5. You should not contain additional tags or text apart from the json response
+                        </instructions>
+                        """
 
 sentiment_prompt="""
         You are a sentiment analyzer. Your responsibilities are as follows:
