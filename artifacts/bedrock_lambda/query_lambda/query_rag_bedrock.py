@@ -50,7 +50,7 @@ def query_sentiment(user_input, model_id, connect_id):
                         "system": sentiment_prompt,
                         "messages": json.loads(user_input)
     }
-    print(f'chat prompt_template {prompt_template}')
+    LOG.debug(f'Sentiment prompt_template {prompt_template}')
     invoke_model(0, prompt_template, connect_id, True, model_id)
     
 
@@ -92,9 +92,11 @@ def query_rag_no_agent(user_input, query_vector_db, model_id, connect_id):
     global rag_chat_bot_prompt
     final_prompt = rag_chat_bot_prompt
     chat_input = json.loads(user_input)
-    print(f'Chat history {chat_input}')
+    LOG.debug(f'Chat history {chat_input}')
+    can_invoke_model = False
 
     if 'role' in chat_input[-1] and 'user' == chat_input[-1]['role']:
+        can_invoke_model=True
         for text_inputs in chat_input[-1]['content']:
             if text_inputs['type'] == 'text':
                 classify_translate_json = classify_and_translation_request(text_inputs['text'])
@@ -113,18 +115,30 @@ def query_rag_no_agent(user_input, query_vector_db, model_id, connect_id):
             elif text_inputs['type'] == 'image':
                 if 'source' in text_inputs and 'partial_s3_key' in text_inputs['source']:
                     s3_key = f"bedrock/data/{text_inputs['source']['partial_s3_key']}"
+                    LOG.debug(f'Fetch document from S3 {s3_key}')
                     encoded_file = base64.b64encode(get_file_from_s3(s3_bucket_name, s3_key))
                     del text_inputs['source']['partial_s3_key']
                     del text_inputs['source']['file_extension']
                     text_inputs['source']['data'] = encoded_file.decode('utf-8')
-        
+
+    for chat in chat_input:
+        if 'role' in chat and chat['role'] == 'user':
+            for message in chat['content']:
+                if message['type'] == 'image' and 'source' in message and 'partial_s3_key' in message['source']:
+                    s3_key = f"bedrock/data/{message['source']['partial_s3_key']}"
+                    del message['source']
+                    message['type']='text'
+                    message['text'] = f"content at S3 location: {s3_key}"
+
+    if can_invoke_model:
         prompt_template = {
                         "anthropic_version": "bedrock-2023-05-31",
                         "max_tokens": 10000,
                         "system": final_prompt,
                         "messages": chat_input
         }
-        print(f'chat prompt_template {prompt_template}')
+
+        LOG.info(f'chat prompt_template {prompt_template}')
         invoke_model(0, prompt_template, connect_id, True, model_id)
                     
 
@@ -180,10 +194,10 @@ def master_orchestrator(agent_type: str, chat_input, connect_id):
     for i in range(5):
         # To be displayed in StackTrace
         websocket_send(connect_id, {"intermediate_execution": f"Hang in there, current agent:{agent_name}, step: {i}", "done": done})
-        print(f"prompt_template {prompt_template}, iteration : {i}")
+        LOG.debug(f"prompt_template {prompt_template}, iteration : {i}")
         step_plan = invoke_model(i, prompt_template, connect_id, False)
         websocket_send(connect_id, {"intermediate_execution": f"Hang in there, {agent_name} created a plan of action", "done": done})
-        print(f'Step {i} output {step_plan}')
+        LOG.debug(f'Step {i} output {step_plan}')
         done, human_prompt, assistant_prompt, agent_name, contains_artifact = agent_execution_step(i, step_plan, prompt_flow)
         
         prompt_flow.append({"role":"assistant", "content": assistant_prompt })
@@ -203,7 +217,7 @@ def master_orchestrator(agent_type: str, chat_input, connect_id):
             # Check for RESERVED TAGS in assistant_prompt
             if contains_artifact:
                 websocket_send(connect_id, {"intermediate_execution": f" Artifact created ..", "done": done})
-            print('Final answer from LLM:\n'+f'{assistant_prompt}')
+            LOG.debug('Final answer from LLM:\n'+f'{assistant_prompt}')
             websocket_send(connect_id, {"prompt_flow": prompt_flow, "done": done})
             return assistant_prompt
         
@@ -212,7 +226,7 @@ def master_orchestrator(agent_type: str, chat_input, connect_id):
             agent_name = agent_executor(classify_prompt, prompt_flow, output_agent, output_tags, False)
             # if next agent could not be found return control back to the user
             if agent_name not in AGENT_MAP:
-                print(f'Agent name {agent_name} not in agent map. prompt_flow {prompt_flow}. Exit')
+                LOG.warn(f'Agent name {agent_name} not in agent map. prompt_flow {prompt_flow}. Exit')
                 done = True
                 last_prmpt = prompt_flow[-1]
                 generated_assist_prmpt = None
@@ -327,7 +341,7 @@ def handler(event, context):
     global websocket_client
     LOG.info(
         "---  Amazon Opensearch Serverless vector db example with Amazon Bedrock Models ---")
-    print(f'event - {event}')
+    LOG.info(f'event - {event}')
 
     if 'httpMethod' not in event and 'requestContext' in event:
     # this is a websocket request
@@ -342,7 +356,7 @@ def handler(event, context):
         if routeKey != '$connect':
             if 'body' in event:
                 input_to_llm = json.loads(event['body'], strict=False)
-                print('input_to_llm: ', input_to_llm)
+                LOG.info('input_to_llm: ', input_to_llm)
                 query = input_to_llm['query']
                 behaviour = input_to_llm['behaviour']
                 if behaviour == 'advanced-agent':
@@ -456,15 +470,15 @@ def get_contents(file_extension, file_bytes):
             #if file_extension in ['csv', 'xls', 'xlsx']:
             content = file_bytes.decode()
     except Exception as e:
-        print(f'Exception reading contents from file {e}')
-    print(f'file-content {content}')
+        LOG.error(f'Exception reading contents from file {e}')
+    LOG.info(f'file-content {content}')
     return content
 
 def get_file_from_s3(s3bucket, key):
     s3 = boto3.resource('s3')
     obj = s3.Object(s3bucket, key)
     file_bytes = obj.get()['Body'].read()
-    print(f'returns S3 encoded object from key {s3bucket}/{key}')
+    LOG.debug(f'returns S3 encoded object from key {s3bucket}/{key}')
     return file_bytes
 
 def success_response(connect_id, result):
@@ -474,7 +488,7 @@ def success_response(connect_id, result):
 def websocket_send(connect_id, message):
     global websocket_client
     global wss_url
-    print(f'WSS URL {wss_url}, connect_id {connect_id}')
+    LOG.debug(f'WSS URL {wss_url}, connect_id {connect_id}, message {message}')
     response = websocket_client.post_to_connection(
                 Data=base64.b64encode(json.dumps(message, indent=4).encode('utf-8')),
                 ConnectionId=connect_id

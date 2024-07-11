@@ -204,34 +204,41 @@ def query_rewrite(user_query):
 def classify_and_translation_request(user_query):
     print(f'In classify_and_translation_request user_query = {user_query}')
     # Classify the request based on the rules
-    system_prompt = """ You will classify the User query whether it needs to fetch data or is just a casual conversation:
+    system_prompt = """ 
+                1. Your role is to classify the User query available in <classify></classify> tags into one of the below:
                 a. If the user is exchanging pleasantries or engaging in casual conversation, then return CASUAL.
                 b. If the user query is asking for a specific file, data, or information retrieval then return RETRIEVAL 
                 c. If you can't classify the user query, then return RETRIEVAL
                 
-                You will also translate the query to english if its in any other language.
+                2. After classification you should also translate the query  to english if its in any other language 
                 
-                You will then wrap your response in a json as below
-                {
-                    "QUERY_TYPE": "$QUERY_TYPE",
-                    "ORIGINAL_QUERY": "$ORIGINAL_QUERY",
-                    "TRANSLATED_QUERY": "$TRANSLATED_QUERY"
-                }
-                $QUERY_TYPE can be either RETRIEVAL or CASUAL
-                $ORIGINAL_QUERY is the original query from the user
-                $TRANSLATED_QUERY is the translated query in english language
+                3. You should responsd in json format as defined below in <json_format></json_format> tags:
+                    <json_format>
+                    {
+                       "QUERY_TYPE": "$QUERY_TYPE",
+                       "ORIGINAL_QUERY": "$ORIGINAL_QUERY",
+                       "TRANSLATED_QUERY": "$TRANSLATED_QUERY"
+                    }
+                    </json_format>
+
+                    $QUERY_TYPE can be either RETRIEVAL or CASUAL
+                    $ORIGINAL_QUERY is the original query from the user
+                    $TRANSLATED_QUERY is the translated query in english language
                 
-                Example:
+                4. Example:
                   {
                     "QUERY_TYPE": "RETRIEVAL",
                     "ORIGINAL_QUERY": "What is the capital of France?",
                     "TRANSLATED_QUERY": "What is the capital of France"
                   }
 
-                Important: All JSON Keys are mandatory, if the query is in english, the query should still be part of TRANSLATED_QUERY
-                Important: Your response will only contain JSON and not other text or tags
+                5. Important: All JSON Keys are mandatory, if the query is in english, the query should still be part of TRANSLATED_QUERY
+                6. Important: Your response will only contain JSON and not other text or tags
            """
     # Classify the request based on the rules
+    user_query =f"<classify>{user_query}</classify>. Please classify the request shared in <classify></classify> tags"
+
+
     query_list = [
         {
             "role": "user",
@@ -255,10 +262,13 @@ def classify_and_translation_request(user_query):
     if 'content' in llm_output:
         output = llm_output['content'][0]['text']
         try:
+            if '<json_format>' in output and '</json_format>' in output:
+                output = output.split('</json_format>')[0]
+                output = output.split('<json_format>')[1]
             classify_translate_json = json.loads(output)
             return classify_translate_json
         except Exception as e:
-            print(f'Exception in classify_and_translation_request {e}')
+            print(f'Exception in classify_and_translation_request, output={output}, error={e}, prompt_template={prompt_template}')
     return {}
         
 
