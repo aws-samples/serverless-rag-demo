@@ -84,16 +84,17 @@ Widespread AI adoption is being driven by generative AI models that can generate
      cd serverless-rag-demo
    ```
 
-4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Look at Prerequisites to deploy to the correct reqion.
+4. Fire the bash script that creates the RAG based solution. Pass the environment and region for deployment. environment can be dev,qa,sandbox. Look at Prerequisites to deploy to the correct region.
    ```
      sh creator.sh
    ```
 
 5. Press **Enter** to proceed with deployment of the stack or **ctrl+c** to exit
 
-   <img width="1086" alt="Screenshot 2023-10-23 at 10 49 04 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/b74105bb-b817-4c47-8c41-1b72f7fa27b3">
+   ![Cloudshell](media/CloudShell-deployment.png)
 
 6. The UI is hosted on AppRunner the link to AppRunner could be found in CloudShell once the script execution is complete, or you could also go to the AppRunner service on the AWS Console and obtain the https url. The UI is authenticated through Amazon Cognito hence the very first time you would have to sign-up and then sign-in to login to the application
+ ![AppRunnerUI](media/AppRunner_UI.png)
 </details>
 
 
@@ -101,6 +102,7 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 ### (ADVANCED) Using an existing Bedrock Knowledge base
 
+<details>
 > [!IMPORTANT]
 > You could query your existing Knowledge base created on Amazon Bedrock provided it uses Amazon Opensearch Serverless service. 
 
@@ -124,4 +126,4 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 > [!IMPORTANT]
 > We do not support indexing to an existing Knowledge base. That can be done through the Amazon Bedrock Console.
-
+</details>
