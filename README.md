@@ -8,8 +8,11 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 [Amazon Opensearch Serverless(AOSS) offers vector engine to store embeddings for faster similarity searches](https://aws.amazon.com/blogs/big-data/introducing-the-vector-engine-for-amazon-opensearch-serverless-now-in-preview/). The vector engine provides a simple, scalable, and high-performing similarity search capability in Amazon OpenSearch Serverless that makes it easy for you to build generative artificial intelligence (AI) applications without having to manage the underlying vector database infrastructure. 
 
-> [!Info]
+> [!NOTE]
 > This repository offers a production ready easily deployable Document chat / Multi-Agent collaboration / Sentiment Analysis / PII Redaction / OCR applications. 
+
+> [!IMPORTANT]
+> The Older UI is maintained in the v0.0.1(Old-UI) branch.
 
 ### Prerequisites
   <details open>
