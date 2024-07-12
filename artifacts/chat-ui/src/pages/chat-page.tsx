@@ -85,7 +85,7 @@ function ChatPage(props: AppPage) {
       {(showAlert && alertType=='warning') ? <Alert dismissible statusIconAriaLabel="Warning" type='warning' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
       {(showAlert && alertType=='info') ? <Alert dismissible statusIconAriaLabel="Info" type='info' onDismiss={() => setShowAlert(false)}>{alertMsg}</Alert> : ""}
         {
-          (props.manageDocument?<UploadUI/>:<ChatUI
+          (props.manageDocument?<UploadUI notify_parent={handle_notifications}/>:<ChatUI
           onSendMessage={sendMessage}
           notify_parent={handle_notifications} 
           messages={messages}

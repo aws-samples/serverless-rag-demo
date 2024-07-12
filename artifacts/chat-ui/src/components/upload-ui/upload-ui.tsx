@@ -6,7 +6,11 @@ import axios from "axios";
 import config from '../../config.json'
 import { AppContext } from "../../common/context";
 
-export function UploadUI() {
+export interface UploadDocProps {
+  running?: boolean;
+  notify_parent?: (message: string, notify_type: string) => void;
+}
+export function UploadUI(props: UploadDocProps) {
   const [value, setValue] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -36,8 +40,13 @@ export function UploadUI() {
     return formdata
   }
 
+  const notify = (message, notify_type) => {
+    props.notify_parent?.(message, notify_type);
+  }
+
   const upload_file = (files: any) => {
     setIsLoading(true);
+    setIsModalVisible(false);
     for (var i = 0; i < value.length; i++) {
       // remove the words after the last dot
       var file_data = value[i]
@@ -58,17 +67,20 @@ export function UploadUI() {
           var upload_url = result['data']['result']['url']
           axios.post(upload_url, formData)
             .then(function (result) {
-              closeModalandRefresh();
               setIsModalVisible(false)
+              notify("File uploaded successfully", "info")
+              closeModalandRefresh();
             })
         }).catch(function (err) {
           console.log(err)
+          notify("File not uploaded " + err, "error")
           setIsModalVisible(false)
 
         })
         // Catch errors if any
         .catch((err) => {
           console.log(err)
+          notify("File not uploaded " + err, "error")
           setIsModalVisible(false)
         });
 
@@ -91,6 +103,7 @@ export function UploadUI() {
       setIsLoading(true);
       axios.post(`${config.apiUrl}del-file`, JSON.stringify({ s3_key: keyid }), { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
         .then((result) => {
+          notify('File was successfully deleted', 'info');
           setTimeout(() => {
             refreshUserFileList();
             setIsLoading(false);
@@ -98,6 +111,7 @@ export function UploadUI() {
 
         })
         .catch((err) => {
+          notify('File was not deleted ' + err, 'error');
           console.log(err)
           refreshUserFileList()
           setIsLoading(false);
@@ -106,20 +120,25 @@ export function UploadUI() {
   }
 
   const deleteIndex = () => {
-    axios.delete(`${config.apiUrl}index-documents`, 
-    { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
-        .then((result) => {
-          setTimeout(() => {
-            refreshUserFileList();
+    if (confirm(`Are you sure to delete all your indexed data`)) {
+      setIsLoading(true);
+      axios.delete(`${config.apiUrl}index-documents`, 
+      { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
+          .then((result) => {
+            notify('Index deleted successfully ', 'info');
+            setTimeout(() => {
+              refreshUserFileList();
+              setIsLoading(false);
+            }, 5000)
+  
+          })
+          .catch((err) => {
+            console.log(err)
+            notify('Index not deleted ' + err, 'error');
+            refreshUserFileList()
             setIsLoading(false);
-          }, 5000)
-
-        })
-        .catch((err) => {
-          console.log(err)
-          refreshUserFileList()
-          setIsLoading(false);
-        })
+          })
+    }
   }
 
   return (
