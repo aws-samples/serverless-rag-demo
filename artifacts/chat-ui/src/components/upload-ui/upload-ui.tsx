@@ -170,7 +170,7 @@ export function UploadUI(props: UploadDocProps) {
           {
             id: "file_id",
             header: "File Name",
-            cell: item => item.file_id || "-",
+            cell: item => item.sort_key.split('-fileid-')[1] || "-",
             sortingField: "file_id",
             isRowHeader: true
           },
@@ -190,7 +190,7 @@ export function UploadUI(props: UploadDocProps) {
           },
           {
             id: "update_epoch",
-            header: "Upload Time",
+            header: "Last Update",
             cell: item => timeago(item.update_epoch * 1000) || "-",
             sortingField: "update_epoch"
           },
