@@ -17,8 +17,8 @@ export default function App() {
 
   useEffect(() => {
     Hub.listen("auth", (data) => {
-      setNotificationVisible(true);
-      setNotificationMsg("Validating Authentication")
+      // setNotificationVisible(true);
+      // setNotificationMsg("Validating Authentication")
       switch (data.payload.event) {
         case "signedOut":
           setAppData({ userinfo: null })

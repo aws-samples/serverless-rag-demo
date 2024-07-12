@@ -148,7 +148,7 @@ export function UploadUI(props: UploadDocProps) {
       header={<Header
         actions={
           <SpaceBetween direction="horizontal" size="s">
-            <Button iconName="refresh" onClick={() => refreshUserFileList()} disabled={isLoading}>Refesh</Button>
+            <Button iconName="refresh" onClick={() => refreshUserFileList()}>Refesh</Button>
             <Button onClick={() => setIsModalVisible(true)} disabled={isLoading}>Upload File</Button>
             <Button onClick={() => deleteIndex()}variant="primary" iconName="delete-marker" disabled={isLoading}>Delete Index</Button>
           </SpaceBetween>
@@ -182,6 +182,13 @@ export function UploadUI(props: UploadDocProps) {
             isRowHeader: true
           },
           {
+            id: "errors",
+            header: "Message",
+            cell: item => item.idx_err_msg || "-",
+            sortingField: "update_epoch",
+            isRowHeader: true
+          },
+          {
             id: "update_epoch",
             header: "Upload Time",
             cell: item => timeago(item.update_epoch * 1000) || "-",
@@ -201,6 +208,8 @@ export function UploadUI(props: UploadDocProps) {
         enableKeyboardNavigation
         items={userFiles}
         loadingText="Loading Files"
+        wrapLines
+        resizableColumns
         stickyHeader
         stripedRows
         sortingDisabled

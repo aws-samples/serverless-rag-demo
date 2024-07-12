@@ -160,7 +160,7 @@ class ApiGw_Stack(Stack):
                               runtime=_lambda.Runtime.PYTHON_3_10,
                               handler="index.handler",
                               role=custom_lambda_role,
-                              timeout=_cdk.Duration.seconds(300),
+                              timeout=_cdk.Duration.seconds(600),
                               description="Create embeddings in Amazon Bedrock",
                               environment={ 'VECTOR_INDEX_NAME': env_params['index_name'],
                                             'OPENSEARCH_VECTOR_ENDPOINT': collection_endpoint,

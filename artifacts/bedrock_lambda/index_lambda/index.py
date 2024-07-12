@@ -7,7 +7,7 @@ import json
 from decimal import Decimal
 import logging
 import boto3
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter, CharacterTextSplitter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import base64
 from datetime import datetime, timezone
@@ -52,7 +52,7 @@ ops_client = OpenSearch(
 )
 
 def create_index() :
-    LOG.debug(f'method=create_index')
+    LOG.info(f'method=create_index')
     if not ops_client.indices.exists(index=INDEX_NAME):
     # Create indicies
         settings = {
@@ -90,33 +90,37 @@ def index_documents(event):
     LOG.info(f'method=index_documents, event={event}')
     payload = json.loads(event['body'])
     text_val = payload['text']
-    title = payload['title']
     email_id = payload['email_id']
     s3_source = payload['s3_source']
-
+    
     text_splitter = RecursiveCharacterTextSplitter(
     # Set a really small chunk size, just to show.
-    chunk_size = 500,
+    chunk_size = 1000,
     chunk_overlap  = 10)
-
     texts = text_splitter.create_documents([text_val])
-
+    error_messages = []
     if texts is not None and len(texts) > 0:
+        print(f'Number of chunks {len(texts)}')
         create_index()
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(_generate_embeddings_and_index,chunk_text, title, s3_source, email_id) for chunk_text in texts]
+        # You will get model timeout exceptons if u increase this beyond 2
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            futures = [executor.submit(_generate_embeddings_and_index, chunk_text, s3_source, email_id) for chunk_text in texts]
             for future in as_completed(futures):
                 result = future.result()
-                if result['statusCode'] != "200":
-                    result['errorMessage']
-                    return result
-                
+                if result['statusCode'] != "200" and 'errorMessage' in result:
+                    error_messages.append(result['errorMessage'])
+                    
+        # for chunk_text in texts:
+        #     result = _generate_embeddings_and_index(chunk_text, s3_source, email_id)
+        #     if result['statusCode'] != "200":
+        #         return result
+    if len(error_messages) > 0:
+        return {"statusCode": "400", "errorMessage": ','.join(error_messages)}    
     return {"statusCode": "200", "message": "Documents indexed successfully"}
 
 
-def _generate_embeddings_and_index(chunk_text, title, s3_source, email_id):
+def _generate_embeddings_and_index(chunk_text, s3_source, email_id):
         body = json.dumps({"inputText": chunk_text.page_content})
-        
         try:
             embeddings_key='embedding'
             if 'cohere' in   embed_model_id:
@@ -144,28 +148,25 @@ def _generate_embeddings_and_index(chunk_text, title, s3_source, email_id):
                 embeddings = result.get(embeddings_key)[0]
             else:
                 embeddings = result.get(embeddings_key)
-        except Exception as e:
-            LOG.error(f'selected embed model {embed_model_id}. Error {str(e)}')
-            return failure_response(f'Selected Embed model {embed_model_id}. Error {str(e)}')
-        doc = {
+        
+            doc = {
             'embedding' : embeddings,
             'text': chunk_text.page_content,
             'timestamp': datetime.today().replace(tzinfo=timezone.utc).isoformat(),
             'meta': {
-                'title': title,
                 's3_source': s3_source,
                 'email_id': email_id
             },
             's3_source_uri': s3_source
-        }
+            }
 
-        try:
-            # Index the document
             ops_client.index(index=INDEX_NAME, body=doc)
             return success_response('Documents Indexed Successfully')
         except Exception as e:
-            LOG.error(f'method=_generate_embeddings_and_index, error={str(e)}')
-            return failure_response(f'Error indexing documents {e}')
+            LOG.error(f'method=_generate_embeddings_and_index, selected embed model: {embed_model_id}, error:{str(e)}')
+            return failure_response(f'Embed model {embed_model_id}. Error {str(e)}, text {chunk_text}')
+        
+        
         
 
 def delete_index(event):
@@ -290,7 +291,7 @@ def create_presigned_post(event):
 
 # Deletes single files from S3 triggering a deleting from Opensearch too
 def delete_file(event):
-    LOG.debug(f'method=delete_file, event={event}')
+    LOG.info(f'method=delete_file, event={event}')
     # Delete the file from S3
     payload = json.loads(event['body'])
     if 's3_key' in payload:
@@ -385,35 +386,60 @@ def process_file_upload(event):
                     utc_now = now_utc_iso8601()
                 index_audit_insert(email_id, s3_source, s3_key, utc_now)
                 
+                error_messages = []
+                index_success=True
+                
                 try:
                     response = {}
-                    index_success=True
-                    title_value = 'empty'
                     if file_extension.lower() in ['pdf']:
                             reader = PdfReader(BytesIO(content))
-                            LOG.debug(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
+                            LOG.info(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
+                            text_value = None
+                            
                             for page in reader.pages:
                                 text_value = None
                                 # Read Text on Page
                                 text_value = page.extract_text()
-                                LOG.debug(f'method=process_file_upload, file_type=pdf-text, content={content}')
-                                response, title_value = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id, title_value)
-                                if 'statusCode' in response and response['statusCode'] != '200':
-                                    LOG.error(f'Failed to index pdf {s3_key} on page {page.page_number}, error={response}')
-                                    index_success=False
-                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
-                                    
                                 # Read Image on Page
+                                pdf_img_txt_val = None
+                                img_counter = 0
                                 for image_file_object in page.images:
                                     # Extract through low cost LLM (Claude3-Haiku)
+                                    img_counter = img_counter + 1
                                     ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
-                                    text_value = query_bedrock(ocr_prompt, ocr_model_id)
-                                    LOG.debug(f'method=process_file_upload, file_type=pdf-image, content={text_value}')
-                                    response, title_value = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id, title_value)
-                                    if 'statusCode' in response and response['statusCode'] != '200':
-                                        LOG.error(f'Failed to index image on pdf {s3_key} on page {page.page_number}, error={response}')
-                                        index_success=False
-                                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
+                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'PDF contains images. Will attempt to extract text. PDF Page no:{page.page_number}, Image no:{img_counter}')
+                                    try:
+                                        # Some images cant be read
+                                        if pdf_img_txt_val:
+                                            pdf_img_txt_val += query_bedrock(ocr_prompt, ocr_model_id)
+                                        else:
+                                            pdf_img_txt_val = query_bedrock(ocr_prompt, ocr_model_id)
+                                    except Exception as e:
+                                        LOG.error(f'Error reading image from PDF {s3_source}, error={e}')
+                                        index_success = False
+                                        error_messages.append(f"Page {page.page_number}. Error textracting image from PDF {str(e)}")
+                                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, ', '.join(error_messages))
+
+                                if text_value is None:
+                                    text_value = ''
+                                if pdf_img_txt_val is None:
+                                    pdf_img_txt_val = ''
+                                text_value = f'{text_value} {pdf_img_txt_val}'.strip()
+                                if (len(text_value.split()) <= 0):
+                                    LOG.info(f'Nothing to read on this Page {page.page_number}')
+                                    continue
+                                
+                                LOG.debug(f'method=process_file_upload, page_number={page.page_number}, page={page.page_number}, content={text_value}')
+                                event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id})
+                                response = index_documents(event)
+                                print(f'Indexing response image txt = {response}')
+                                index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'Page {page.page_number} complete')
+                                if 'statusCode' in response and response['statusCode'] != '200':
+                                    LOG.error(f'Failed to index image on pdf {s3_key} on page {page.page_number}, error={response}')
+                                    index_success=False
+                                    error_messages.append(response['errorMessage'])
+                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, ','.join(error_messages))
+                                    
         
                     elif file_extension.lower() in ['png', 'jpg']:
                         # Extract through low cost LLM (Claude3-Haiku)
@@ -421,26 +447,34 @@ def process_file_upload(event):
                         ocr_prompt = generate_claude_3_ocr_prompt(content)
                         text_value = query_bedrock(ocr_prompt, ocr_model_id)
                         LOG.debug(f'method=process_file_upload, file_type=image-text, content={text_value}')
-                        response, title_value = generate_title_and_index_doc(event, 1, text_value, s3_source, email_id, title_value)
+                        event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id})
+                        response = index_documents(event)
                         if 'statusCode' in response and response['statusCode'] != '200':
-                            LOG.error(f'Failed to index image {s3_key}, error={response["errorMessage"]}')
+                            LOG.error(f'Failed to index image {s3_key}, error={response}')
                             index_success=False
-                            index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
+                            error_messages.append(response['errorMessage'])
                         
                     else:
                         decoded_txt = content.decode()
                         LOG.debug(f'method=process_file_upload, decoded_txt={decoded_txt}')
-                        response, title_value = generate_title_and_index_doc(event, 1, decoded_txt, s3_source, email_id, title_value)
+                        event['body'] = json.dumps({"text": decoded_txt, 's3_source': s3_source, 'email_id': email_id})
+                        response = index_documents(event)
                         if 'statusCode' in response and response['statusCode'] != '200':
-                            LOG.error(f'Failed to index file {s3_key}, error={response["errorMessage"]}')
+                            LOG.error(f'Failed to index file {s3_key}, error={response}')
                             index_success=False
-                            index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, response['errorMessage'])
-                    
-                    if index_success:
-                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._SUCCESS, utc_now)
+                            error_messages.append(response['errorMessage'])
+                                                
                 except Exception as e:
                     LOG.error(f'Indexing failed for file {s3_source}, error={e}')
-                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now)
+                    index_success = False
+                    error_messages.append(f"{str(e)}")
+                finally:
+                    print(f'In finally block ---- {index_success}')
+                    if index_success:
+                        LOG.debug('Index successful')
+                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._SUCCESS, utc_now)
+                    else:
+                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, ','.join(error_messages))
             
             
             elif record['eventName'] == 'ObjectRemoved:Delete' and "index/" in record["s3"]["object"]["key"]:
@@ -455,22 +489,26 @@ def process_file_upload(event):
                        
     return success_response(f'File process complete for event {event}')
 
-def generate_title_and_index_doc(event, page_number, text_value, s3_source, email_id, title_value='empty'):
-    if text_value:
-        if page_number <2:
-            title_value = generate_title(text_value)
-        text_value = f'Page Number: {page_number}, content: {text_value}'
-        event['body'] = json.dumps({"text": text_value, "title": title_value, 's3_source': s3_source, 'email_id': email_id})
-        response = index_documents(event)
-        return response, title_value
-    else: 
-        return None, None
+# def generate_title_and_index_doc(event, page_number, text_value, s3_source, email_id):
+#     LOG.info(f"generate_title_index_doc, text_value={text_value}, page_no={page_number}")
+#     try:        
+#         if text_value:
+#             if page_number <2:
+#                 title_value = generate_title(text_value)
+#             text_value = f'Page Number {page_number} content: """{str(text_value)}"""'
+#             event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id})
+#             response = index_documents(event)
+#             return response
+#     except Exception as e:
+#         print(f'method=generate_title_index_doc, error={e}')
+#         return {"statusCode": "400", "errorMessage": f"Error indexing chunk on Page {page_number}, Error={str(e)}, chunk={text_value} "}
+#     return {"statusCode": "200", "message": f"Nothing to index"}
 
  
-def generate_title(text_snippet):
-    title_prompt = generate_claude_3_title_prompt(text_snippet)
-    title_value = query_bedrock(title_prompt, ocr_model_id)
-    return title_value
+# def generate_title(text_snippet):
+#     title_prompt = generate_claude_3_title_prompt(text_snippet)
+#     title_value = query_bedrock(title_prompt, ocr_model_id)
+#     return title_value
 
 def query_bedrock(prompt, model_id): 
     response = bedrock_client.invoke_model(
@@ -488,8 +526,10 @@ def query_bedrock(prompt, model_id):
                 try:
                     text = json.loads(content['text'])['text']
                 except Exception as e:
-                    LOG.error(f'Error parsing JSON {e}')
-                texts.append(text)
+                    LOG.warn(f'method=query_bedrock, bedrock_response={content}, Error parsing JSON {e}')
+                    # The text value could contain incorrectly formatted json hence better to dump it
+                    
+                texts.append(json.dumps(text))
 
     final_text = ' \n '.join(texts)
     LOG.debug(f"method=query_bedrock, prompt={prompt}, model_id={model_id}, response={response_body}")
@@ -544,7 +584,7 @@ def handler(event, context):
         api_path = http_method + event['resource']
         try:
             if api_path in api_map:
-                LOG.debug(f"method=handler , api_path={api_path}")
+                LOG.info(f"method=handler , api_path={api_path}")
                 return respond(None, api_map[api_path](event))
             else:
                 LOG.info(f"error=api_not_found , api={api_path}")
@@ -617,17 +657,18 @@ def index_audit_insert(email_id, s3_uri, file_id, utc_now, error_message='None')
     
 
 def index_audit_update(email_id, s3_uri, file_id, file_index_status, utc_now, error_message="None"):
-    LOG.info(f'method=index_audit_update, email_id={email_id}, s3_uri={s3_uri}, file_id={file_id}, index_status={file_index_status}, utc_now={utc_now}, error_message={error_message}')
     try:
+        LOG.info(f'method=index_audit_update, email_id={email_id}, s3_uri={s3_uri}, file_id={file_id}, index_status={file_index_status}, utc_now={utc_now}, error_message={error_message}')
         table.update_item(
                     Key={
                         INDEX_KEYS._PRIMARY_KEY: 'INDEX',
                         INDEX_KEYS._SORT_KEY: generate_sort_key(email_id, file_id)
                     },
-                    UpdateExpression=f"set {INDEX_KEYS._UPLOAD_STATUS}=:s, {INDEX_KEYS._ERROR_MESSAGE}=:errm ",
+                    UpdateExpression=f"set {INDEX_KEYS._UPLOAD_STATUS}=:s, {INDEX_KEYS._ERROR_MESSAGE}=:errm, {INDEX_KEYS._UPDATE_EPOCH}=:u_epoch ",
                     ExpressionAttributeValues={
                         ':s': file_index_status,
-                        ':errm': error_message
+                        ':errm': error_message,
+                        ':u_epoch': int(time.time())
                     }
         )
     except Exception as e:
