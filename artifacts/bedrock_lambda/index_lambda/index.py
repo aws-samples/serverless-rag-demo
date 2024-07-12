@@ -59,6 +59,7 @@ def create_index() :
             "settings": {
                 "index": {
                     "knn": True,
+                    "knn.algo_param.ef_search": 100
                 }
             },
             "mappings": {
@@ -70,11 +71,11 @@ def create_index() :
                         "dimension": 1024,
                         "method": {
                             "name":"hnsw",
-                            "engine":"faiss",
-                            "space_type": "l2",
+                            "engine":"nmslib",
+                            "space_type": "cosinesimil",
                             "parameters": {
-                                "ef_construction": 512,
-                                "m": 16
+                                "ef_construction": 128,
+                                "m": 24
                           }
                         }
                     },
@@ -120,7 +121,7 @@ def _generate_embeddings_and_index(chunk_text, title, s3_source, email_id):
             embeddings_key='embedding'
             if 'cohere' in   embed_model_id:
                 response = bedrock_client.invoke_model(
-                body=json.dumps({"texts": [chunk_text.page_content], "input_type": 'search_document', "embedding_types":["int8"]}),
+                body=json.dumps({"texts": [chunk_text.page_content], "input_type": 'search_document'}),
                 modelId=embed_model_id,
                 accept='application/json',
                 contentType='application/json'
@@ -137,11 +138,15 @@ def _generate_embeddings_and_index(chunk_text, title, s3_source, email_id):
 
             finish_reason = result.get("message")
             if finish_reason is not None:
-                print(f'Embed Error {finish_reason}')
-                
-            embeddings = result.get(embeddings_key)
+                LOG.error(f'Embed Model {embed_model_id}, error {finish_reason}')
+            
+            if 'cohere' in   embed_model_id:
+                embeddings = result.get(embeddings_key)[0]
+            else:
+                embeddings = result.get(embeddings_key)
         except Exception as e:
-            return failure_response(f'Do you have access to embed model {embed_model_id}. Error {e.info["error"]["reason"]}')
+            LOG.error(f'selected embed model {embed_model_id}. Error {str(e)}')
+            return failure_response(f'Selected Embed model {embed_model_id}. Error {str(e)}')
         doc = {
             'embedding' : embeddings,
             'text': chunk_text.page_content,
@@ -159,16 +164,20 @@ def _generate_embeddings_and_index(chunk_text, title, s3_source, email_id):
             ops_client.index(index=INDEX_NAME, body=doc)
             return success_response('Documents Indexed Successfully')
         except Exception as e:
-            LOG.error(f'method=_generate_embeddings_and_index, error={e.info["error"]["reason"]}')
-            return failure_response(f'Error indexing documents {e.info["error"]["reason"]}')
+            LOG.error(f'method=_generate_embeddings_and_index, error={str(e)}')
+            return failure_response(f'Error indexing documents {e}')
         
 
 def delete_index(event):
     try:
         res = ops_client.indices.delete(index=INDEX_NAME)
-        LOG.debug(f"method=delete_index, delete_response={res}")
+        LOG.info(f"method=delete_index, delete_response={res}")
+        truncateTable()
+        LOG.info(f"method=delete_index, Dynamo_DB_Table truncate initiated={res}")
     except Exception as e:
         LOG.error(f"method=delete_index, error={e.info['error']['reason']}")
+        truncateTable()
+        LOG.info(f"method=delete_index, Dynamo_DB_Table truncate initiated={res}")
         return failure_response(f'Error deleting index. {e.info["error"]["reason"]}')
     return success_response('Index deleted successfully')
 
@@ -379,6 +388,7 @@ def process_file_upload(event):
                 try:
                     response = {}
                     index_success=True
+                    title_value = 'empty'
                     if file_extension.lower() in ['pdf']:
                             reader = PdfReader(BytesIO(content))
                             LOG.debug(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
@@ -387,7 +397,7 @@ def process_file_upload(event):
                                 # Read Text on Page
                                 text_value = page.extract_text()
                                 LOG.debug(f'method=process_file_upload, file_type=pdf-text, content={content}')
-                                response = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id)
+                                response, title_value = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id, title_value)
                                 if 'statusCode' in response and response['statusCode'] != '200':
                                     LOG.error(f'Failed to index pdf {s3_key} on page {page.page_number}, error={response}')
                                     index_success=False
@@ -399,7 +409,7 @@ def process_file_upload(event):
                                     ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
                                     text_value = query_bedrock(ocr_prompt, ocr_model_id)
                                     LOG.debug(f'method=process_file_upload, file_type=pdf-image, content={text_value}')
-                                    response = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id)
+                                    response, title_value = generate_title_and_index_doc(event, page.page_number, text_value, s3_source, email_id, title_value)
                                     if 'statusCode' in response and response['statusCode'] != '200':
                                         LOG.error(f'Failed to index image on pdf {s3_key} on page {page.page_number}, error={response}')
                                         index_success=False
@@ -411,7 +421,7 @@ def process_file_upload(event):
                         ocr_prompt = generate_claude_3_ocr_prompt(content)
                         text_value = query_bedrock(ocr_prompt, ocr_model_id)
                         LOG.debug(f'method=process_file_upload, file_type=image-text, content={text_value}')
-                        response = generate_title_and_index_doc(event, 1, text_value, s3_source, email_id)
+                        response, title_value = generate_title_and_index_doc(event, 1, text_value, s3_source, email_id, title_value)
                         if 'statusCode' in response and response['statusCode'] != '200':
                             LOG.error(f'Failed to index image {s3_key}, error={response["errorMessage"]}')
                             index_success=False
@@ -420,7 +430,7 @@ def process_file_upload(event):
                     else:
                         decoded_txt = content.decode()
                         LOG.debug(f'method=process_file_upload, decoded_txt={decoded_txt}')
-                        response = generate_title_and_index_doc(event, 1, decoded_txt, s3_source, email_id)
+                        response, title_value = generate_title_and_index_doc(event, 1, decoded_txt, s3_source, email_id, title_value)
                         if 'statusCode' in response and response['statusCode'] != '200':
                             LOG.error(f'Failed to index file {s3_key}, error={response["errorMessage"]}')
                             index_success=False
@@ -445,14 +455,16 @@ def process_file_upload(event):
                        
     return success_response(f'File process complete for event {event}')
 
-def generate_title_and_index_doc(event, page_number, text_value, s3_source, email_id):
+def generate_title_and_index_doc(event, page_number, text_value, s3_source, email_id, title_value='empty'):
     if text_value:
         if page_number <2:
             title_value = generate_title(text_value)
         text_value = f'Page Number: {page_number}, content: {text_value}'
         event['body'] = json.dumps({"text": text_value, "title": title_value, 's3_source': s3_source, 'email_id': email_id})
         response = index_documents(event)
-        return response
+        return response, title_value
+    else: 
+        return None, None
 
  
 def generate_title(text_snippet):
@@ -476,7 +488,7 @@ def query_bedrock(prompt, model_id):
                 try:
                     text = json.loads(content['text'])['text']
                 except Exception as e:
-                    print(f'Error parsing JSON {e}')
+                    LOG.error(f'Error parsing JSON {e}')
                 texts.append(text)
 
     final_text = ' \n '.join(texts)
@@ -547,6 +559,32 @@ def failure_response(error_message):
    
 def success_response(result):
     return {"success": True, "result": result, "statusCode": "200"}
+
+def truncateTable():
+    global table
+    #get the table keys
+    tableKeyNames = [key.get("AttributeName") for key in table.key_schema]
+
+    #Only retrieve the keys for each item in the table (minimize data transfer)
+    projectionExpression = ", ".join('#' + key for key in tableKeyNames)
+    expressionAttrNames = {'#'+key: key for key in tableKeyNames}
+    
+    counter = 0
+    page = table.scan(ProjectionExpression=projectionExpression, ExpressionAttributeNames=expressionAttrNames)
+    with table.batch_writer() as batch:
+        while page["Count"] > 0:
+            counter += page["Count"]
+            # Delete items in batches
+            for itemKeys in page["Items"]:
+                batch.delete_item(Key=itemKeys)
+            # Fetch the next page
+            if 'LastEvaluatedKey' in page:
+                page = table.scan(
+                    ProjectionExpression=projectionExpression, ExpressionAttributeNames=expressionAttrNames,
+                    ExclusiveStartKey=page['LastEvaluatedKey'])
+            else:
+                break
+    LOG.info(f"Deleted {counter}")
 
 # Store the indexing metadata information in a dynamodb table
 # Triggered when a file is uploaded to S3

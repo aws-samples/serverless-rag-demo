@@ -279,7 +279,16 @@ def fetch_data(user_query):
     print(f'In Fetch Data = {user_query}')
     context = ''
     embeddings_key="embedding"
-    response = bedrock_client.invoke_model(
+    if 'cohere' in   embed_model_id:
+                response = bedrock_client.invoke_model(
+                body=json.dumps({"texts": [user_query], "input_type": 'search_query'}),
+                modelId=embed_model_id,
+                accept='application/json',
+                contentType='application/json'
+                )
+                embeddings_key="embeddings"
+    else:
+                response = bedrock_client.invoke_model(
                     body=json.dumps({"inputText": user_query}),
                     modelId=embed_model_id,
                     accept='application/json',
@@ -289,13 +298,16 @@ def fetch_data(user_query):
     finish_reason = result.get("message")
     if finish_reason is not None:
         print(f'Embed Error {finish_reason}')
-    embedded_search = result.get(embeddings_key)
+    if 'cohere' in   embed_model_id:
+         embedded_search = result.get(embeddings_key)[0]
+    else:
+        embedded_search = result.get(embeddings_key)
 
     TEXT_CHUNK_FIELD = 'text'
     DOC_TYPE_FIELD = 'doc_type'
     vector_query = {
-                "size": 10,
-                "query": {"knn": {"embedding": {"vector": embedded_search, "k": 5}}},
+                "size": 20,
+                "query": {"knn": {"embedding": {"vector": embedded_search, "k": 6}}},
                 "_source": False,
                 "fields": [TEXT_CHUNK_FIELD, DOC_TYPE_FIELD]
     }

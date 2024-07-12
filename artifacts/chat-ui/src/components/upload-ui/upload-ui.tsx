@@ -59,14 +59,17 @@ export function UploadUI() {
           axios.post(upload_url, formData)
             .then(function (result) {
               closeModalandRefresh();
+              setIsModalVisible(false)
             })
         }).catch(function (err) {
           console.log(err)
+          setIsModalVisible(false)
 
         })
         // Catch errors if any
         .catch((err) => {
           console.log(err)
+          setIsModalVisible(false)
         });
 
     }
@@ -102,6 +105,23 @@ export function UploadUI() {
     }
   }
 
+  const deleteIndex = () => {
+    axios.delete(`${config.apiUrl}index-documents`, 
+    { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
+        .then((result) => {
+          setTimeout(() => {
+            refreshUserFileList();
+            setIsLoading(false);
+          }, 5000)
+
+        })
+        .catch((err) => {
+          console.log(err)
+          refreshUserFileList()
+          setIsLoading(false);
+        })
+  }
+
   return (
     <Container
       fitHeight
@@ -111,7 +131,7 @@ export function UploadUI() {
           <SpaceBetween direction="horizontal" size="s">
             <Button iconName="refresh" onClick={() => refreshUserFileList()} disabled={isLoading}>Refesh</Button>
             <Button onClick={() => setIsModalVisible(true)} disabled={isLoading}>Upload File</Button>
-            <Button variant="primary" iconName="delete-marker" disabled={isLoading}>Delete Index</Button>
+            <Button onClick={() => deleteIndex()}variant="primary" iconName="delete-marker" disabled={isLoading}>Delete Index</Button>
           </SpaceBetween>
 
         }
