@@ -22,7 +22,10 @@ Widespread AI adoption is being driven by generative AI models that can generate
 ### Demos
 <details open>
   <summary><b> Doc Chat/Doc Management (Multi-lingual) </b></summary>
-  ![output](https://github.com/user-attachments/assets/91883100-0d9a-4808-bffa-c7c815c6ce1f)
+  
+![doc-chat](https://github.com/user-attachments/assets/0a7a473a-ebef-40a4-a8f2-44edc2762137)
+
+
 
 </details>
 <details>
