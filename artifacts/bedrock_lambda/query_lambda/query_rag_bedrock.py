@@ -80,6 +80,7 @@ def perform_ocr(user_input, model_id, connect_id):
                         reader = PdfReader(BytesIO(content))
                         LOG.debug(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
                         for page in reader.pages:
+                            websocket_send(connect_id, { "text": f"Page {page.page_number}" } )
                             text_value = None
                             # Read Text on Page
                             text_value = page.extract_text()
@@ -87,14 +88,26 @@ def perform_ocr(user_input, model_id, connect_id):
                                 websocket_send(connect_id, {"text": text_value})
                             LOG.debug(f'method=perform_ocr, file_type=pdf-text, content={text_value}')
                             # Read Image on Page
+                            img_files = []
+                            img_counter = 0
                             for image_file_object in page.images:
+                                img_files.append(image_file_object.data)
+                                img_counter = img_counter + 1
+                                if img_counter >= 19:
+                                    # Extract through low cost LLM (Claude3-Haiku)
+                                    ocr_prompt = generate_claude_3_ocr_prompt(img_files)
+                                    LOG.debug(f'method=perform_ocr, file_type=pdf-image, content={ocr_prompt}')
+                                    invoke_model(0, ocr_prompt, connect_id, True, model_id)
+                                    img_counter=0
+                                    img_files=[]
+                            if len(img_files) > 0:
                                 # Extract through low cost LLM (Claude3-Haiku)
-                                ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
+                                ocr_prompt = generate_claude_3_ocr_prompt(img_files)
                                 LOG.debug(f'method=perform_ocr, file_type=pdf-image, content={ocr_prompt}')
                                 invoke_model(0, ocr_prompt, connect_id, True, model_id)
                         websocket_send(connect_id, { "text": "ack-end-of-msg" } )
                     elif file_extension.lower() in ['png', 'jpg']:
-                        ocr_prompt = generate_claude_3_ocr_prompt(content)
+                        ocr_prompt = generate_claude_3_ocr_prompt([content])
                         LOG.debug(f'method=perform_ocr, file_type=png_jpg_image, content={ocr_prompt}')
                         invoke_model(0, ocr_prompt, connect_id, True, model_id)   
 

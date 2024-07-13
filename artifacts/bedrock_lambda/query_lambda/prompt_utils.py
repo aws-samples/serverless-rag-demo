@@ -332,24 +332,26 @@ Remember not to summarize or analyze the image. You should only return the extra
 
 """
 
-def generate_claude_3_ocr_prompt(image_bytes):
-    ocr_prompt = [
-        {
-        "role": "user",
-        "content": [
-            {
+def generate_claude_3_ocr_prompt(image_bytes_list):
+    img_content_list = []
+    for image_bytes in image_bytes_list:
+        img_content_list.append({
                 "type": "image",
                 "source": {
                     "type": "base64",
                     "media_type": "image/jpeg",
                     "data": base64.b64encode(image_bytes).decode("utf-8")
                 }
-            },
-            {
+            })
+    img_content_list.append({
                 "type": "text",
                 "text": textract_prompt
-            }
-        ]
+            })
+        
+    ocr_prompt = [
+        {
+        "role": "user",
+        "content": img_content_list
     }]
     prompt_template= {"anthropic_version": "bedrock-2023-05-31",
                         "max_tokens": 100000,

@@ -20,27 +20,30 @@ Wrap the response as a json with key text and value the title.
 Do not include any other words or characters in the output other than the json.
 """
 
-def generate_claude_3_ocr_prompt(image_bytes):
-    ocr_prompt = [
-        {
-        "role": "user",
-        "content": [
-            {
+def generate_claude_3_ocr_prompt(image_bytes_list):
+    image_content_list = []
+    if len(image_bytes_list) > 0:
+        for image_bytes in image_bytes_list:
+            image_content_list.append({
                 "type": "image",
                 "source": {
                     "type": "base64",
                     "media_type": "image/jpeg",
                     "data": base64.b64encode(image_bytes).decode("utf-8")
                 }
-            },
-            {
+            })
+        image_content_list.append({
                 "type": "text",
                 "text": claude3_textract_prompt
-            }
-        ]
+            })
+    
+    ocr_prompt = [
+        {
+        "role": "user",
+        "content": image_content_list
     }]
     prompt_template= {"anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 100000,
+                        "max_tokens": 600000,
                         "messages": ocr_prompt
                     }
     return prompt_template 

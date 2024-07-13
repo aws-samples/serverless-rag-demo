@@ -388,6 +388,8 @@ def process_file_upload(event):
                 
                 error_messages = []
                 index_success=True
+                index_counter = 0
+                num_of_pages = 1
                 
                 try:
                     response = {}
@@ -395,7 +397,7 @@ def process_file_upload(event):
                             reader = PdfReader(BytesIO(content))
                             LOG.info(f'method=process_file_upload, num_of_pages={len(reader.pages)}')
                             text_value = None
-                            
+                            num_of_pages = len(reader.pages)
                             for page in reader.pages:
                                 text_value = None
                                 # Read Text on Page
@@ -403,11 +405,36 @@ def process_file_upload(event):
                                 # Read Image on Page
                                 pdf_img_txt_val = None
                                 img_counter = 0
+                                base64_encoded_images = []
+                                index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'PDF Page number {page.page_number}, total images found {len(page.images)}.')
+                                # Extract from Images on PDF
                                 for image_file_object in page.images:
                                     # Extract through low cost LLM (Claude3-Haiku)
                                     img_counter = img_counter + 1
-                                    ocr_prompt = generate_claude_3_ocr_prompt(image_file_object.data)
-                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'PDF contains images. Will attempt to extract text. PDF Page no:{page.page_number}, Image no:{img_counter}')
+                                    base64_encoded_images.append(image_file_object.data)
+                                    # Claude supports upto 20 images per prompt
+                                    if img_counter >= 19:
+                                        ocr_prompt = generate_claude_3_ocr_prompt(base64_encoded_images)
+                                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'PDF Page number {page.page_number} contains {len(page.images)} images, processing {img_counter} images')    
+                                        try:
+                                        # Some images cant be read
+                                            if pdf_img_txt_val:
+                                                pdf_img_txt_val += query_bedrock(ocr_prompt, ocr_model_id)
+                                            else:
+                                                pdf_img_txt_val = query_bedrock(ocr_prompt, ocr_model_id)
+                                        except Exception as e:
+                                            LOG.error(f'Error reading image from PDF {s3_source}, error={e}')
+                                            index_success = False
+                                            error_messages.append(f"Page {page.page_number}. Error textracting image from PDF {str(e)}")
+                                            index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, ', '.join(error_messages))
+                                        finally:
+                                            base64_encoded_images = []
+                                            img_counter = 0
+                                # Extract the last batch of images if they werent textracted
+                                if len(base64_encoded_images) > 0:
+                                    LOG.info(f'method=process_file_upload, message=extract_last_batch_of_images, images={len(base64_encoded_images)}')
+                                    ocr_prompt = generate_claude_3_ocr_prompt(base64_encoded_images)
+                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'PDF Page number {page.page_number} contains {len(page.images)} images, processing {img_counter} images')
                                     try:
                                         # Some images cant be read
                                         if pdf_img_txt_val:
@@ -432,23 +459,24 @@ def process_file_upload(event):
                                 LOG.debug(f'method=process_file_upload, page_number={page.page_number}, page={page.page_number}, content={text_value}')
                                 event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id})
                                 response = index_documents(event)
+                                index_counter = index_counter + 1
                                 print(f'Indexing response image txt = {response}')
-                                index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'Page {page.page_number} complete')
+                                index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, f'Page {page.page_number} complete', f'Total Pages {num_of_pages}, Indexed {index_counter}')
                                 if 'statusCode' in response and response['statusCode'] != '200':
                                     LOG.error(f'Failed to index image on pdf {s3_key} on page {page.page_number}, error={response}')
                                     index_success=False
                                     error_messages.append(response['errorMessage'])
-                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, ','.join(error_messages))
+                                    index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._INPROGRESS, utc_now, ','.join(error_messages), f'Page {page.page_number} complete', f'Total Pages {num_of_pages}, Indexed {index_counter}')
                                     
-        
                     elif file_extension.lower() in ['png', 'jpg']:
                         # Extract through low cost LLM (Claude3-Haiku)
                         LOG.debug(f'method=process_file_upload, message=File is an image, record={record}')
-                        ocr_prompt = generate_claude_3_ocr_prompt(content)
+                        ocr_prompt = generate_claude_3_ocr_prompt([content])
                         text_value = query_bedrock(ocr_prompt, ocr_model_id)
                         LOG.debug(f'method=process_file_upload, file_type=image-text, content={text_value}')
                         event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id})
                         response = index_documents(event)
+                        index_counter = index_counter + 1
                         if 'statusCode' in response and response['statusCode'] != '200':
                             LOG.error(f'Failed to index image {s3_key}, error={response}')
                             index_success=False
@@ -459,6 +487,7 @@ def process_file_upload(event):
                         LOG.debug(f'method=process_file_upload, decoded_txt={decoded_txt}')
                         event['body'] = json.dumps({"text": decoded_txt, 's3_source': s3_source, 'email_id': email_id})
                         response = index_documents(event)
+                        index_counter = index_counter + 1
                         if 'statusCode' in response and response['statusCode'] != '200':
                             LOG.error(f'Failed to index file {s3_key}, error={response}')
                             index_success=False
@@ -469,12 +498,11 @@ def process_file_upload(event):
                     index_success = False
                     error_messages.append(f"{str(e)}")
                 finally:
-                    print(f'In finally block ---- {index_success}')
                     if index_success:
                         LOG.debug('Index successful')
-                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._SUCCESS, utc_now)
+                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._SUCCESS, utc_now, '' , f'Total Pages {num_of_pages}, Indexed Documents {index_counter}')
                     else:
-                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, ','.join(error_messages))
+                        index_audit_update(email_id, s3_source, s3_key, FILE_UPLOAD_STATUS._FAILURE, utc_now, ','.join(error_messages), f'Total Pages {num_of_pages}, Indexed Documents {index_counter}')
             
             
             elif record['eventName'] == 'ObjectRemoved:Delete' and "index/" in record["s3"]["object"]["key"]:
@@ -638,6 +666,7 @@ def index_audit_insert(email_id, s3_uri, file_id, utc_now, error_message='None')
         INDEX_KEYS._INDEX_TIMESTAMP: utc_now,
         INDEX_KEYS._UPLOAD_STATUS: FILE_UPLOAD_STATUS._INPROGRESS,
         INDEX_KEYS._ERROR_MESSAGE: error_message,
+        INDEX_KEYS._stats: '',
         INDEX_KEYS._UPDATE_EPOCH: int(time.time())
     }
 
@@ -656,7 +685,7 @@ def index_audit_insert(email_id, s3_uri, file_id, utc_now, error_message='None')
     return success_response(f"Inserted index audit for email_id={email_id}, utc_now={utc_now}, file_id={file_id}")
     
 
-def index_audit_update(email_id, s3_uri, file_id, file_index_status, utc_now, error_message="None"):
+def index_audit_update(email_id, s3_uri, file_id, file_index_status, utc_now, error_message="None", stats="None"):
     try:
         LOG.info(f'method=index_audit_update, email_id={email_id}, s3_uri={s3_uri}, file_id={file_id}, index_status={file_index_status}, utc_now={utc_now}, error_message={error_message}')
         table.update_item(
@@ -664,11 +693,12 @@ def index_audit_update(email_id, s3_uri, file_id, file_index_status, utc_now, er
                         INDEX_KEYS._PRIMARY_KEY: 'INDEX',
                         INDEX_KEYS._SORT_KEY: generate_sort_key(email_id, file_id)
                     },
-                    UpdateExpression=f"set {INDEX_KEYS._UPLOAD_STATUS}=:s, {INDEX_KEYS._ERROR_MESSAGE}=:errm, {INDEX_KEYS._UPDATE_EPOCH}=:u_epoch ",
+                    UpdateExpression=f"set {INDEX_KEYS._UPLOAD_STATUS}=:s, {INDEX_KEYS._ERROR_MESSAGE}=:errm, {INDEX_KEYS._UPDATE_EPOCH}=:u_epoch, {INDEX_KEYS._stats}=:istats ",
                     ExpressionAttributeValues={
                         ':s': file_index_status,
                         ':errm': error_message,
-                        ':u_epoch': int(time.time())
+                        ':u_epoch': int(time.time()),
+                        ':istats': stats
                     }
         )
     except Exception as e:
@@ -728,13 +758,15 @@ class INDEX_KEYS():
     _UPDATE_EPOCH: str = 'update_epoch'
     _UPLOAD_STATUS: str = 'file_index_status'
     _ERROR_MESSAGE: str = 'idx_err_msg'
+    _stats: str = 'index_stats'
 
 class FILE_UPLOAD_STATUS():
-    _SUCCESS: str = 'success_index_create'
+    _SUCCESS: str = 'completed'
+    _SUCCESS_W_ERRORS: str = 'completed_with_errors'
     _INPROGRESS: str = 'inprogress'
     _FAILURE: str = 'failure'
-    _DELETED: str = 'success_file_delete'
-    _INDEX_DELETE: str = 'success_index_delete'
+    _DELETED: str = 'file_deleted'
+    _INDEX_DELETE: str = 'index_deleted'
 
 # Hack
 class CustomJsonEncoder(json.JSONEncoder):
