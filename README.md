@@ -23,17 +23,17 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 <details open>
   <summary><b> Doc Chat/Doc Management (Multi-lingual) </b></summary>
-  
-![output](https://github.com/user-attachments/assets/bdbe92b5-bcc1-4c69-a091-3c3d1ebc14c6)
-
-
+  ![output](https://github.com/user-attachments/assets/7c1bd957-3053-4311-9422-86a5542ff2c3)
 </details>
+
 <details>
   <summary><b> Multi-Agent Demo </b></summary>
 </details>
+
 <details>
   <summary><b> PII Redaction </b></summary>
 </details>
+
 <details>
   <summary><b> OCR </b></summary>
 </details>
