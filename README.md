@@ -20,12 +20,11 @@ Widespread AI adoption is being driven by generative AI models that can generate
 > The Older UI is maintained in the v0.0.1(Old-UI) branch.
 
 ### Demos
-![doc-chat](https://github.com/user-attachments/assets/0a7a473a-ebef-40a4-a8f2-44edc2762137)
+
 <details open>
   <summary><b> Doc Chat/Doc Management (Multi-lingual) </b></summary>
   
-
-
+![output](https://github.com/user-attachments/assets/bdbe92b5-bcc1-4c69-a091-3c3d1ebc14c6)
 
 
 </details>
