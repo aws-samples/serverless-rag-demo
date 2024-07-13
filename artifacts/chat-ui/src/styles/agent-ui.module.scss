@@ -1,0 +1,11 @@
+.agent_ui_chat_panel{
+    max-height: calc(100vh - 330px);
+    overflow: auto;
+}
+
+.vertical_line { 
+    width: 0px; 
+    border-left: 1px solid #000; 
+    height: 100%; 
+    float: left; 
+  }

@@ -20,17 +20,10 @@ class BedrockLayerStack(NestedStack):
         # Aspects.of(self).add(_cdk_nag.AwsSolutionsChecks())
         env_name = self.node.try_get_context('environment_name')
         config_details = self.node.try_get_context(env_name)
-        boto3_bedrock_layer_name = config_details['boto3_bedrock_layer']
-        opensearchpy_layer_name = config_details['opensearchpy_layer']
         langchainpy_layer_name = config_details['langchainpy_layer_name']
-        aws4auth_layer_name = config_details['aws4auth_layer']
-        wrangler_layer_name = config_details["wrangler_layer"]
-
-        llm_model_id = 'random'
-        try:
-            llm_model_id = self.node.get_context("llm_model_id")
-        except Exception as e:
-            pass
+        addtional_libs_layer_name = config_details["addtional_libs_layer_name"]
+        agentic_libs_layer_name = config_details["agentic_libs_layer_name"]
+        pypdf_layer_name = config_details["pypdf_layer"]
 
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
         region = os.getenv("CDK_DEFAULT_REGION")
@@ -53,13 +46,12 @@ class BedrockLayerStack(NestedStack):
             build_image=_codebuild.LinuxBuildImage.STANDARD_6_0,
             privileged=True,
             environment_variables={
-                "boto3_bedrock_layer_name": _codebuild.BuildEnvironmentVariable(value = boto3_bedrock_layer_name),
-                "opensearchpy_layer_name": _codebuild.BuildEnvironmentVariable(value = opensearchpy_layer_name),
-                "aws4auth_layer_name": _codebuild.BuildEnvironmentVariable(value = aws4auth_layer_name),
+                "addtional_libs_layer_name": _codebuild.BuildEnvironmentVariable(value = addtional_libs_layer_name),
+                "agentic_libs_layer_name": _codebuild.BuildEnvironmentVariable(value = agentic_libs_layer_name),
                 "langchainpy_layer_name":  _codebuild.BuildEnvironmentVariable(value = langchainpy_layer_name),
-                "wrangler_layer_name": _codebuild.BuildEnvironmentVariable(value = wrangler_layer_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = account_id),
-                "region": _codebuild.BuildEnvironmentVariable(value = region)
+                "region": _codebuild.BuildEnvironmentVariable(value = region),
+                "pypdf_layer_name": _codebuild.BuildEnvironmentVariable(value = pypdf_layer_name) 
             })
         )
 

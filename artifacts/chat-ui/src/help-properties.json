@@ -1,0 +1,34 @@
+{
+    "home": {
+        "title": "Help",
+        "description" : "<a href='https://aws.amazon.com/bedrock'>Amazon Bedrock</a> offers access to a diverse range of large language models. This demo showcases how foundation models can be accessed through a single Bedrock API to serve multiple usecases"
+    },
+    "404": {
+        "title": "Not Found",
+        "description" : "<b>You have landed on wrong page</b>"
+    },
+    "doc-chat":{
+        "title":"Document Chat",
+        "description":"Store your documents on <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon Opensearch serverless service</a> and query those documents in natural language. Supports multiple languages and multiple FMs on Amazon Bedrock"
+    },
+    "doc-chat-manage":{
+        "title":"Manage Documents",
+        "description": "Upload PDF files, that are then vectorized and stored in <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon Opensearch serverless service(AOSS)</a>. AOSS supports semantic searches which is a key requirement when building a <a href='https://aws.amazon.com/blogs/big-data/build-scalable-and-serverless-rag-workflows-with-a-vector-engine-for-amazon-opensearch-serverless-and-amazon-bedrock-claude-models/'>Retrieval Augmented Generation</a> based solution"
+    },
+    "sentiment": {
+        "title": "Sentiment Analysis",
+        "description" : "Identify the sentiment of customer reviews/tweets/posts etc..."
+    },
+    "multi-agent": {
+        "title": "Multi Agent",
+        "description" : "Here we have multiple GenAI agents working together to solve a user problem. You could use agents to generate presentations/search the web/build applications, games and much more. All of this in a few seconds without writing any code"
+    },
+    "ocr": {
+        "title": "OCR",
+        "description" : "Extract text from images or PDFs all through foundation models on Amazon Bedrock"
+    },
+    "pii": {
+        "title": "PII",
+        "description" : "Redact PII data"
+    }
+}
