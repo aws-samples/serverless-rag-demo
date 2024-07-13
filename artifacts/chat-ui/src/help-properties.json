@@ -9,7 +9,7 @@
     },
     "doc-chat":{
         "title":"Document Chat",
-        "description":"Store your documents on <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon Opensearch serverless service</a> and query those documents in natural language."
+        "description":"Store your documents on <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon Opensearch serverless service</a> and query those documents in natural language. Supports multiple languages and multiple FMs on Amazon Bedrock"
     },
     "doc-chat-manage":{
         "title":"Manage Documents",

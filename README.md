@@ -24,9 +24,11 @@ Widespread AI adoption is being driven by generative AI models that can generate
      <summary><b> Prerequisites </b></summary>
     
   * [An AWS account](https://aws.amazon.com/console/)
-  * [For Amazon Bedrock, you should have access to Anthropic Claude models](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
+  * [You should have access to Anthropic Claude-3 Haiku/Sonnet models on Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
+  * [For RAG, you should have access to Cohere English Embed model on Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access.html)
   * [Amazon Bedrock supported regions](https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html#bedrock-regions)
   * [Amazon Opensearch serverless(AOSS) supported regions](https://aws.amazon.com/about-aws/whats-new/2023/01/amazon-opensearch-serverless-available/)
+  
   #### Familiarity with below Services 
   * [AWS IAM](https://docs.aws.amazon.com/iam/index.html). 
   * [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)

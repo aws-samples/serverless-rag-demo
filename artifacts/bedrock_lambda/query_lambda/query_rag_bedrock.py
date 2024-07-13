@@ -112,7 +112,7 @@ def perform_ocr(user_input, model_id, connect_id):
                         invoke_model(0, ocr_prompt, connect_id, True, model_id)   
 
                     
-def query_rag_no_agent(user_input, query_vector_db, model_id, connect_id):
+def query_rag_no_agent(user_input, query_vector_db, language, model_id, connect_id):
     global rag_chat_bot_prompt
     final_prompt = rag_chat_bot_prompt
     chat_input = json.loads(user_input)
@@ -157,8 +157,8 @@ def query_rag_no_agent(user_input, query_vector_db, model_id, connect_id):
     if can_invoke_model:
         prompt_template = {
                         "anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 10000,
-                        "system": final_prompt,
+                        "max_tokens": 70000,
+                        "system": final_prompt + f'. You will always respond in {language} language',
                         "messages": chat_input
         }
 
@@ -382,6 +382,9 @@ def handler(event, context):
                 input_to_llm = json.loads(event['body'], strict=False)
                 LOG.info('input_to_llm: ', input_to_llm)
                 query = input_to_llm['query']
+                language = 'english'
+                if 'language' in input_to_llm:
+                    language = input_to_llm['language']
                 behaviour = input_to_llm['behaviour']
                 if behaviour == 'advanced-agent':
                     query_agents(behaviour, query, connect_id)
@@ -400,7 +403,7 @@ def handler(event, context):
                         query_vector_db='yes' 
                     if 'model_id' in input_to_llm:
                         model_id = input_to_llm['model_id']
-                    query_rag_no_agent(query, query_vector_db, model_id, connect_id)
+                    query_rag_no_agent(query, query_vector_db, language, model_id, connect_id)
         elif routeKey == '$connect':
             # TODO Add authentication of access token
             if 'access_token' in event['queryStringParameters']:

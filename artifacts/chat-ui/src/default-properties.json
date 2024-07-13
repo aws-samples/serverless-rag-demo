@@ -54,12 +54,24 @@
                     "value": "hindi"
                 },
                 {
+                    "label": "Marathi",
+                    "value": "marathi"
+                },
+                {
                     "label": "Thai",
                     "value": "thai"
                 },
                 {
                     "label": "French",
                     "value": "french"
+                },
+                {
+                    "label": "Italian",
+                    "value": "italian"
+                },
+                {
+                    "label": "Spanish",
+                    "value": "spanish"
                 },
                 {
                     "label": "Arabic",
