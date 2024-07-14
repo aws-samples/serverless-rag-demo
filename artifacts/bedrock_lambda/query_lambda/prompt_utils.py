@@ -327,7 +327,7 @@ casual_prompt = """You are an assistant. Refrain from engaging in any tasks or r
 """
 
 textract_prompt="""Your purpose is to extract the text from the given image (traditional OCR). 
-If the text is in another language, you should first translate it to english and then extract it.
+If the text is in another language, you should extract it and translate it to english
 Remember not to summarize or analyze the image. You should only return the extracted text.
 
 """
