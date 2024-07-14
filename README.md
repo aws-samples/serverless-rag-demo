@@ -30,6 +30,9 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 <details>
   <summary><b> Multi-Agent Demo </b></summary>
+
+  ![ma](https://github.com/user-attachments/assets/1d38d65a-cb4f-4533-84be-1ae784838917)
+
 </details>
 
 <details>
@@ -38,6 +41,9 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 <details>
   <summary><b> OCR </b></summary>
+  
+  ![ocr](https://github.com/user-attachments/assets/dd635617-6b24-43b8-8dd4-8b8f40758083)
+
 </details>
 
 <details>
