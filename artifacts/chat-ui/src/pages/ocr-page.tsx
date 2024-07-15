@@ -5,7 +5,7 @@ import {
   Button,
   ColumnLayout,
   SpaceBetween,
-  Textarea,Alert, Box, Spinner
+  Textarea,Alert, Box, Spinner, FormField, Modal, Select, Link
 } from "@cloudscape-design/components";
 import { useState, useEffect, useContext, useRef } from "react";
 import { withAuthenticator, useAuthenticator } from '@aws-amplify/ui-react';
@@ -16,7 +16,10 @@ import style from "../styles/ocr-page.module.scss";
 import axios from "axios";
 import config from "../config.json";
 import { AppContext } from "../common/context";
+import defaultConfig from "../default-properties.json";
 
+const documentConfig = defaultConfig["document-chat"]["config"]
+const ocr_placeholder = defaultConfig["ocr"]["defaultOCRPlaceholder"]
 var base64File = []
 var files = []
 var msgs = null
@@ -33,6 +36,10 @@ function OcrPage(props: AppPage) {
   const [showAlert, setShowAlert] = useState(false)
   const [alertMsg, setAlertMsg] = useState("")
   const [alertType, setAlertType] = useState("error")
+  const [modalVisible, setModalVisible] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
+  const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
+  const [inputText, setInputText] = useState("Extract data from the given document");
 
   useEffect(() => {
     const init = async () => {
@@ -179,11 +186,11 @@ function OcrPage(props: AppPage) {
         query: JSON.stringify([{
           "role": "user", "content": [
             { "type": "document", "file_name": file_name },
-            { "type": "text", "text": "extract the text from the given image" }]
+            { "type": "text", "text": inputText }]
         }]),
         behaviour: 'ocr',
         'query_vectordb': 'no',
-        'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
+        'model_id': selectedModelOption.value
 
       }));
 
@@ -194,11 +201,11 @@ function OcrPage(props: AppPage) {
         query: JSON.stringify([{
           "role": "user", "content": [
             { "type": "document", "file_name": file_name },
-            { "type": "text", "text": "extract the text from the given image" }]
+            { "type": "text", "text": inputText }]
         }]),
         behaviour: 'ocr',
         'query_vectordb': 'no',
-        'model_id': 'anthropic.claude-3-haiku-20240307-v1:0'
+        'model_id': selectedModelOption.value
 
       }));
     };
@@ -273,8 +280,9 @@ function OcrPage(props: AppPage) {
         <Header
           variant="h1"
           description="App description will come here"
+          actions={<Button iconName="settings" variant="icon" onClick={() => setModalVisible(true)} />}
         >
-          OCR
+          OCR <Link variant="primary" onClick={() => setModalVisible(true)}> ({selectedModelOption.label}) </Link>
         </Header>
       }
     >
@@ -321,8 +329,42 @@ function OcrPage(props: AppPage) {
           <p>File size must be less than <span>5 MB</span></p>
           </Box>
           </Alert>
+          {/* <Textarea
+            spellcheck={true}
+            rows={2}
+            autoFocus
+            onChange={({ detail }) => setInputText(detail.value)}
+            value={inputText}
+            placeholder={ocr_placeholder}
+          /> */}
           </SpaceBetween>
         </Container>
+
+        <Modal
+          size="medium"
+          onDismiss={() => setModalVisible(false)}
+          visible={modalVisible}
+          header="Preference"
+        >
+          <Container
+            fitHeight>
+            <SpaceBetween size="m">
+              <FormField label="Model">
+                <Select
+                  selectedOption={selectedModelOption}
+                  onChange={({ detail }) =>
+                    setSelectedModelOption(detail.selectedOption)
+                  }
+                  options={documentConfig["models"]}
+                  expandToViewport
+                  triggerVariant="option"
+                />
+              </FormField>
+
+            </SpaceBetween>
+          </Container>
+        </Modal>
+
       </Container>
     </ContentLayout>
   );
