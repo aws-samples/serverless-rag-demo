@@ -133,7 +133,7 @@ function SentimentPage(props: AppPage) {
       header={
         <Header
           variant="h1"
-          description="App description will come here"
+          description="Analyze the sentiment of a customer review/tweet/post"
           actions={<Button iconName="settings" variant="icon" onClick={() => setModalVisible(true)} />}
         >
           Sentiment Analysis<Link variant="primary" onClick={() => setModalVisible(true)}> ({selectedModelOption.label}) </Link>

@@ -101,6 +101,17 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
   function load_base64(file_value) {
     if (file_value.length > 0) {
       for (var i = 0; i < file_value.length; i++) {
+        // File type should be pdf or jpg or png
+        if (file_value[i].type !== "image/webp" && file_value[i].type !== "image/jpeg" && file_value[i].type !== "image/png") {
+          notify("File type should be jpg or png or webp", "error")
+          return 
+        }
+        // File size should be less than 10 MB
+        if (file_value[i].size > 10 * 1024 * 1024) {
+          notify("File size should be less than 10 MB", "error")
+          return
+        }
+
         var reader = new FileReader();
         reader.onload = function (e) {
           b64_content.push(e.target.result)
@@ -108,6 +119,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
         reader.readAsDataURL(file_value[i]);
       }
     }
+    setValue(file_value)
   }
 
   const notify = (message, notify_type) => {
@@ -288,9 +300,8 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       />
       <SpaceBetween size="s" direction="horizontal">
       <FileUpload
-          accept=".pdf,.png,.jpg"
+          accept=".png,.jpg,.webp,.gif"
           onChange={({ detail }) => {
-            setValue(detail.value)
             load_base64(detail.value)
           }
           }
