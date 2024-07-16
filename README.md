@@ -133,6 +133,10 @@ Widespread AI adoption is being driven by generative AI models that can generate
 6. The UI is hosted on AppRunner the link to AppRunner could be found in CloudShell once the script execution is complete, or you could also go to the AppRunner service on the AWS Console and obtain the https url. The UI is authenticated through Amazon Cognito hence the very first time you would have to sign-up and then sign-in to login to the application
  ![AppRunnerUI](media/AppRunner_UI.png)
 
+7. On Amazon Bedrock page enable access to the below models
+   <img width="1427" alt="model_access" src="https://github.com/user-attachments/assets/b0f874b0-d311-4422-a102-8eb2c43e1d87">
+
+
 </details>
 
 
