@@ -102,13 +102,13 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     if (file_value.length > 0) {
       for (var i = 0; i < file_value.length; i++) {
         // File type should be pdf or jpg or png
-        if (file_value[i].type !== "image/webp" && file_value[i].type !== "image/jpeg" && file_value[i].type !== "image/png") {
+        if (file_value[i].type !== "image/webp" && file_value[i].type !== "image/jpeg" && file_value[i].type !== "image/png" && file_value[i].type !== "image/gif") {
           notify("File type should be jpg or png or webp", "error")
           return 
         }
-        // File size should be less than 10 MB
-        if (file_value[i].size > 10 * 1024 * 1024) {
-          notify("File size should be less than 10 MB", "error")
+        // File size should be less than 30 MB
+        if (file_value[i].size > 5 * 1024 * 1024) {
+          notify("File size should be less than 5 MB", "error")
           return
         }
 
@@ -142,31 +142,41 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
         }
         // Images/docs are attached
         if (value.length > 0) {
-          let idToken = appData.userinfo.tokens.idToken.toString();
           for (var i = 0; i < value.length; i++) {
-            var unique_id = crypto.randomUUID()
+            var unique_file_id = crypto.randomUUID()
+            var file_data = value[i]
+            var file_name = file_data['name'];
+            var period = file_name.lastIndexOf('.');
+            var fileExtension = file_name.substring(period + 1);
             axios.post(
-              config.apiUrl + 'file_data',
-              { "content": b64_content[i], "id": unique_id },
-              { headers: { authorization: "Bearer " + idToken } }
+              config.apiUrl + 'file_data', null,
+              {params: { "file_extension": fileExtension, "file_name": unique_file_id }, 
+              headers: { authorization: appData.userinfo.tokens.idToken.toString() } }
             ).then((result) => {
-              console.log('Upload successful')
-              notify("File uploaded successfully", "info")
-              // user_content.push({"type": "image", "source": { "type": "base64", "media_type": "image/png", "data": e.target.result }})
-              // Extract file extension from base64 content
-              var file_extension = result['data']['result']['file_extension']
-              var file_id = result['data']['result']['file_id']
-              var media_type = 'image/' + file_extension
-              var partial_s3_key = file_id + '.' + file_extension
-              user_content.push({ "type": "image", "source": { "type": "base64", "media_type": media_type, "file_extension": file_extension, "partial_s3_key": partial_s3_key } })
-              if (i >= value.length - 1) {
-                user_content.push({ "type": "text", "text": inputText })
-              }
-              // Add user content to the agent prompt flow
-              agent_prompt_flow.push({ 'role': 'user', 'content': user_content })
-              if (i >= value.length - 1) {
-                send_over_socket();
-              }
+              var formData = new FormData();
+              formData = build_form_data(result['data']['result'], formData)
+              formData.append('file', file_data);
+              var upload_url = result['data']['result']['url']
+              axios.post(upload_url, formData).then(function (result) {
+                console.log('Upload successful')
+                notify("File uploaded successfully", "info")
+                // user_content.push({"type": "image", "source": { "type": "base64", "media_type": "image/png", "data": e.target.result }})
+                // Extract file extension from base64 content
+                var media_type = 'image/' + fileExtension
+                var partial_s3_key = unique_file_id + '.' + fileExtension
+                user_content.push({ "type": "image", "source": { "type": "base64", "media_type": media_type, "file_extension": fileExtension, "partial_s3_key": partial_s3_key } })
+                if (i >= value.length - 1) {
+                  user_content.push({ "type": "text", "text": inputText })
+                }
+                // Add user content to the agent prompt flow
+                agent_prompt_flow.push({ 'role': 'user', 'content': user_content })
+                if (i >= value.length - 1) {
+                  send_over_socket();
+                }
+              }).catch(function (err) {
+                notify("File upload error" + String(err), "error")
+              })
+              
             }).catch(function (err) {
               notify("File upload error" + String(err), "error")
             })
@@ -184,6 +194,15 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       }
     }
   };
+
+  function build_form_data(result, formdata) {
+    if ('fields' in result) {
+      for (var key in result['fields']) {
+        formdata.append(key, result['fields'][key])
+      }
+    }
+    return formdata
+  }
 
   function send_over_socket() {
     if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
