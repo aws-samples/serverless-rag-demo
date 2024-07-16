@@ -101,7 +101,7 @@ embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
 INDEX_NAME = getenv("VECTOR_INDEX_NAME", "sample-embeddings-store-dev")
 model_id = getenv("RETRIEVER_MODEL", "anthropic.claude-3-haiku-20240307-v1:0")
 is_bedrock_kb = getenv("IS_BEDROCK_KB", "no")
-bedrock_embedding_key_name = getenv("BEDROCK_EMBED_KEY_NAME", "bedrock-knowledge-base-default-vector")
+bedrock_embedding_key_name = getenv("BEDROCK_KB_EMBEDDING_KEY", "bedrock-knowledge-base-default-vector")
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 

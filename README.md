@@ -151,8 +151,12 @@ Widespread AI adoption is being driven by generative AI models that can generate
 3. Modify the configurations of your `bedrock_rag_query_*` lambda function. Set the below
    a. IS_BEDROCK_KB = yes  
    b. OPENSEARCH_VECTOR_ENDPOINT = <<Amazon Opensearch Serverless endpoint of your Bedrock KB >>
-   c. EMBED_MODEL_ID = <<Embedding Model ID used by your Bedrock KB>>
+   c. EMBED_MODEL_ID = <<Embedding Model ID used by your Bedrock KB>>. Find the base model Id from here (https://docs.aws.amazon.com/bedrock/latest/userguide/model-ids.html)
+   d. VECTOR_INDEX_NAME = <<VECTOR_INDEX used by your Bedrock KB>>
+   e. BEDROCK_KB_EMBEDDING_KEY = <<Embedding Key used in Bedrock KB>>
    ![Lambda-Config](media/Bedrock-KB-Integration.png)
+   ![Bedrock-page](media/Bedrock-Page.png)
+   
 4. Get the ARN of the Lambda role
    ![Lambda-Config](media/Lambda-ARN.png)
 5. Head to Amazon Opensearch on the AWS Console and click on Data Access Policies. Search for the Data Access Policy attached to your Bedrock KB and click on the `Edit` button
