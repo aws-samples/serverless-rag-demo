@@ -7,6 +7,7 @@ import requests
 import json
 from decimal import Decimal
 import logging
+import re
 import base64
 
 from agents.retriever_agent import fetch_data, classify_and_translation_request
@@ -353,6 +354,49 @@ def store_image_in_s3(event):
     s3_client.put_object(Body=file_content, Bucket=s3_bucket_name, Key=s3_key)
     return http_success_response({'file_extension': file_extension, 'file_id': content_id, 'message': 'stored successfully'})
 
+def create_presigned_post(event):
+    # Generate a presigned S3 POST URL
+    query_params = {}
+    if 'queryStringParameters' in event:
+        query_params = event['queryStringParameters']
+    email_id = "empty_email_id"
+    if 'requestContext' in event and 'authorizer' in event['requestContext']:
+            if 'claims' in event['requestContext']['authorizer']:
+                email_id = event['requestContext']['authorizer']['claims']['email']
+    
+    if 'file_extension' in query_params and 'file_name' in query_params:
+        extension = query_params['file_extension']
+        file_name = query_params['file_name']
+        # Usecase could be index or ocr
+        usecase_type = 'bedrock'
+        if 'type' in query_params and query_params['type'] in ['index', 'ocr', 'bedrock']:
+            usecase_type = query_params['type']
+        # remove special characters from file name
+        file_name = re.sub(r'[^a-zA-Z0-9_\-\.]','',file_name)
+
+        session = boto3.Session()
+        s3_client = session.client('s3', region_name=region)
+        file_name = file_name.replace(' ', '_')
+        s3_key = f"{usecase_type}/data/{file_name}.{extension}"
+        # response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
+        #                                       Key=s3_key,
+        #                                       Fields=None,
+        #                                       Conditions=[]
+        #                                   )
+        response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
+                                            Key=s3_key,
+                                            Fields={'x-amz-meta-email_id': email_id
+                                                    },
+                                            Conditions=[{'x-amz-meta-email_id': email_id}]
+                                        )
+        
+        # 'x-amz-meta-email_id': email_id, 
+        # The response contains the presigned URL and required fields
+        return http_success_response(response)
+    else:
+        return http_failure_response('Missing file_extension field cannot generate signed url')
+
+
 def extract_file_extension(base64_encoded_file):
     if base64_encoded_file.find(';') > -1:
         extension = base64_encoded_file.split(';')[0]
@@ -419,7 +463,7 @@ def handler(event, context):
             
     elif 'httpMethod' in event:
         api_map = {
-            'POST/rag/file_data': lambda x: store_image_in_s3(x)
+            'POST/rag/file_data': lambda x: create_presigned_post(x)
         }
         http_method = event['httpMethod'] if 'httpMethod' in event else ''
         api_path = http_method + event['resource']
