@@ -55,6 +55,7 @@ def create_index() :
     LOG.info(f'method=create_index')
     if not ops_client.indices.exists(index=INDEX_NAME):
     # Create indicies
+    # Consine Simi for large datasets. With hybrid search it does a post filter on the results
         settings = {
             "settings": {
                 "index": {
@@ -82,6 +83,34 @@ def create_index() :
                 }
             },
         }
+
+        # Lucene HNSW not currently supported in serverless opensearch
+        # settings = {
+        #     "settings": {
+        #         "index": {
+        #             "knn": True
+        #         }
+        #     },
+        #     "mappings": {
+        #       "properties": {
+        #         "id": {"type": "integer"},
+        #         "text": {"type": "text"},
+        #         "embedding": {
+        #           "type": "knn_vector",
+        #           "dimension": 1024,
+        #           "method": {
+        #             "name": "hnsw",
+        #             "space_type": "l2",
+        #             "engine": "lucene",
+        #             "parameters": {
+        #               "ef_construction": 128,
+        #               "m": 24
+        #             }
+        #           }
+        #         }
+        #       }
+        #     }
+        # }
         LOG.debug(f'method=create_index, index_settings={settings}')
         res = ops_client.indices.create(index=INDEX_NAME, body=settings, ignore=[400])
         LOG.debug(f'method=create_index, index_creation_response={res}')
@@ -92,10 +121,11 @@ def index_documents(event):
     text_val = payload['text']
     email_id = payload['email_id']
     s3_source = payload['s3_source']
+    doc_title = payload['doc_title']
     
     text_splitter = RecursiveCharacterTextSplitter(
     # Set a really small chunk size, just to show.
-    chunk_size = 1000,
+    chunk_size = 500,
     chunk_overlap  = 10)
     texts = text_splitter.create_documents([text_val])
     error_messages = []
@@ -104,14 +134,14 @@ def index_documents(event):
         create_index()
         # You will get model timeout exceptons if u increase this beyond 2
         with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [executor.submit(_generate_embeddings_and_index, chunk_text, s3_source, email_id) for chunk_text in texts]
+            futures = [executor.submit(_generate_embeddings_and_index, chunk_text, s3_source, email_id, doc_title) for chunk_text in texts]
             for future in as_completed(futures):
                 result = future.result()
                 if result['statusCode'] != "200" and 'errorMessage' in result:
                     error_messages.append(result['errorMessage'])
                     
         # for chunk_text in texts:
-        #     result = _generate_embeddings_and_index(chunk_text, s3_source, email_id)
+        #     result = _generate_embeddings_and_index(chunk_text, s3_source, email_id, doc_title)
         #     if result['statusCode'] != "200":
         #         return result
     if len(error_messages) > 0:
@@ -119,13 +149,15 @@ def index_documents(event):
     return {"statusCode": "200", "message": "Documents indexed successfully"}
 
 
-def _generate_embeddings_and_index(chunk_text, s3_source, email_id):
-        body = json.dumps({"inputText": chunk_text.page_content})
+def _generate_embeddings_and_index(chunk_text, s3_source, email_id, doc_title):
+        chunk_data = f"""Doc Title: {doc_title} 
+                        {chunk_text.page_content}"""
+        body = json.dumps({"inputText": chunk_data})
         try:
             embeddings_key='embedding'
             if 'cohere' in   embed_model_id:
                 response = bedrock_client.invoke_model(
-                body=json.dumps({"texts": [chunk_text.page_content], "input_type": 'search_document'}),
+                body=json.dumps({"texts": [chunk_data], "input_type": 'search_document'}),
                 modelId=embed_model_id,
                 accept='application/json',
                 contentType='application/json'
@@ -151,7 +183,7 @@ def _generate_embeddings_and_index(chunk_text, s3_source, email_id):
         
             doc = {
             'embedding' : embeddings,
-            'text': chunk_text.page_content,
+            'text': chunk_data,
             'timestamp': datetime.today().replace(tzinfo=timezone.utc).isoformat(),
             'meta': {
                 's3_source': s3_source,
@@ -249,12 +281,14 @@ def create_presigned_post(event):
     if 'file_extension' in query_params and 'file_name' in query_params:
         extension = query_params['file_extension']
         file_name = query_params['file_name']
+        doc_title = query_params['doc_title']
         # Usecase could be index or ocr
         usecase_type = 'index'
         if 'type' in query_params and query_params['type'] in ['index', 'ocr']:
             usecase_type = query_params['type']
         # remove special characters from file name
         file_name = re.sub(r'[^a-zA-Z0-9_\-\.]','',file_name)
+        doc_title = re.sub(r'[^a-zA-Z0-9_\-\.]','',doc_title)
 
         session = boto3.Session()
         s3_client = session.client('s3', region_name=region)
@@ -276,10 +310,12 @@ def create_presigned_post(event):
         response = s3_client.generate_presigned_post(Bucket=s3_bucket_name,
                                             Key=s3_key,
                                             Fields={'x-amz-meta-email_id': email_id, 
-                                                     'x-amz-meta-uploaded_at': utc_now
+                                                     'x-amz-meta-uploaded_at': utc_now,
+                                                     'x-amz-meta-doc_title': doc_title
                                                     },
                                             Conditions=[{'x-amz-meta-email_id': email_id},
-                                                        {'x-amz-meta-uploaded_at': utc_now}
+                                                        {'x-amz-meta-uploaded_at': utc_now},
+                                                        {'x-amz-meta-doc_title': doc_title}
                                                         ]
                                         )
         
@@ -375,6 +411,7 @@ def process_file_upload(event):
                 content, metadata = get_file_from_s3(s3_key)
                 email_id = 'no-id-set'
                 utc_now = ''
+                doc_title = '1'
                 if 'email_id' in metadata:
                     email_id = metadata['email_id']
                 elif 'userIdentity' in record:
@@ -384,6 +421,8 @@ def process_file_upload(event):
                     utc_now = metadata['upload_utc']
                 else:
                     utc_now = now_utc_iso8601()
+                if 'doc_title' in metadata:
+                    doc_title = metadata['doc_title']
                 index_audit_insert(email_id, s3_source, s3_key, utc_now)
                 
                 error_messages = []
@@ -457,7 +496,7 @@ def process_file_upload(event):
                                     continue
                                 
                                 LOG.debug(f'method=process_file_upload, page_number={page.page_number}, page={page.page_number}, content={text_value}')
-                                event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id})
+                                event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id, 'doc_title': doc_title})
                                 response = index_documents(event)
                                 index_counter = index_counter + 1
                                 print(f'Indexing response image txt = {response}')
@@ -474,7 +513,7 @@ def process_file_upload(event):
                         ocr_prompt = generate_claude_3_ocr_prompt([content])
                         text_value = query_bedrock(ocr_prompt, ocr_model_id)
                         LOG.debug(f'method=process_file_upload, file_type=image-text, content={text_value}')
-                        event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id})
+                        event['body'] = json.dumps({"text": text_value, 's3_source': s3_source, 'email_id': email_id, 'doc_title': doc_title})
                         response = index_documents(event)
                         index_counter = index_counter + 1
                         if 'statusCode' in response and response['statusCode'] != '200':
@@ -485,7 +524,7 @@ def process_file_upload(event):
                     else:
                         decoded_txt = content.decode()
                         LOG.debug(f'method=process_file_upload, decoded_txt={decoded_txt}')
-                        event['body'] = json.dumps({"text": decoded_txt, 's3_source': s3_source, 'email_id': email_id})
+                        event['body'] = json.dumps({"text": decoded_txt, 's3_source': s3_source, 'email_id': email_id, 'doc_title': doc_title})
                         response = index_documents(event)
                         index_counter = index_counter + 1
                         if 'statusCode' in response and response['statusCode'] != '200':

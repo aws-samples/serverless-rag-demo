@@ -202,42 +202,53 @@ def query_rewrite(user_query):
     print(f'Rewritten Text = {rewritten_query}')
     return rewritten_query
 
+
 def classify_and_translation_request(user_query):
     print(f'In classify_and_translation_request user_query = {user_query}')
     # Classify the request based on the rules
     system_prompt = """ 
-                1. Your role is to classify the User query available in <classify></classify> tags into one of the below:
+                1. You have access to the entire conversation between a user and an assistant
+                2. Your role is to classify the User conversation available in <conversation></conversation> tags into one of the below:
                 a. If the user is exchanging pleasantries or engaging in casual conversation, then return CASUAL.
                 b. If the user query is asking for a specific file, data, or information retrieval then return RETRIEVAL 
                 c. If you can't classify the user query, then return RETRIEVAL
                 
-                2. After classification you should also translate the query  to english if its in any other language 
+                3. After classifying you should also reformulate the query from the conversation details available in <conversation></conversation> tags. 
+                4. The reformulated query should be be detailed, precise, and contextually enriched question to obtain accurate results.
+                5. Reformulation steps:
+                   a.  Identify the main topic and entity mentioned in the conversation.
+                   b.  Formulate a question that encompasses the main topic and relevant details from the conversation.
+                   c.  Ensure the reformulated question is detailed, precise, and contextually enriched and gramatically correct for accurate results.
+                6. After reformulation you should also translate the query to english if its in any other language.
+                7. You should identify critical proper nouns from the conversation that could help build accurate search results
                 
-                3. You should responsd in json format as defined below in <json_format></json_format> tags:
+                8. You should respond in json format as defined below in <json_format></json_format> tags:
                     <json_format>
                     {
                        "QUERY_TYPE": "$QUERY_TYPE",
-                       "ORIGINAL_QUERY": "$ORIGINAL_QUERY",
-                       "TRANSLATED_QUERY": "$TRANSLATED_QUERY"
+                       "TRANSLATED_QUERY": "$TRANSLATED_QUERY",
+                       "PROPER_NOUNS": ["$PROPER_NOUNS"]
                     }
                     </json_format>
 
                     $QUERY_TYPE can be either RETRIEVAL or CASUAL
-                    $ORIGINAL_QUERY is the original query from the user
-                    $TRANSLATED_QUERY is the translated query in english language
+                    $TRANSLATED_QUERY is the translated reformulated query in english language
+                    $PROPER_NOUNS is the list of proper nouns which are derived from the conversation
                 
-                4. Example:
+                9. Example:
+                  If the ORIGINAL conversation was like this: "user: What is the capital of France?, assistant: I think its Paris, user: Whats good in that city ?"
+                  Then the json output would be as follows:
                   {
                     "QUERY_TYPE": "RETRIEVAL",
-                    "ORIGINAL_QUERY": "What is the capital of France?",
-                    "TRANSLATED_QUERY": "What is the capital of France"
+                    "TRANSLATED_QUERY": "What is good in paris the capital city of France ?"
+                    "PROPER_NOUNS": ["Paris", "France"]
                   }
 
-                5. Important: All JSON Keys are mandatory, if the query is in english, the query should still be part of TRANSLATED_QUERY
-                6. Important: Your response will only contain JSON and not other text or tags
+                10.  Important: All JSON Keys are mandatory, if the query is in english, the query should still be part of TRANSLATED_QUERY
+                11. Important: Your response will only contain JSON and not other text or tags
            """
     # Classify the request based on the rules
-    user_query =f"<classify>{user_query}</classify>. Please classify the request shared in <classify></classify> tags"
+    user_query =f"<conversation>{user_query}</conversation>"
 
 
     query_list = [
@@ -263,10 +274,12 @@ def classify_and_translation_request(user_query):
     if 'content' in llm_output:
         output = llm_output['content'][0]['text']
         try:
-            if '<json_format>' in output and '</json_format>' in output:
-                output = output.split('</json_format>')[0]
+            if '<json_format>' in output:
                 output = output.split('<json_format>')[1]
+            if '</json_format>' in output:
+                output = output.split('</json_format>')[0]
             classify_translate_json = json.loads(output)
+            print(f'classify_translate_json = {classify_translate_json}')
             return classify_translate_json
         except Exception as e:
             print(f'Exception in classify_and_translation_request, output={output}, error={e}, prompt_template={prompt_template}')
@@ -274,8 +287,10 @@ def classify_and_translation_request(user_query):
         
 
 
-def fetch_data(user_query):
+def fetch_data(user_query, proper_nouns: list, is_hybrid=False):
     global INDEX_NAME
+    nearest_neighbours = 10
+    result_set_size = 20
     print(f'In Fetch Data = {user_query}')
     context = ''
     embeddings_key="embedding"
@@ -304,10 +319,37 @@ def fetch_data(user_query):
         embedded_search = result.get(embeddings_key)
 
     TEXT_CHUNK_FIELD = 'text'
+    if is_bedrock_kb == 'yes':
+        TEXT_CHUNK_FIELD="AMAZON_BEDROCK_TEXT_CHUNK"
+    
+    # Default operator is OR. To narrow the scope you could change it to 'AND'
+    # "minimum_should_match": len(proper_nouns)-1
+    # fuzziness handle spelling erros in the query
+    KEYWORD_SEARCH = {
+            "match": { 
+                TEXT_CHUNK_FIELD: { "query": " ".join(proper_nouns), "operator": "or", "analyzer": "english",
+                    "fuzziness": "AUTO", "auto_generate_synonyms_phrase_query": False, "zero_terms_query": "all"} 
+                }
+    }
+    
     DOC_TYPE_FIELD = 'doc_type'
     vector_query = {
-                "size": 20,
-                "query": {"knn": {"embedding": {"vector": embedded_search, "k": 6}}},
+                "size": result_set_size,
+                "query": {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "knn": {"embedding": {"vector": embedded_search, "k": nearest_neighbours}}              
+                                    }     
+                                ]
+                            }
+                        },
+                "sort": [ 
+                            {
+                                "timestamp": {"order": "desc"}
+                            }
+                        ],
+                "track_scores": True, 
                 "_source": False,
                 "fields": [TEXT_CHUNK_FIELD, DOC_TYPE_FIELD]
     }
@@ -318,12 +360,26 @@ def fetch_data(user_query):
         if not INDEX_NAME.startswith('bedrock'):
             INDEX_NAME = 'bedrock-knowledge-base*'
             vector_query = {
-                "size": 10,
-                "query": {"knn": {bedrock_embedding_key_name: {"vector": embedded_search, "k": 5}}},
+                "size": result_set_size,
+                "query":{
+                            "bool": {
+                                "must": [
+                                    {
+                                        "knn": {bedrock_embedding_key_name: {"vector": embedded_search, "k": nearest_neighbours}}
+                                    }
+                                ]
+                            }
+                        },
+                "track_scores": True,    
                 "_source": False,
                 "fields": [TEXT_CHUNK_FIELD]
             }
-        LOG.info(f'Bedrock KB Query {vector_query}')
+
+    if is_hybrid and len(proper_nouns) > 0:
+        vector_query['query']['bool']['must'].append(KEYWORD_SEARCH)
+        result_set_size = 100
+        vector_query['size'] = result_set_size
+    LOG.info(f'AOSS Query {vector_query}')
         
 
     try:
@@ -337,4 +393,139 @@ def fetch_data(user_query):
     except Exception as e:
                 LOG.error(f'Vector Index query error {e}')
     return context
+
+
+# Here we combine the results of Keyword and Semantic search to produce better results
+def fetch_data_v2(user_query, proper_nouns: list, is_hybrid=False):
+    global INDEX_NAME
+    nearest_neighbours = 10
+    result_set_size = 20
+    print(f'In Fetch Data = {user_query}')
+    context = ''
+    embeddings_key="embedding"
+    if 'cohere' in   embed_model_id:
+                response = bedrock_client.invoke_model(
+                body=json.dumps({"texts": [user_query], "input_type": 'search_query'}),
+                modelId=embed_model_id,
+                accept='application/json',
+                contentType='application/json'
+                )
+                embeddings_key="embeddings"
+    else:
+                response = bedrock_client.invoke_model(
+                    body=json.dumps({"inputText": user_query}),
+                    modelId=embed_model_id,
+                    accept='application/json',
+                    contentType='application/json'
+                )
+    result = json.loads(response['body'].read())
+    finish_reason = result.get("message")
+    if finish_reason is not None:
+        print(f'Embed Error {finish_reason}')
+    if 'cohere' in   embed_model_id:
+         embedded_search = result.get(embeddings_key)[0]
+    else:
+        embedded_search = result.get(embeddings_key)
+    
+    TEXT_CHUNK_FIELD = 'text'
+    if is_bedrock_kb == 'yes':
+        TEXT_CHUNK_FIELD="AMAZON_BEDROCK_TEXT_CHUNK"
+    
+    DOC_TYPE_FIELD = 'doc_type'
+    vector_query = {
+                "size": result_set_size,
+                "query": {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "knn": {"embedding": {"vector": embedded_search, "k": nearest_neighbours}}              
+                                    }     
+                                ]
+                            }
+                        },
+                "track_scores": True, 
+                "_source": False,
+                "fields": [TEXT_CHUNK_FIELD, DOC_TYPE_FIELD]
+    }
+    
+    if is_bedrock_kb == 'yes':
+        LOG.info('Connecting to Bedrock KB')
+        if not INDEX_NAME.startswith('bedrock'):
+            INDEX_NAME = 'bedrock-knowledge-base*'
+            vector_query = {
+                "size": result_set_size,
+                "query":{
+                            "bool": {
+                                "must": [
+                                    {
+                                        "knn": {bedrock_embedding_key_name: {"vector": embedded_search, "k": nearest_neighbours}}
+                                    }
+                                ]
+                            }
+                        },
+                "track_scores": True,    
+                "_source": False,
+                "fields": [TEXT_CHUNK_FIELD]
+            }
+
+    keyword_results = []
+    
+    # Common for both Bedrock and non-Bedrock collections
+    if is_hybrid and len(proper_nouns) > 0:
+        # Default operator is OR. To narrow the scope you could change it to 'AND'
+        # "minimum_should_match": len(proper_nouns)-1
+        # fuzziness handle spelling erros in the query
+        KEYWORD_SEARCH = {
+            "match": { 
+                TEXT_CHUNK_FIELD: { "query": " ".join(proper_nouns), "operator": "or", "analyzer": "english",
+                    "fuzziness": "AUTO", "auto_generate_synonyms_phrase_query": False, "zero_terms_query": "all"} 
+                }
+        }
+        
+        keyword_search_query = {
+                "size": result_set_size,
+                "query":{
+                            "bool": {
+                                "must": [
+                                    KEYWORD_SEARCH
+                                ]
+                            }
+                        },
+                "track_scores": True,    
+                "_source": False,
+                "fields": [TEXT_CHUNK_FIELD]
+        }
+        LOG.info(f'AOSS Keyword search Query {keyword_search_query}')
+
+        
+        try:
+            response = ops_client.search(body=keyword_search_query, index=INDEX_NAME)
+            LOG.info(f'Opensearch response {response}')
+            keyword_results.extend(response["hits"]["hits"])
+        except Exception as e:
+            LOG.error(f'Keyword search query error {e}')
+    else:
+        # When its just semantic search increase the result set size
+        result_set_size=50
+        vector_query['size']=result_set_size
+        
+    LOG.info(f'AOSS Vector search Query {vector_query}')
+    semantic_results = []
+        
+    try:
+        response = ops_client.search(body=vector_query, index=INDEX_NAME)
+        LOG.info(f'Opensearch response {response}')
+        semantic_results.extend(response["hits"]["hits"])
+    except Exception as e:
+                LOG.error(f'Vector Index query error {e}')
+    
+    all_results = keyword_results + semantic_results
+    all_results = sorted(all_results, key=lambda x: x['_score'], reverse=True)
+    for data in all_results:
+        if context == '':
+            context = data['fields'][TEXT_CHUNK_FIELD][0]
+        else:
+            context += data['fields'][TEXT_CHUNK_FIELD][0] + ' '
+
+    return context.strip()
 

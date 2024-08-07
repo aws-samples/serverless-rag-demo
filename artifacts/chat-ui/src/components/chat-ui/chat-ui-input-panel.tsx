@@ -29,6 +29,7 @@ export interface ChatUIInputPanelProps {
   selected_model_option?: string;
   selected_language?: string;
   check_vector_db?: boolean;
+  is_hybrid_search?: boolean;
   clear_socket?: boolean;
   onSendMessage?: (message: string, type: string) => void;
   userinfo?: any;
@@ -216,14 +217,20 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       };
     } else {
       var query_vector_db = 'no';
+      var hybrid_enabled = 'no';
       if (props.check_vector_db) {
         query_vector_db = 'yes';
       }
+      if (props.is_hybrid_search) {
+        hybrid_enabled = 'yes';
+      }
+
       // query_vectordb allowed values -> yes/no
       ws.send(JSON.stringify({
         query: JSON.stringify(agent_prompt_flow),
         behaviour: 'advanced-rag-agent',
         'query_vectordb': query_vector_db,
+        'is_hybrid_search': hybrid_enabled,
         'model_id': props.selected_model_option,
         'language': props.selected_language,
       }));
@@ -237,11 +244,15 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       if (props.check_vector_db) {
         query_vector_db = 'yes';
       }
+      if (props.is_hybrid_search) {
+        hybrid_enabled = 'yes';
+      }
       // query_vectordb allowed values -> yes/no
       ws.send(JSON.stringify({
         query: JSON.stringify(agent_prompt_flow),
         behaviour: 'advanced-rag-agent',
         'query_vectordb': query_vector_db,
+        'is_hybrid_search': hybrid_enabled,
         'model_id': props.selected_model_option,
         'language': props.selected_language
       }));

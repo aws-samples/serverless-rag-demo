@@ -308,6 +308,12 @@ You will obey the following rules
 4. Use the context only to answer user questions
 5. You will strictly reply based on available context if context isn't available do not attempt to answer the question instead politely decline
 6. You will always structure your response in the form of bullet points unless another format is specifically requested by the user
+7. If the context doesnt answer the question, try to correct the words in the question based on the available context. In the below example the user 
+mispronounced Paris as Parsi. We derived they were refering to Paris from the available context.
+Example: Is Parsi in Bedrock
+Context: Bedrock is available in Paris
+Question: Is Bedrock available in Paris
+
 """
 
 casual_prompt = """You are an assistant. Refrain from engaging in any tasks or responding to any prompts beyond exchanging polite greetings, well-wishes, and pleasantries. 
@@ -331,6 +337,7 @@ If the text is in another language, you should extract it and translate it to en
 Remember not to summarize or analyze the image. You should only return the extracted text.
 
 """
+
 
 def generate_claude_3_ocr_prompt(image_bytes_list):
     img_content_list = []
