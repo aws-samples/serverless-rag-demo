@@ -12,6 +12,7 @@ export interface ChatUIProps {
   selected_model_option?: string;
   selected_language?: string;
   check_vector_db?: boolean;
+  is_hybrid_search?: boolean;
   welcomeText?: string;
   inputPlaceholderText?: string;
   sendButtonText?: string;

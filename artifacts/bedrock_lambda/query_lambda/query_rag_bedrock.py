@@ -10,7 +10,7 @@ import logging
 import re
 import base64
 
-from agents.retriever_agent import fetch_data, classify_and_translation_request
+from agents.retriever_agent import fetch_data, fetch_data_v2, classify_and_translation_request
 from prompt_utils import AGENT_MAP, get_system_prompt, agent_execution_step, rag_chat_bot_prompt
 from prompt_utils import casual_prompt, get_classification_prompt, RESERVED_TAGS
 from prompt_utils import get_can_the_orchestrator_answer_prompt
@@ -113,27 +113,50 @@ def perform_ocr(user_input, model_id, connect_id):
                         invoke_model(0, ocr_prompt, connect_id, True, model_id)   
 
                     
-def query_rag_no_agent(user_input, query_vector_db, language, model_id, connect_id):
+def query_rag_no_agent(user_input, query_vector_db, language, model_id, is_hybrid_search, connect_id):
     global rag_chat_bot_prompt
     final_prompt = rag_chat_bot_prompt
     chat_input = json.loads(user_input)
     LOG.debug(f'Chat history {chat_input}')
     can_invoke_model = False
 
+    user_chat_history = ''
+    for chat in chat_input:
+        if 'role' in chat and chat['role'] == 'user':
+            for message in chat['content']:
+                if message['type'] == 'text':
+                    user_conv_wo_context = re.sub('<context>.*?</context>','Context redacted',message['text'], flags=re.DOTALL)
+                    user_chat_history += 'user: ' + user_conv_wo_context + '. '
+                elif message['type'] == 'image' and 'source' in message and 'partial_s3_key' in message['source']:
+                    s3_key = f"bedrock/data/{message['source']['partial_s3_key']}"
+                    del message['source']
+                    message['type']='text'
+                    message['text'] = f"content at S3 location: {s3_key}"
+                    user_chat_history += 'user:' + message['text']
+        elif 'role' in chat and chat['role'] == 'assistant':
+            for message in chat['content']:
+                if message['type'] == 'text':
+                    user_chat_history += 'assistant: ' + message['text'] + '. '
+    # First step is classification
+    context = None
+    classify_translate_json = classify_and_translation_request(user_chat_history)
+
+    if 'QUERY_TYPE' in  classify_translate_json and classify_translate_json['QUERY_TYPE'] == 'RETRIEVAL':
+        if 'TRANSLATED_QUERY' in classify_translate_json:
+            reformulated_q = classify_translate_json['TRANSLATED_QUERY']
+            proper_nouns = []
+            if 'PROPER_NOUNS' in classify_translate_json:
+                proper_nouns = classify_translate_json['PROPER_NOUNS']
+            if query_vector_db == 'yes':
+                context = fetch_data_v2(reformulated_q, proper_nouns, is_hybrid_search)
+    
     if 'role' in chat_input[-1] and 'user' == chat_input[-1]['role']:
         can_invoke_model=True
         for text_inputs in chat_input[-1]['content']:
-            if text_inputs['type'] == 'text':
-                classify_translate_json = classify_and_translation_request(text_inputs['text'])
-                if '<user-question>' not in text_inputs['text']:
-                    text_inputs['text'] =  f'<user-question> {text_inputs["text"]} </user-question>'
-                if 'QUERY_TYPE' in  classify_translate_json and classify_translate_json['QUERY_TYPE'] == 'RETRIEVAL':
-                    if 'TRANSLATED_QUERY' in classify_translate_json:
-                        user_input = classify_translate_json['TRANSLATED_QUERY']
-                    if query_vector_db == 'yes':
-                        context = fetch_data(user_input)
-                        text_inputs['text'] = f"""<context> {context} </context> 
-                                              {text_inputs['text']} """
+            if text_inputs['type'] == 'text' and '<user-question>' not in text_inputs['text']:
+                text_inputs['text'] =  f'<user-question> {text_inputs["text"]} </user-question>'
+                if 'QUERY_TYPE' in  classify_translate_json and classify_translate_json['QUERY_TYPE'] == 'RETRIEVAL' and context is not None:
+                    text_inputs['text'] = f"""<context> {context} </context> {text_inputs['text']} """
                 elif 'QUERY_TYPE' in  classify_translate_json and classify_translate_json['QUERY_TYPE'] == 'CASUAL':
                     final_prompt = rag_chat_bot_prompt + casual_prompt
                 break
@@ -145,15 +168,6 @@ def query_rag_no_agent(user_input, query_vector_db, language, model_id, connect_
                     del text_inputs['source']['partial_s3_key']
                     del text_inputs['source']['file_extension']
                     text_inputs['source']['data'] = encoded_file.decode('utf-8')
-
-    for chat in chat_input:
-        if 'role' in chat and chat['role'] == 'user':
-            for message in chat['content']:
-                if message['type'] == 'image' and 'source' in message and 'partial_s3_key' in message['source']:
-                    s3_key = f"bedrock/data/{message['source']['partial_s3_key']}"
-                    del message['source']
-                    message['type']='text'
-                    message['text'] = f"content at S3 location: {s3_key}"
 
     if can_invoke_model:
         prompt_template = {
@@ -447,7 +461,10 @@ def handler(event, context):
                         query_vector_db='yes' 
                     if 'model_id' in input_to_llm:
                         model_id = input_to_llm['model_id']
-                    query_rag_no_agent(query, query_vector_db, language, model_id, connect_id)
+                    is_hybrid_search = False
+                    if 'is_hybrid_search' in input_to_llm and input_to_llm['is_hybrid_search'] == 'yes':
+                        is_hybrid_search = True
+                    query_rag_no_agent(query, query_vector_db, language, model_id, is_hybrid_search, connect_id)
         elif routeKey == '$connect':
             # TODO Add authentication of access token
             if 'access_token' in event['queryStringParameters']:

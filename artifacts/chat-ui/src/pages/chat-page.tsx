@@ -21,6 +21,7 @@ function ChatPage(props: AppPage) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
+  const [isHybridSearch, setHybridSearch] = useState(false)
   const [checkVectorDb, setCheckVectorDb] = useState(true);
   const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
   const [showAlert, setShowAlert] = useState(false)
@@ -93,6 +94,7 @@ function ChatPage(props: AppPage) {
           selected_model_option={selectedModelOption.value}
           selected_language={selectedLanguage.value}
           check_vector_db={checkVectorDb}
+          is_hybrid_search={isHybridSearch}
         />)
         }
         
@@ -136,6 +138,15 @@ function ChatPage(props: AppPage) {
                 checked={checkVectorDb}
               >
                 Query Vector Store
+              </Toggle>
+              
+              <Toggle
+                onChange={({ detail }) =>
+                  setHybridSearch(detail.checked)
+                }
+                checked={isHybridSearch}
+              >
+                Enable Hybrid Search(Beta)
               </Toggle>
 
             </SpaceBetween>

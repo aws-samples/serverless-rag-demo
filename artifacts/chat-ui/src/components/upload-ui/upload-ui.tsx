@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { FileUpload, Button, SpaceBetween, Container, Header, Modal, Box, Table } from "@cloudscape-design/components";
+import { FileUpload, Button, SpaceBetween, Container, Header, Modal, Box, Table, Input, Grid } from "@cloudscape-design/components";
 import timeago from 'epoch-timeago';
 import { LoadingBar } from "@cloudscape-design/chat-components";
 import axios from "axios";
@@ -12,6 +12,7 @@ export interface UploadDocProps {
 }
 export function UploadUI(props: UploadDocProps) {
   const [value, setValue] = useState<File[]>([]);
+  const [tag, setTag] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [userFiles, setUserFiles] = useState([]);
@@ -54,8 +55,12 @@ export function UploadUI(props: UploadDocProps) {
       var period = file_name.lastIndexOf('.');
       var file_name_no_ext = file_name.substring(0, period);
       var fileExtension = file_name.substring(period + 1);
+      if(tag == null || tag == undefined || tag == '') {
+        notify("Please enter a tag for the file", "error")
+        return
+      }
       axios.get(config.apiUrl + 'get-presigned-url', {
-        params: { "file_extension": fileExtension, "file_name": file_name_no_ext },
+        params: { "file_extension": fileExtension, "file_name": file_name_no_ext, "doc_title": tag },
         headers: {
           authorization: appData.userinfo.tokens.idToken.toString()
         }
@@ -243,7 +248,12 @@ export function UploadUI(props: UploadDocProps) {
         }
         header="Upload file"
       >
-        <FileUpload
+
+<Grid
+      gridDefinition={[{ colspan: 5 }, { colspan: 10 }]}>
+        <div><Input onChange={({ detail }) => setTag(detail.value)} value={tag} placeholder="Doc Tag"/></div>
+        <div>
+      <FileUpload
           accept=".pdf,.png,.jpg"
           onChange={({ detail }) => {
             setValue(detail.value);
@@ -265,7 +275,11 @@ export function UploadUI(props: UploadDocProps) {
           showFileLastModified
           showFileSize
           showFileThumbnail
-        />
+        /></div>
+  </Grid>
+
+      
+        
       </Modal>
     </Container>
   );
