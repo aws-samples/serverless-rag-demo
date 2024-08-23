@@ -44,6 +44,9 @@
     "typescript": "^5.2.2",
     "vite": "^5.2.9"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-musl": "4.21.0"
+  },
   "overrides": {
     "react-virtual": {
       "react": "^18.0.0"
