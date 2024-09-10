@@ -281,11 +281,13 @@ def create_presigned_post(event):
     if 'file_extension' in query_params and 'file_name' in query_params:
         extension = query_params['file_extension']
         file_name = query_params['file_name']
-        doc_title = query_params['doc_title']
+        doc_title = "unset"
         # Usecase could be index or ocr
         usecase_type = 'index'
         if 'type' in query_params and query_params['type'] in ['index', 'ocr']:
             usecase_type = query_params['type']
+            if 'type' == 'index':
+                doc_title = query_params['doc_title']
         # remove special characters from file name
         file_name = re.sub(r'[^a-zA-Z0-9_\-\.]','',file_name)
         doc_title = re.sub(r'[^a-zA-Z0-9_\-\.]','',doc_title)
