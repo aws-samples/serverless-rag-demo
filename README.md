@@ -1,7 +1,7 @@
 
 ### Scalable RAG solutions/Agentic Workflows with Amazon Bedrock and Amazon Opensearch serverless service
 
-
+<a href="https://app.commanddash.io/agent/github_aws-samples_serverless-rag-demo"><img src="https://img.shields.io/badge/AI-Code%20Agent-EB9FDA"></a>
 # Overview
 
 Widespread AI adoption is being driven by generative AI models that can generate human-like content. However, these foundation models are trained on general data making it less effective for domain specific tasks. There lies the importance of Retrieval Augmented Generation (RAG). RAG allows augmenting prompts with relevant external data for better domain-specific outputs. With RAG, documents and queries are converted to embeddings, compared to find relevant context, and that context is appended to the original prompt before being passed to the LLM. Knowledge libraries can be updated asynchronously to provide the most relevant external data for augmenting prompts.
