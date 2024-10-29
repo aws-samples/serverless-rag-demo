@@ -50,9 +50,9 @@ Widespread AI adoption is being driven by generative AI models that can generate
   <summary><b> Sentiment Analysis </b></summary>
 </details>
 
-### Latest project updates
+
 <details>
-  <summary><b> Support Claude-3.5 V2 </b></summary>
+  <summary><b> Latest project updates </b></summary>
   
   * 29-Oct-2024 Support for Claude-3.5 Sonnet V2/Opus for RAG/OCR/PII Identification/Sentiment Analysis
   * 1-Sept-204 Document Aware chunking strategy, to compare across several documents
