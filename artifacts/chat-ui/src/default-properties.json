@@ -13,6 +13,16 @@
                     "labelTag": "Text & Vision"
                 },
                 {
+                    "label": "Claude 3.5 Haiku",
+                    "value": "anthropic.claude-3-5-haiku-20241022-v1:0",
+                    "iconName": "keyboard",
+                    "description": "Text & vision model | Context size = up to 200k",
+                    "tags": [
+                        "Anthropic"
+                    ],
+                    "labelTag": "Text & Vision"
+                },
+                {
                     "label": "Claude 3 Sonnet",
                     "value": "anthropic.claude-3-sonnet-20240229-v1:0",
                     "iconName": "keyboard",
