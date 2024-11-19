@@ -86,9 +86,9 @@ Widespread AI adoption is being driven by generative AI models that can generate
 ### Deploying the Solution to your AWS account with AWS Cloudshell
 
 <details>
- <summary><b> Create an Admin User to deploy this stack </b></summary>
+ <summary><b> Section 1: Create an Admin User to deploy this stack </b></summary>
 
- #### Section1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin role, you may skip this step) 
+ #### Section 1 - Create an IAM user with Administrator permissions (OPTIONAL:  If you're already an Admin role, you may skip this step) 
 
 1. Search for the service IAM on the AWS Console and go the IAM Dashboard and click on “Roles“ tab under ”Access Management” and Click on “Create Role”
 <img width="1389" alt="Screenshot 2024-04-05 at 5 52 42 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/f02c2096-98d8-4601-b5d3-d36da7ecff4b">
@@ -109,12 +109,12 @@ Widespread AI adoption is being driven by generative AI models that can generate
 6. Switch role
 <img width="1423" alt="Screenshot 2024-04-05 at 5 42 06 PM" src="https://github.com/aws-samples/serverless-rag-demo/assets/25897220/4c4221ed-32b1-4c44-828b-191daad3bbce">
 
-7. Proceed to cloudshell step
+7. Proceed to Section 2
 </details>
 
 
 <details>
- <summary><b> Deploy the RAG based Solution (Total deployment time 40 minutes) </b></summary>
+ <summary><b> Section 2 - Deploy the RAG based Solution (Total deployment time 40 minutes) </b></summary>
 
 #### Section 2 - Deploy this RAG based Solution (The below commands should be executed in the region of deployment)
 
