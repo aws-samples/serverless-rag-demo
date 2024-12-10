@@ -191,7 +191,7 @@ class ApiGw_Stack(Stack):
                                             'IS_BEDROCK_KB': 'no',
                                             'CONVERSATIONS_DYNAMO_TABLE_NAME': env_params['conversations_dynamo_table_name']
                               },
-                              memory_size=4096,
+                              memory_size=3000,
                               layers= [addtional_libs_layer, agentic_libs_layer_name, langchainpy_layer, pdfpy_layer]
                             )
         
