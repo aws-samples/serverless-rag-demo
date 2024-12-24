@@ -10,11 +10,11 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 > [!NOTE]
 > This repository offers a production ready easily deployable Generative AI solution with the below features:
->   1. <b>Document chat </b>
->   2. <b>Multi-Agent collaboration </b>
->   3. <b>Sentiment Analysis </b>
->   4. <b>PII Redaction </b>
->   5. <b>OCR </b>
+>   1. <b>Document chat</b>
+>   2. <b>Multi-Agent collaboration</b>
+>   3. <b>Sentiment Analysis</b>
+>   4. <b>PII Redaction</b>
+>   5. <b>OCR</b>
 
 > [!IMPORTANT]
 > The Older UI is maintained in the v0.0.1(Old-UI) branch.
@@ -71,7 +71,7 @@ Widespread AI adoption is being driven by generative AI models that can generate
   * [Amazon Opensearch serverless(AOSS) supported regions](https://aws.amazon.com/about-aws/whats-new/2023/01/amazon-opensearch-serverless-available/)
   
   #### Familiarity with below Services 
-  * [AWS IAM](https://docs.aws.amazon.com/iam/index.html). 
+  * [AWS IAM](https://docs.aws.amazon.com/iam/index.html)
   * [AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
   * [Amazon API Gateway](https://docs.aws.amazon.com/apigateway/latest/developerguide/welcome.html)
   * [Amazon opensearch serverless](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/serverless-overview.html)
