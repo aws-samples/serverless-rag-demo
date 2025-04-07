@@ -20,8 +20,8 @@ echo "Environment: $infra_env"
 deployment_region=$(aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].RegionName')
 embed_model_id='cohere.embed-english-v3'
 
-printf "$Green Selected region: $deployment_region $NC"
-printf "$Green Selected embedding model: $embed_model_id $NC"
+printf "$Green Selected region: $deployment_region $NC \n"
+printf "$Green Selected embedding model: $embed_model_id $NC \n"
 
 echo '*************************************************************'
 echo ' '
