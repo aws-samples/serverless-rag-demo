@@ -382,11 +382,11 @@ def delete_file(event):
         "s3SchemaVersion": "1.0",
         "configurationId": "invoke_lambda",
         "bucket": {
-          "name": "bedrockstore-dev-444206144756-us-east-1",
+          "name": "bedrockstore-dev-4xxxxxxxxxx-us-east-1",
           "ownerIdentity": {
             "principalId": "A39XEE2Y21D328"
           },
-          "arn": "arn:aws:s3:::bedrockstore-dev-444206144756-us-east-1"
+          "arn": "arn:aws:s3:::bedrockstore-dev-4xxxxxxxxxxxxx-us-east-1"
         },
         "object": {
           "key": "index/Screenshot+2024-06-17+at+12.12.12%E2%80%AFPM.png",
