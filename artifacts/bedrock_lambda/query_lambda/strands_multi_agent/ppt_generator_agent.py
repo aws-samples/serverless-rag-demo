@@ -30,8 +30,9 @@ bedrock_client = boto3.client('bedrock-runtime')
 s3_client = boto3.client('s3')
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
 cwd = os.getcwd() 
-THEMES = ['strands/ppt_themes/ion_theme.pptx', 'strands/ppt_themes/circuit_theme.pptx']
+THEMES = ['strands_multi_agent/ppt_themes/ion_theme.pptx', 'strands_multi_agent/ppt_themes/circuit_theme.pptx']
 cwd = getenv("LAMBDA_TASK_ROOT", 'var/')
+
 
 
 PPT_GENERATOR_SYSTEM_PROMPT = """
@@ -39,7 +40,8 @@ You are a PPT Generator Agent. Your task is to generate a presentation on a give
 You have access to the following tools:
 - generate_ppt: To generate a presentation on a given topic. 
                 This tool will generate a presentation and upload it on s3.
-                It will provide you the S3 key where the presentation is uploaded in <location>...</location> tags.
+                It will provide you the presigned S3 url where the presentation is uploaded in <location>...</location> tags.
+                You should use this S3 url to display the presentation to the user.
 
 Key Responsibilities:
 - Generate a presentation on a given topic
@@ -103,6 +105,7 @@ Remember to:
 You should use the tools to generate a presentation.
 You should also follow the slide specific instructions.
 You should also follow the general instructions.
+You should pass on the presigned S3 url to the user.
 """
 
 LOG = logging.getLogger("ppt_generator_agent")
@@ -128,12 +131,26 @@ def generate_ppt(ppt_content):
     if '<presentation>' in ppt_content and '</presentation>' in ppt_content:
         presentation = ppt_content.split('</presentation')[0]
         presentation = presentation.split('<presentation>')[1]
-
+    try:
+        slides_json = xmltodict.parse(presentation)
+    except Exception as e:  
+        print(f"Error parsing XML: {e}")
+        # use LLM to correct the xml
+        XML_CORRECTION_PROMPT = f"""
+        You are an XML validator. The below xml is not valid and generated an error {e}
+        Your taks is to correct the following xml. 
+        {presentation}
+        Return only the corrected xml and nothing else, no preamble.
+        """
+        agent = Agent(system_prompt=XML_CORRECTION_PROMPT, model=bedrockModel, tools=[])
+        agent_response = agent(presentation)
+        presentation = str(agent_response)
     try:
         return ppt(presentation)
     except Exception as e:
         print(f"PPT generation error: {e}")
-    return "PPT generation failed - 0"
+        return "PPT generation failed - 0"
+    
 
 
 def ppt(slides_xml_str: str):
@@ -299,64 +316,44 @@ def generate_presigned_url(s3_key):
 # if __name__ == "__main__":
 #     print(generate_ppt_agent("The Wonderful World of Cats", "Beautifull cats", 3))
 
-# def test_ppt():
-#     xml = """
-# <slides>
-# <slide>
-# <slide_number>1</slide_number>
-# <title>The Wonderful World of Cats</title>
-# <subtitle>Explore the fascinating feline friends</subtitle>
-# <text>This presentation will take a deep dive into the captivating lives of cats, covering their unique characteristics, behaviors, and the special bond they share with humans.</text>
-# <speaker_notes>Welcome everyone! Today, we'll embark on a journey to discover the amazing world of our feline companions. Get ready to be enchanted by the fascinating facts and endearing traits of these adorable creatures.</speaker_notes>
-# <slideFormat>Title page</slideFormat>
-# </slide>
-# <slide>
-# <slide_number>2</slide_number>
-# <title>Purr-fect Personalities</title>
-# <subtitle>Exploring the diverse traits of cats</subtitle>
-# <text>
-# - Cats are known for their independence and self-reliance, often aloof yet affectionate
-# - They exhibit a wide range of personalities, from playful and curious to calm and reserved
-# - Cats are master communicators, using a variety of vocalizations and body language to express their needs and emotions
-# - Each cat has its own unique quirks and idiosyncrasies that make them endearing companions
-# </text>
-# <speaker_notes>Cats are complex and multifaceted creatures, with a wide range of personalities and behaviors that make them truly captivating. Let's dive into some of the key traits that make cats such fascinating pets.</speaker_notes>
-# <slideFormat>Slide with bullet points</slideFormat>
-# </slide>
-# <slide>
-# <slide_number>3</slide_number>
-# <title>The Feline Senses</title>
-# <subtitle>Exploring the extraordinary abilities of cats</subtitle>
-# <text>Cats possess a remarkable set of sensory capabilities that allow them to thrive in their environments:
-# Sight: Cats have exceptional night vision and can see a wider range of colors than humans.
-# Hearing: Feline ears can detect a wider range of frequencies, enabling them to hear sounds that humans cannot.
-# Smell: A cat's sense of smell is up to 14 times more sensitive than a human's, allowing them to gather valuable information about their surroundings.
-# These heightened senses contribute to the cat's impressive hunting prowess and overall adaptability.</text>
-# <speaker_notes>Cats have evolved with an impressive array of sensory abilities that allow them to navigate their world with incredible precision and awareness. Let's explore some of the key ways in which their senses set them apart.</speaker_notes>
-# <slideFormat>Slide with text</slideFormat>
-# </slide>
-# <slide>
-# <slide_number>4</slide_number>
-# <title>The Feline Agility</title>
-# <subtitle>Marveling at the athletic prowess of cats</subtitle>
-# <image>https://example.com/cat-jumping.jpg</image>
-# <speaker_notes>Cats are renowned for their incredible agility and athleticism. From effortlessly leaping to great heights to executing precise landings, their physical capabilities are truly awe-inspiring.</speaker_notes>
-# <slideFormat>Slide with image only</slideFormat>
-# </slide>
-# <slide>
-# <slide_number>5</slide_number>
-# <title>Important Takeaways</title>
-# <subtitle>Key messages to remember</subtitle>
-# <text>
-# - Cats exhibit a wide range of unique personalities and traits
-# - Feline senses are extraordinarily keen, enabling them to thrive in their environments
-# - Cats possess remarkable agility and athleticism, allowing them to perform amazing feats
-# - The special bond between cats and humans is a cherished and rewarding relationship
-# </text>
-# <speaker_notes>As we conclude our exploration of the wonderful world of cats, remember these key takeaways about these fascinating feline friends. Their captivating personalities, heightened senses, and incredible physical abilities make them truly remarkable creatures.</speaker_notes>
-# <slideFormat>Slide with 4 takeaways</slideFormat>
-# </slides>
+
+# xml = """
+# <presentation>
+#   <slides>
+#     <slide>
+#       <slide_number>1</slide_number>
+#       <title>Amazon Web Services (AWS)</title>
+#       <subtitle>The Cloud Computing Platform for Modern Businesses</subtitle>
+#       <text>Presented by: Cloud Solutions Expert</text>
+#       <speaker_notes>Introduction to AWS and its key service categories.</speaker_notes>
+#       <slideFormat>Title page</slideFormat>
+#     </slide>
+#     <slide>
+#       <slide_number>2</slide_number>
+#       <title>Core AWS Service Categories</title>
+#       <subtitle>Building blocks for your cloud infrastructure</subtitle>
+#       <text>• Compute: EC2, Lambda, ECS, Fargate
+# • Storage: S3, EBS, Glacier, Storage Gateway
+# • Database: RDS, DynamoDB, Aurora, Redshift
+# • Networking: VPC, Route 53, CloudFront
+# • Security: IAM, Shield, WAF, GuardDuty</text>
+#       <speaker_notes>AWS offers over 200 services across multiple categories.</speaker_notes>
+#       <slideFormat>Slide with bullet points</slideFormat>
+#     </slide>
+#     <slide>
+#       <slide_number>3</slide_number>
+#       <title>Key Takeaways</title>
+#       <subtitle>Why businesses choose AWS</subtitle>
+#       <text>1. Comprehensive Service Portfolio
+# 2. Global Infrastructure
+# 3. Flexible Pricing
+# 4. Security & Compliance</text>
+#       <speaker_notes>AWS is the market leader in cloud computing.</speaker_notes>
+#       <slideFormat>Slide with 4 takeaways</slideFormat>
+#     </slide>
+#   </slides>
+# </presentation> 
 # """
-#     ppt(xml)
+# generate_ppt(xml)
 
 # test_ppt()
