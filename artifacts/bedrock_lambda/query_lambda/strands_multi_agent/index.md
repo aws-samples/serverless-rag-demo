@@ -23,28 +23,6 @@ graph TB
             General[General Assistant]
         end
 
-        subgraph "Agent Tools"
-            subgraph "Web Search Tools"
-                DuckDuckGo[DuckDuckGo Search + other tools]                
-            end
-
-            subgraph "RAG Tools"
-                QueryTranslation[Query Translation + other tools]
-            end
-
-            subgraph "Code Tools"
-                UploadToS3[Upload To S3]
-            end
-
-            subgraph "Weather Tools"
-                GetLatLong[Get Lat Long + other tools]
-            end
-
-            subgraph "PPT Tools"
-                GeneratePPT[Generate Presentation + other tools]
-            end
-
-        end
 
         subgraph "External Services"
             Bedrock[Amazon Bedrock]
@@ -62,10 +40,6 @@ graph TB
     Orchestrator -->|Route Query| PPTGen
     Orchestrator -->|Route Query| General
 
-    WebSearch -->|Use| DuckDuckGo
-    Retriever -->|Use| QueryTranslation
-    Weather -->|Use| GetLatLong
-    PPTGen -->|Use| GeneratePPT
     
     WebSearch -->|Search| Bedrock
     Retriever -->|Query| OpenSearch
@@ -82,7 +56,6 @@ graph TB
     classDef external fill:#bfb,stroke:#333,stroke-width:2px
     
     class WebSearch,Retriever,CodeGen,Weather,PPTGen,General agent
-    class DuckDuckGo,Wikipedia,YahooFinance,Summarizer,QueryTranslation,QueryRewrite,FetchData,UploadToS3,GetLatLong,GetWeather,GeneratePPT tool
     class Orchestrator service
     class Bedrock,OpenSearch,S3,WeatherAPI external
 ```
