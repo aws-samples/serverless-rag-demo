@@ -80,7 +80,7 @@ class AppRunnerHostingStack(Stack):
                                         versioned=False)
         
         lambda_arn=f'arn:aws:lambda:{region}:{account_id}:function:{config_details["bedrock_indexing_function_name"]}'
-        function = _lambda.Function.from_function_arn(self, f's3-notify-lambda-{env_name}', lambda_arn)
+        function = _lambda.Function.from_function_attributes(self, f's3-notify-lambda-{env_name}', function_arn=lambda_arn, same_environment=True)
         # create s3 notification for lambda function
         notification = _s3_notifications.LambdaDestination(function)
         self.images_bucket.add_event_notification(_s3.EventType.OBJECT_CREATED, notification)

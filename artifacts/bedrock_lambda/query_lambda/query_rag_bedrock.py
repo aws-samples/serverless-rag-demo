@@ -1,23 +1,23 @@
 import boto3
 from os import getenv
+import logging
+
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
 from io import BytesIO
 import requests
 import json
 from decimal import Decimal
-import logging
 import re
 import base64
 
-from agents.retriever_agent import fetch_data, fetch_data_v2, classify_and_translation_request
-from prompt_utils import AGENT_MAP, get_system_prompt, agent_execution_step, rag_chat_bot_prompt
-from prompt_utils import casual_prompt, get_classification_prompt, RESERVED_TAGS
-from prompt_utils import get_can_the_orchestrator_answer_prompt
+from agents.retriever_agent import fetch_data_v2, classify_and_translation_request
+from prompt_utils import rag_chat_bot_prompt
+from prompt_utils import casual_prompt
 from prompt_utils import sentiment_prompt, generate_claude_3_ocr_prompt
 from prompt_utils import pii_redact_prompt
-from agent_executor_utils import agent_executor
 from pypdf import PdfReader
+from strands_multi_agent.orchestrator import orchestrator
 
 bedrock_client = boto3.client('bedrock-runtime')
 embed_model_id = getenv("EMBED_MODEL_ID", "amazon.titan-embed-image-v1")
@@ -182,122 +182,8 @@ def query_rag_no_agent(user_input, query_vector_db, language, model_id, is_hybri
                     
 
 def query_agents(agent_type, user_input, connect_id):
-    master_orchestrator(agent_type, json.loads(user_input), connect_id)
+    orchestrator(user_input, connect_id, websocket_client)
     # return success_response(connect_id, "success")
-
-# The Orchestrator Agent
-def master_orchestrator(agent_type: str, chat_input, connect_id):
-    done = False
-    # Clean up chat_input remove presigned length URLs when processing the next user-request
-    for chat in chat_input:
-        if 'content' in chat:
-            cntnt = []
-            for msg in chat['content']:
-                if 'text' in msg:
-                    cntnt = msg['text']
-                    if any(ele in cntnt for ele in RESERVED_TAGS):
-                        for tag in RESERVED_TAGS:
-                            last_half = ''
-                            first_half = ''
-                            # Do not change the order
-                            if  '</' in tag:
-                                last_half = cntnt.split(tag)[1]
-                            else:
-                                first_half = cntnt.split(tag)[0]
-                            msg['text'] = first_half + '(S3).' + last_half
-                
-                        
-
-                        
-    # Orchestrator classifies the problem
-    classify_prompt, output_agent, output_tags = get_classification_prompt(agent_type)
-    websocket_send(connect_id, {"intermediate_execution": "Hang in there, generating results", "done": done})
-    agent_name = agent_executor(classify_prompt, chat_input, output_agent, output_tags, False)
-    websocket_send(connect_id, {"intermediate_execution": f"Hang in there, current agent:{agent_name}", "done": done})
-    # Orchestrator decides which agent should handle the problem
-    # Orchestrator injects methods associated with that agent into the prompt
-    LOG.info(f'method=master_orchestrator, chat_history={chat_input}')
-    system_prompt = get_system_prompt(agent_name)
-    
-    prompt_template= {
-                        "anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 10000,
-                        "system": system_prompt,
-                        "messages": chat_input
-                    }
-    
-    prompt_flow = []
-    prompt_flow.extend(chat_input)
-    # Orchestrator executes the next step
-    # Try to solve a user query in 5 steps
-    for i in range(5):
-        # To be displayed in StackTrace
-        websocket_send(connect_id, {"intermediate_execution": f"Hang in there, current agent:{agent_name}, step: {i}", "done": done})
-        LOG.debug(f"prompt_template {prompt_template}, iteration : {i}")
-        step_plan = invoke_model(i, prompt_template, connect_id, False)
-        websocket_send(connect_id, {"intermediate_execution": f"Hang in there, {agent_name} created a plan of action", "done": done})
-        LOG.debug(f'Step {i} output {step_plan}')
-        done, human_prompt, assistant_prompt, agent_name, contains_artifact = agent_execution_step(i, step_plan, prompt_flow)
-        
-        prompt_flow.append({"role":"assistant", "content": assistant_prompt })
-        should_classify = True
-        if not done and human_prompt is not None:
-            prompt_flow.append({"role":"user", "content": human_prompt })
-            websocket_send(connect_id, {"intermediate_execution": "Working on it", "done": done})
-            reply = agent_executor(get_can_the_orchestrator_answer_prompt(), prompt_flow, "output", None, True)
-            if '<can_answer>' in reply:
-                should_classify = False
-                done=True
-                prompt_flow.append({"role":"assistant", "content": [{"type": "text", "text": reply.split('<can_answer>')[1].split('</can_answer>')[0]}]})
-                websocket_send(connect_id, {"prompt_flow": prompt_flow, "done": done})
-                return reply
-        
-        if done:
-            # Check for RESERVED TAGS in assistant_prompt
-            if contains_artifact:
-                websocket_send(connect_id, {"intermediate_execution": f" Artifact created ..", "done": done})
-            LOG.debug('Final answer from LLM:\n'+f'{assistant_prompt}')
-            websocket_send(connect_id, {"prompt_flow": prompt_flow, "done": done})
-            return assistant_prompt
-        
-        if should_classify:
-            #if not done then find next agent
-            agent_name = agent_executor(classify_prompt, prompt_flow, output_agent, output_tags, False)
-            # if next agent could not be found return control back to the user
-            if agent_name not in AGENT_MAP:
-                LOG.warn(f'Agent name {agent_name} not in agent map. prompt_flow {prompt_flow}. Exit')
-                done = True
-                last_prmpt = prompt_flow[-1]
-                generated_assist_prmpt = None
-                if 'role' in last_prmpt and last_prmpt['role'] == 'user':
-                    for content in last_prmpt['content']:
-                        if content['type'] == 'text' and '<function_result>' in content['text']:
-                            generated_assist_prmpt = content['text'].split('<function_result>')[1]
-                            generated_assist_prmpt = generated_assist_prmpt.split('</function_result>')[0]
-                            prompt_flow.append({"role":"assistant", "content": [{"type": "text", "text": generated_assist_prmpt}] })
-                            websocket_send(connect_id, {"prompt_flow": prompt_flow, "done": done})
-                            return assistant_prompt
-            else:
-                system_prompt = get_system_prompt(agent_name)
-                prompt_template= {
-                            "anthropic_version": "bedrock-2023-05-31",
-                            "max_tokens": 10000,
-                            "system": system_prompt,
-                            "messages": prompt_flow
-                        }
-                websocket_send(connect_id, {"intermediate_execution": f"Hang in there, next Agent: {agent_name} assigned", "done": done})
-
-        content = prompt_flow[-1]["content"]
-        content.extend([{"type": "text", "text": "\n\n If you know the answer, say it. If not, what is the next step?"}])
-        
-    
-    
-    ######
-    if not done:
-        prompt_flow.append({"role":"assistant", "content": {type: "text", "text": "I apologize but I cant answer this question"} })
-        websocket_send(connect_id, {"prompt_flow": prompt_flow, "done": True})
-        return prompt_flow
-
 
 
 def invoke_model(step_id, prompt, connect_id, send_on_socket=False, model_id = "anthropic.claude-3-sonnet-20240229-v1:0"):

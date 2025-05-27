@@ -22,7 +22,8 @@ class BedrockLayerStack(NestedStack):
         config_details = self.node.try_get_context(env_name)
         langchainpy_layer_name = config_details['langchainpy_layer_name']
         addtional_libs_layer_name = config_details["addtional_libs_layer_name"]
-        agentic_libs_layer_name = config_details["agentic_libs_layer_name"]
+        strands_layer_name = config_details["strands_layer_name"]
+        agents_tools_layer_name = config_details["agents_tools_layer_name"]
         pypdf_layer_name = config_details["pypdf_layer"]
 
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
@@ -47,16 +48,21 @@ class BedrockLayerStack(NestedStack):
             privileged=True,
             environment_variables={
                 "addtional_libs_layer_name": _codebuild.BuildEnvironmentVariable(value = addtional_libs_layer_name),
-                "agentic_libs_layer_name": _codebuild.BuildEnvironmentVariable(value = agentic_libs_layer_name),
+                "strands_layer_name": _codebuild.BuildEnvironmentVariable(value = strands_layer_name),
+                "agentic_tools_layer_name": _codebuild.BuildEnvironmentVariable(value = agents_tools_layer_name),
                 "langchainpy_layer_name":  _codebuild.BuildEnvironmentVariable(value = langchainpy_layer_name),
                 "account_id" : _codebuild.BuildEnvironmentVariable(value = account_id),
                 "region": _codebuild.BuildEnvironmentVariable(value = region),
+                "infra_env": _codebuild.BuildEnvironmentVariable(value = env_name),
                 "pypdf_layer_name": _codebuild.BuildEnvironmentVariable(value = pypdf_layer_name) 
             })
         )
 
         lambda_layer_policy = _iam.PolicyStatement(actions=[
-        "lambda:PublishLayerVersion"
+        "lambda:PublishLayerVersion",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket"
         ], resources=["*"])
         containerize_build_job.add_to_role_policy(lambda_layer_policy)
         self.suppressor([containerize_build_job], 'AwsSolutions-IAM5', 'We cannot remove wildcard here, as the CodeBuild should have permissions to publish different layer versions')

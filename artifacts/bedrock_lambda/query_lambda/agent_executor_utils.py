@@ -1,19 +1,21 @@
-import boto3
-import json
 from os import getenv
 import boto3
 import logging
 import json
 from datetime import datetime
+from strands.models import BedrockModel
 
 region = getenv("REGION", "us-east-1")
 bedrock_client = boto3.client('bedrock-runtime')
 s3_client = boto3.client("s3")
-model_id = getenv("WEBSEARCH_MODEL", "anthropic.claude-3-haiku-20240307-v1:0")
+model_id = getenv("MULTI_AGENT_MODEL", "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
 LOG = logging.getLogger()
 LOG.setLevel(logging.INFO)
 s3_bucket_name = getenv("S3_BUCKET_NAME", "S3_BUCKET_NAME_MISSING")
 
+bedrockModel = BedrockModel(
+    model_id=model_id
+)
 
 def agent_executor(system_prompt, chat_input, output, output_tags="<agent_output></agent_output>", custom_impl=False) :
     LOG.info(f'method=agent_executor, sys_prompt={system_prompt}, user_query={chat_input}, output= {output}, output_tags={output_tags}, custom_impl={custom_impl}')

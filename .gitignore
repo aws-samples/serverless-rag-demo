@@ -2,7 +2,9 @@
 */.DS_Store
 .DS_Store
 cdk.out
-*/__pycache__
+*/__pycache__/
+__pycache__/
+**/package-lock.json
 node_modules
 generate-react-cli.json
 artifacts/chat-ui/src/config.json

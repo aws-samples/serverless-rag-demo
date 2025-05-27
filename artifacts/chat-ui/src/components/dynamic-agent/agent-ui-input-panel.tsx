@@ -96,87 +96,34 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
             setDisabled(false);
           }
         } else {
-          // query_vectordb allowed values -> yes/no
           ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
         }
 
         ws.onopen = () => {
-          // query_vectordb allowed values -> yes/no
           ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
-
         };
-        var messages = ''
-        var thought = ''
+        
         ws.onmessage = (event) => {
-          if (event.data.includes('message')) {
-            var evt_json = JSON.parse(event.data)
-            props.onSendMessage?.(evt_json['message'], ChatMessageType.AI);
+          if (event.data) {
+            var decodedMessage = ""
+            try{
+               decodedMessage = atob(event.data);
+            }
+            catch(e){
+              // If decoding fails, use the original message
+              decodedMessage = event.data;
+            }
+            try {
+              const parsedMessage = JSON.parse(decodedMessage);
+              const messageText = parsedMessage.text || parsedMessage;
+              const cleanMessage = messageText.replace(/""/g, '"');
+              props.onSendMessage?.(cleanMessage, ChatMessageType.AI);
+            } catch (e) {
+              // If parsing fails, just use the decoded message
+              const cleanMessage = decodedMessage.replace(/""/g, '"');
+              props.onSendMessage?.(cleanMessage, ChatMessageType.AI);
+            }
             setDisabled(false);
-          }
-          else {
-            var response_details = JSON.parse(atob(event.data))
-            if ('intermediate_execution' in response_details) {
-              props.onSendMessage?.(response_details['intermediate_execution'], ChatMessageType.AI);
-            }
-            else if ('prompt_flow' in response_details) {
-              var is_done = Boolean(response_details['done'])
-              if (!is_done) {
-                agent_prompt_flow = []
-                for (var k = 0; k < response_details['prompt_flow'].length; k++) {
-                  var prompt_content_list = response_details['prompt_flow'][k]['content']
-                  var content = []
-                  for (var j = 0; j < prompt_content_list.length; j++) {
-                    if ('text' in prompt_content_list[j]) {
-                      content.push({ "type": "text", "text": prompt_content_list[j]['text'] })
-                    } else {
-                      content.push(prompt_content_list[j])
-                    }
-                  }
-                  agent_prompt_flow.push({ "role": response_details['prompt_flow'][k]['role'], "content": content })
-                }
-
-                for (var i = 0; i < response_details['prompt_flow'].length; i++) {
-                  if ('content' in response_details['prompt_flow'][i]) {
-                    var content_list = response_details['prompt_flow'][i]['content']
-                    for (var j = 0; j < content_list.length; j++) {
-                      if ('text' in content_list[j]) {
-                        thought = thought + capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]['text']
-                      } else {
-                        thought = thought + capitalizeFirstLetter(response_details['prompt_flow'][i]['role']) + ': ' + content_list[j]
-                      }
-                    }
-                  }
-                }
-                messages = thought.replace('ack-end-of-string', '')
-                props.onSendMessage?.(messages, ChatMessageType.AI);
-              } else {
-                if (response_details['prompt_flow'].length > 0) {
-
-                  var last_element = response_details['prompt_flow'][response_details['prompt_flow'].length - 1]
-                  if ('content' in last_element) {
-                    var content_list = last_element['content']
-                    var content = []
-                    for (var j = 0; j < content_list.length; j++) {
-                      if ('text' in content_list[j]) {
-                        content.push({ "type": "text", "text": content_list[j]['text'] })
-                        thought = thought + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]['text']
-                      } else {
-                        content.push(content_list[j])
-                        thought = thought + capitalizeFirstLetter(last_element['role']) + ': ' + content_list[j]
-                      }
-                    }
-                    agent_prompt_flow.push({ "role": last_element['role'], "content": content })
-                    messages = thought.replace('ack-end-of-msg', '')
-                    props.onSendMessage?.(messages, ChatMessageType.AI);
-                    setTimeout(() => {
-                      setDisabled(false);
-                    }, 2000)
-                  }
-                }
-              }
-
-            }
-
           }
         };
 
@@ -184,7 +131,6 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
           console.log('WebSocket connection closed');
           agent_prompt_flow = []
         };
-
       } else {
         console.log('WebSocket is not supported by your browser.');
         agent_prompt_flow = []
@@ -202,7 +148,8 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
       onSendMessage();
     }
   }
-  return (<Container disableContentPaddings disableHeaderPaddings variant="embed">
+  return (
+    <Container disableContentPaddings disableHeaderPaddings variant="stacked">
       <SpaceBetween size="s">
         <Textarea
           spellcheck={true}
@@ -229,5 +176,6 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
           )}
         </Button>
       </SpaceBetween>
-  </Container>);
+    </Container>
+  );
 }

@@ -66,7 +66,7 @@ cd ..
 echo "--- Upgrading npm ---"
 sudo npm install n stable -g
 echo "--- Installing cdk ---"
-sudo npm install -g aws-cdk@2.91.0
+sudo npm install -g aws-cdk@2.1016.1
 
 echo "--- Bootstrapping CDK on account in region $deployment_region ---"
 cdk bootstrap aws://$(aws sts get-caller-identity --query "Account" --output text)/$deployment_region
@@ -82,6 +82,18 @@ echo "--- CDK deploy ---"
 CURRENT_UTC_TIMESTAMP=$(date -u +"%Y%m%d%H%M%S")
 echo Setting Tagging Lambda Image with timestamp $CURRENT_UTC_TIMESTAMP
 cdk deploy -c environment_name=$infra_env -c current_timestamp=$CURRENT_UTC_TIMESTAMP  -c is_aoss="$aoss_selected" -c embed_model_id=$embed_model_id LlmsWithServerlessRag"$infra_env"Stack --require-approval never
+
+# Create an S3 bucket only if it doesn't exist to store lambda layer artifacts
+# get the aws account id
+account_id=$(aws sts get-caller-identity --query "Account" --output text)
+s3_bucket_name=serverless-rag-demo-$infra_env-$account_id-$deployment_region
+if ! aws s3 ls "s3://$s3_bucket_name" 2>&1 > /dev/null; then
+    echo "S3 bucket $s3_bucket_name does not exist. Creating it..."
+    aws s3 mb s3://$s3_bucket_name
+else
+    echo "S3 bucket $s3_bucket_name already exists."
+fi
+
 echo "--- Get Build Container ---"
 project=lambdaragllmcontainer"$infra_env"
 echo project: $project
