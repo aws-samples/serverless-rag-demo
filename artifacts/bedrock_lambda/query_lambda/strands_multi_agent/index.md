@@ -26,38 +26,30 @@ graph TB
         subgraph "Agent Tools"
             subgraph "Web Search Tools"
                 DuckDuckGo[DuckDuckGo Search]
-                WebScraper[Web Scraper]
+                Wikipedia[Wikipedia Scraper]
+                YahooFinance[Yahoo Finance Scrapper]
+                Summarizer[Summarizer]
             end
 
             subgraph "RAG Tools"
-                VectorSearch[Vector Search]
-                DocLoader[Document Loader]
-                TextSplitter[Text Splitter]
+                QueryTranslation[Query Translation]
+                QueryRewrite[Query Rewrite]
+                FetchData[Fetch Data]
             end
 
             subgraph "Code Tools"
-                CodeFormatter[Code Formatter]
-                SyntaxChecker[Syntax Checker]
-                LangDetector[Language Detector]
+                UploadToS3[Upload To S3 ]
             end
 
             subgraph "Weather Tools"
-                WeatherAPI[OpenWeatherMap API]
-                LocationParser[Location Parser]
-                ForecastFormatter[Forecast Formatter]
+                GetLatLong[Get Lat Long]
+                GetWeather[Get Weather]
             end
 
             subgraph "PPT Tools"
-                ThemeManager[Theme Manager]
-                SlideGenerator[Slide Generator]
-                ContentFormatter[Content Formatter]
+                GeneratePPT[Generate Presentation]
             end
 
-            subgraph "General Tools"
-                ChatFormatter[Chat Formatter]
-                ContextManager[Context Manager]
-                ResponseFormatter[Response Formatter]
-            end
         end
 
         subgraph "External Services"
@@ -77,23 +69,17 @@ graph TB
     Orchestrator -->|Route Query| General
 
     WebSearch -->|Use| DuckDuckGo
-    WebSearch -->|Use| WebScraper
-    Retriever -->|Use| VectorSearch
-    Retriever -->|Use| DocLoader
-    Retriever -->|Use| TextSplitter
-    CodeGen -->|Use| CodeFormatter
-    CodeGen -->|Use| SyntaxChecker
-    CodeGen -->|Use| LangDetector
-    Weather -->|Use| WeatherAPI
-    Weather -->|Use| LocationParser
-    Weather -->|Use| ForecastFormatter
-    PPTGen -->|Use| ThemeManager
-    PPTGen -->|Use| SlideGenerator
-    PPTGen -->|Use| ContentFormatter
-    General -->|Use| ChatFormatter
-    General -->|Use| ContextManager
-    General -->|Use| ResponseFormatter
-
+    WebSearch -->|Use| Wikipedia
+    WebSearch -->|Use| YahooFinance
+    WebSearch -->|Use| Summarizer
+    Retriever -->|Use| QueryTranslation
+    Retriever -->|Use| QueryRewrite
+    Retriever -->|Use| FetchData
+    CodeGen -->|Use| UploadToS3
+    Weather -->|Use| GetLatLong
+    Weather -->|Use| GetWeather
+    PPTGen -->|Use| GeneratePPT
+    
     WebSearch -->|Search| Bedrock
     Retriever -->|Query| OpenSearch
     Retriever -->|Store| S3
@@ -109,7 +95,8 @@ graph TB
     classDef external fill:#bfb,stroke:#333,stroke-width:2px
     
     class WebSearch,Retriever,CodeGen,Weather,PPTGen,General agent
-    class DuckDuckGo,WebScraper,VectorSearch,DocLoader,TextSplitter,CodeFormatter,SyntaxChecker,LangDetector,WeatherAPI,LocationParser,ForecastFormatter,ThemeManager,SlideGenerator,ContentFormatter,ChatFormatter,ContextManager,ResponseFormatter tool
+    class DuckDuckGo,Wikipedia,YahooFinance,Summarizer,QueryTranslation,QueryRewrite,FetchData,
+    UploadToS3,GetLatLong,GetWeather,GeneratePPT tool
     class Orchestrator service
     class Bedrock,OpenSearch,S3,WeatherAPI external
 ```
