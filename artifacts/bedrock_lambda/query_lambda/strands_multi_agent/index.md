@@ -1,10 +1,7 @@
-# STRANDS Multi-Agent System
+# Multi-Agent Orchestration Made Simple
 
-A powerful multi-agent orchestration system built on top of Amazon Bedrock, enabling specialized agents to work together to handle complex user queries.
+STRANDS[https://strandsagents.com/] is a powerful multi-agent orchestration opensource sdk. We've used the "Agents as Tools" architectural pattern wherein our Specialised agents are wrapped in as callable functions that can be used by other Agents. The Primary Orchestrator handles user interaction and calles relevant specialist agents. It then reflects if the user question is successfully answered 
 
-## Overview
-
-The STRANDS Multi-Agent system is designed to coordinate multiple specialized AI agents to provide comprehensive assistance across various domains. The system uses an Orchestrator to analyze user queries and route them to the most appropriate specialized agent.
 
 ## System Architecture
 
@@ -26,6 +23,43 @@ graph TB
             General[General Assistant]
         end
 
+        subgraph "Agent Tools"
+            subgraph "Web Search Tools"
+                DuckDuckGo[DuckDuckGo Search]
+                WebScraper[Web Scraper]
+            end
+
+            subgraph "RAG Tools"
+                VectorSearch[Vector Search]
+                DocLoader[Document Loader]
+                TextSplitter[Text Splitter]
+            end
+
+            subgraph "Code Tools"
+                CodeFormatter[Code Formatter]
+                SyntaxChecker[Syntax Checker]
+                LangDetector[Language Detector]
+            end
+
+            subgraph "Weather Tools"
+                WeatherAPI[OpenWeatherMap API]
+                LocationParser[Location Parser]
+                ForecastFormatter[Forecast Formatter]
+            end
+
+            subgraph "PPT Tools"
+                ThemeManager[Theme Manager]
+                SlideGenerator[Slide Generator]
+                ContentFormatter[Content Formatter]
+            end
+
+            subgraph "General Tools"
+                ChatFormatter[Chat Formatter]
+                ContextManager[Context Manager]
+                ResponseFormatter[Response Formatter]
+            end
+        end
+
         subgraph "External Services"
             Bedrock[Amazon Bedrock]
             OpenSearch[OpenSearch]
@@ -42,6 +76,24 @@ graph TB
     Orchestrator -->|Route Query| PPTGen
     Orchestrator -->|Route Query| General
 
+    WebSearch -->|Use| DuckDuckGo
+    WebSearch -->|Use| WebScraper
+    Retriever -->|Use| VectorSearch
+    Retriever -->|Use| DocLoader
+    Retriever -->|Use| TextSplitter
+    CodeGen -->|Use| CodeFormatter
+    CodeGen -->|Use| SyntaxChecker
+    CodeGen -->|Use| LangDetector
+    Weather -->|Use| WeatherAPI
+    Weather -->|Use| LocationParser
+    Weather -->|Use| ForecastFormatter
+    PPTGen -->|Use| ThemeManager
+    PPTGen -->|Use| SlideGenerator
+    PPTGen -->|Use| ContentFormatter
+    General -->|Use| ChatFormatter
+    General -->|Use| ContextManager
+    General -->|Use| ResponseFormatter
+
     WebSearch -->|Search| Bedrock
     Retriever -->|Query| OpenSearch
     Retriever -->|Store| S3
@@ -52,10 +104,12 @@ graph TB
     General -->|Chat| Bedrock
 
     classDef agent fill:#f9f,stroke:#333,stroke-width:2px
+    classDef tool fill:#ffd,stroke:#333,stroke-width:2px
     classDef service fill:#bbf,stroke:#333,stroke-width:2px
     classDef external fill:#bfb,stroke:#333,stroke-width:2px
     
     class WebSearch,Retriever,CodeGen,Weather,PPTGen,General agent
+    class DuckDuckGo,WebScraper,VectorSearch,DocLoader,TextSplitter,CodeFormatter,SyntaxChecker,LangDetector,WeatherAPI,LocationParser,ForecastFormatter,ThemeManager,SlideGenerator,ContentFormatter,ChatFormatter,ContextManager,ResponseFormatter tool
     class Orchestrator service
     class Bedrock,OpenSearch,S3,WeatherAPI external
 ```
@@ -66,86 +120,4 @@ graph TB
 pip install strands-agents strands-agents-tools
 ```
 
-## Available Agents
-
-The system includes the following specialized agents:
-
-1. **Web Search Agent**
-   - Handles queries requiring real-time web information
-   - Performs web searches to find up-to-date information
-   - Uses DuckDuckGo for web searches
-
-2. **Retriever Agent**
-   - Manages RAG (Retrieval-Augmented Generation) queries
-   - Retrieves specific information from the knowledge base
-   - Uses vector search for semantic matching
-   - Supports OpenSearch integration
-
-3. **Code Generator Agent**
-   - Specializes in programming and code generation tasks
-   - Can generate code snippets and solutions
-   - Supports multiple programming languages
-   - Uses Claude for code generation
-
-4. **Weather Agent**
-   - Provides weather information for specific locations
-   - Handles weather-related queries and forecasts
-   - Uses OpenWeatherMap API
-
-5. **PPT Generator Agent**
-   - Creates PowerPoint presentations
-   - Supports various presentation themes
-   - Generates structured content for slides
-   - Uses python-pptx for presentation generation
-
-6. **General Assistant Agent**
-   - Handles general queries outside specialized domains
-   - Provides conversational assistance
-   - Coordinates with other agents when needed
-   - Uses Claude for natural conversation
-
-## Architecture
-
-The system is built using:
-- Amazon Bedrock for LLM capabilities
-- WebSocket for real-time communication
-- Vector database (OpenSearch) for RAG functionality
-- Modular agent architecture for easy extension
-- STRANDS framework for agent orchestration
-
-## Directory Structure
-
-```
-strands_multi_agent/
-├── orchestrator.py           # Main orchestrator for agent coordination
-├── web_search_agent.py      # Web search functionality
-├── retriever_agent.py       # RAG and knowledge base queries
-├── code_generator_agent.py  # Code generation capabilities
-├── weather_agent.py         # Weather information handling
-├── ppt_generator_agent.py   # Presentation generation
-├── casual_conversations_agent.py  # General conversation handling
-└── ppt_themes/             # Presentation themes and templates
-```
-
-## Usage
-
-The system is designed to be used through a WebSocket interface. Messages should be sent in the following format:
-
-```json
-{
-  "query": "user query string",
-  "behaviour": "advanced-agent",
-  "query_vectordb": "yes",
-  "model_id": "anthropic.claude-3-haiku-20240307-v1:0"
-}
-```
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## References
-
-- [STRANDS Agents Documentation](https://strandsagents.com/0.1.x/)
-- [STRANDS Multi-Agent Example](https://github.com/strands-agents/docs/blob/main/docs/examples/python/multi_agent_example/index.md)
-- [Amazon Bedrock Documentation](https://docs.aws.amazon.com/bedrock/) 
+* You can also run these agents individually in standalone mode
