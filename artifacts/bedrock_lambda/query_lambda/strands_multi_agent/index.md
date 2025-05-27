@@ -25,29 +25,23 @@ graph TB
 
         subgraph "Agent Tools"
             subgraph "Web Search Tools"
-                DuckDuckGo[DuckDuckGo Search]
-                Wikipedia[Wikipedia Scraper]
-                YahooFinance[Yahoo Finance Scrapper]
-                Summarizer[Summarizer]
+                DuckDuckGo[DuckDuckGo Search + other tools]                
             end
 
             subgraph "RAG Tools"
-                QueryTranslation[Query Translation]
-                QueryRewrite[Query Rewrite]
-                FetchData[Fetch Data]
+                QueryTranslation[Query Translation + other tools]
             end
 
             subgraph "Code Tools"
-                UploadToS3[Upload To S3 ]
+                UploadToS3[Upload To S3]
             end
 
             subgraph "Weather Tools"
-                GetLatLong[Get Lat Long]
-                GetWeather[Get Weather]
+                GetLatLong[Get Lat Long + other tools]
             end
 
             subgraph "PPT Tools"
-                GeneratePPT[Generate Presentation]
+                GeneratePPT[Generate Presentation + other tools]
             end
 
         end
@@ -69,15 +63,8 @@ graph TB
     Orchestrator -->|Route Query| General
 
     WebSearch -->|Use| DuckDuckGo
-    WebSearch -->|Use| Wikipedia
-    WebSearch -->|Use| YahooFinance
-    WebSearch -->|Use| Summarizer
     Retriever -->|Use| QueryTranslation
-    Retriever -->|Use| QueryRewrite
-    Retriever -->|Use| FetchData
-    CodeGen -->|Use| UploadToS3
     Weather -->|Use| GetLatLong
-    Weather -->|Use| GetWeather
     PPTGen -->|Use| GeneratePPT
     
     WebSearch -->|Search| Bedrock
