@@ -95,8 +95,7 @@ graph TB
     classDef external fill:#bfb,stroke:#333,stroke-width:2px
     
     class WebSearch,Retriever,CodeGen,Weather,PPTGen,General agent
-    class DuckDuckGo,Wikipedia,YahooFinance,Summarizer,QueryTranslation,QueryRewrite,FetchData,
-    UploadToS3,GetLatLong,GetWeather,GeneratePPT tool
+    class DuckDuckGo,Wikipedia,YahooFinance,Summarizer,QueryTranslation,QueryRewrite,FetchData,UploadToS3,GetLatLong,GetWeather,GeneratePPT tool
     class Orchestrator service
     class Bedrock,OpenSearch,S3,WeatherAPI external
 ```
