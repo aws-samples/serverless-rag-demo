@@ -142,8 +142,11 @@ class ApiGw_Stack(Stack):
         addtional_libs_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'additional-libs-layer-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["addtional_libs_layer_name"]}:1')
         
-        agentic_libs_layer_name = _lambda.LayerVersion.from_layer_version_arn(self, f'agentic-libs-layer-{env_name}',
-                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["agentic_libs_layer_name"]}:1')
+        agentic_libs_layer_name = _lambda.LayerVersion.from_layer_version_arn(self, f'strands-layer-name-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["strands_layer_name"]}:1')
+        
+        agentic_tools_layer_name = _lambda.LayerVersion.from_layer_version_arn(self, f'agentic-tools-layer-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["agents_tools_layer_name"]}:1')
             
         langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
@@ -157,7 +160,8 @@ class ApiGw_Stack(Stack):
         bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
                               function_name=env_params['bedrock_indexing_function_name'],
                               code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/index_lambda/')),
-                              runtime=_lambda.Runtime.PYTHON_3_10,
+                              runtime=_lambda.Runtime.PYTHON_3_12,
+                              architecture=_lambda.Architecture.ARM_64,
                               handler="index.handler",
                               role=custom_lambda_role,
                               timeout=_cdk.Duration.seconds(600),
@@ -171,12 +175,16 @@ class ApiGw_Stack(Stack):
                               },
                               memory_size=3000,
                               layers= [addtional_libs_layer, langchainpy_layer, pdfpy_layer])
-        
+        multi_agent_model = 'anthropic.claude-3-7-sonnet-20250219-v1:0'
+        model_region = region.split('-')[0]
+        inference_profile_id = f"{model_region}.{multi_agent_model}"
+        print(f'Inference Profile ID: {inference_profile_id}')
         lambda_function = bedrock_indexing_lambda_function
         bedrock_querying_lambda_function = _lambda.Function(self, f'llm-bedrock-query-{env_name}',
                               function_name=env_params['bedrock_querying_function_name'],
                               code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/query_lambda/')),
-                              runtime=_lambda.Runtime.PYTHON_3_10,
+                              runtime=_lambda.Runtime.PYTHON_3_12,
+                              architecture=_lambda.Architecture.ARM_64,
                               handler="query_rag_bedrock.handler",
                               role=custom_lambda_role,
                               timeout=_cdk.Duration.seconds(300),
@@ -189,10 +197,12 @@ class ApiGw_Stack(Stack):
                                             'S3_BUCKET_NAME': bucket_name,
                                             'EMBED_MODEL_ID': embed_model_id,
                                             'IS_BEDROCK_KB': 'no',
-                                            'CONVERSATIONS_DYNAMO_TABLE_NAME': env_params['conversations_dynamo_table_name']
+                                            'CONVERSATIONS_DYNAMO_TABLE_NAME': env_params['conversations_dynamo_table_name'],
+                                            'MULTI_AGENT_MODEL': inference_profile_id
                               },
                               memory_size=3000,
-                              layers= [addtional_libs_layer, agentic_libs_layer_name, langchainpy_layer, pdfpy_layer]
+                            layers= [addtional_libs_layer, agentic_libs_layer_name, agentic_tools_layer_name, pdfpy_layer]
+                            #   layers= [addtional_libs_layer, langchainpy_layer, pdfpy_layer]
                             )
         
         websocket_api = _cdk.aws_apigatewayv2.CfnApi(self, f'bedrock-streaming-response-{env_name}',

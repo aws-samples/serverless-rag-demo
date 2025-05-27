@@ -2,21 +2,18 @@ import boto3
 from os import getenv
 from opensearchpy import OpenSearch, RequestsHttpConnection, exceptions
 from requests_aws4auth import AWS4Auth
-import requests
 from requests.auth import HTTPBasicAuth
-import os
 import json
 from decimal import Decimal
 import logging
-import base64
 import datetime
-import csv
-import re
 import requests
-import subprocess
-import sys
+
 import json
 
+"""
+In here for backward compatibility with non-agentic code
+"""
 from datetime import datetime, timedelta
 
 date = datetime.now()

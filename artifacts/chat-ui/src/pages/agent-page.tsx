@@ -34,16 +34,13 @@ function AgentPage(props: AppPage) {
         },
       ]);
     } else if (type === ChatMessageType.AI) {
-      setMessages((prevMessages) => [
-        ...prevMessages.splice(0, prevMessages.length - 1),
-        {
-          type: ChatMessageType.AI,
-          content: message,
-        },
-      ]);
+      setMessages((prevMessages) => {
+        const lastMessage = prevMessages[prevMessages.length - 1];
+        lastMessage.content += message;
+        return [...prevMessages];
+      });
       setRunning(false);
     }
-
   };
   return (
     <ContentLayout
@@ -69,6 +66,5 @@ function AgentPage(props: AppPage) {
     </ContentLayout>
   );
 }
-
 
 export default withAuthenticator(AgentPage)
