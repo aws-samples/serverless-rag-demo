@@ -26,6 +26,7 @@ graph TB
 
         subgraph "External Services"
             Bedrock[Amazon Bedrock]
+            Web [DuckDuckGo Wikipedia YahooFin]
             OpenSearch[OpenSearch]
             S3[S3 Storage]
             WeatherAPI[OpenWeatherMap]
@@ -41,12 +42,13 @@ graph TB
     Orchestrator -->|Route Query| General
 
     
-    WebSearch -->|Search| Bedrock
+    WebSearch -->|Summarize| Bedrock
+    WebSearch -->|Search| Web
     Retriever -->|Query| OpenSearch
-    Retriever -->|Store| S3
     CodeGen -->|Generate| Bedrock
-    Weather -->|Forecast| WeatherAPI
-    PPTGen -->|Generate| Bedrock
+    CodeGen -->|Store| S3
+    Weather -->|Query| WeatherAPI
+    PPTGen -->|Generate xml| Bedrock
     PPTGen -->|Store| S3
     General -->|Chat| Bedrock
 
@@ -57,7 +59,7 @@ graph TB
     
     class WebSearch,Retriever,CodeGen,Weather,PPTGen,General agent
     class Orchestrator service
-    class Bedrock,OpenSearch,S3,WeatherAPI external
+    class Bedrock,OpenSearch,S3,Web,WeatherAPI external
 ```
 
 ## Installation
