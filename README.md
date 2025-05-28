@@ -53,7 +53,7 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 <details>
   <summary><b> Latest project updates </b></summary>
-  * 28-May-2025 Multi-Agent Orchestration now through [Strands SDK](https://strandsagents.com/latest/)
+  * 28-May-2025 Multi-Agent Orchestration now through Strands SDK
   * 08-Nov-2024 Supports Claude-3.5 Haiku for RAG/OCR/PII Identification/Sentiment Analysis
   * 29-Oct-2024 Supports Claude-3.5 Sonnet V2/Opus for RAG/OCR/PII Identification/Sentiment Analysis
   * 1-Sept-204 Document Aware chunking strategy, to answer questions comparing several documents. For example: What did I say in Doc 1 that I contradict in Doc 7 ?
