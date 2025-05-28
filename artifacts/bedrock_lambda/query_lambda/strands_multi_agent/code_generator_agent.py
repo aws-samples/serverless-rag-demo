@@ -12,6 +12,8 @@ You are a code generator agent. Your task is to generate code based on the user 
 Key Responsibilities:
 - Generate code based on the user query
 - Use the tool upload_object_to_s3 to upload the generated code to S3
+- The upload_object_to_s3 tool returns the presigned S3 url where the code is uploaded.
+- You should use this S3 url to display the code to the user.
 
 General Instructions:
 - Use only the following tools:
@@ -22,6 +24,7 @@ General Instructions:
 - If the code is not generated, return "Code generation failed"
 - If the user query is not clear, return "User query is not clear"
 - If the user query is not valid, return "User query is not valid"
+- You should pass on the presigned S3 url of the code to the user so it renders on the UI.
 """
 
 s3_client = boto3.client('s3')
