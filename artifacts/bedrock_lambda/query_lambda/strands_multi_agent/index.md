@@ -26,7 +26,7 @@ graph TB
 
         subgraph "External Services"
             Bedrock[Amazon Bedrock]
-            Web [DuckDuckGo Wikipedia YahooFin]
+            Web[DuckDuckGo Wikipedia YahooFin]
             OpenSearch[OpenSearch]
             S3[S3 Storage]
             WeatherAPI[OpenWeatherMap]
