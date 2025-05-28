@@ -11,7 +11,7 @@ Widespread AI adoption is being driven by generative AI models that can generate
 > [!NOTE]
 > This repository offers a production ready easily deployable Generative AI solution with the below features:
 >   1. <b>Document chat</b>
->   2. <b>Multi-Agent collaboration</b>
+>   2. <b>Multi-Agent collaboration with Strands sdk</b>
 >   3. <b>Sentiment Analysis</b>
 >   4. <b>PII Redaction</b>
 >   5. <b>OCR</b>
@@ -53,7 +53,7 @@ Widespread AI adoption is being driven by generative AI models that can generate
 
 <details>
   <summary><b> Latest project updates </b></summary>
-  
+  * 28-May-2025 Multi-Agent Orchestration now through [Strands SDK](https://strandsagents.com/latest/)
   * 08-Nov-2024 Supports Claude-3.5 Haiku for RAG/OCR/PII Identification/Sentiment Analysis
   * 29-Oct-2024 Supports Claude-3.5 Sonnet V2/Opus for RAG/OCR/PII Identification/Sentiment Analysis
   * 1-Sept-204 Document Aware chunking strategy, to answer questions comparing several documents. For example: What did I say in Doc 1 that I contradict in Doc 7 ?
