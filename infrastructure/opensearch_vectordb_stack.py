@@ -34,7 +34,7 @@ class OpensearchVectorDbStack(NestedStack):
 
         data_access_policy = _oss.CfnAccessPolicy(self, f'sample-vectordb-data-{env_name}', name=f'sample-vectordb-data-{env_name}',
                                 type='data',
-                                policy="""[{\"Rules\":[{\"ResourceType\":\"index\",\"Resource\":[\"index/"""+ collection_name +"""/*\"], \"Permission\": [\"aoss:*\"]}, {\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ collection_name +"""\"], \"Permission\": [\"aoss:*\"]}], \"Principal\": [\"""" + lambda_role_arn + """\"]}]""")
+                                policy="""[{\"Rules\":[{\"ResourceType\":\"index\",\"Resource\":[\"index/"""+ collection_name +"""/*\"], \"Permission\": [\"aoss:*\"]}, {\"ResourceType\":\"collection\",\"Resource\":[\"collection/"""+ collection_name +"""\"], \"Permission\": [\"aoss:*\"]}], \"Principal\": [\"""" + lambda_role_arn + """\", \"arn:aws:iam::"""+ account_id +""":root\"]}]""")
         
         cfn_collection = _oss.CfnCollection(self, f"vector_db_collection_{env_name}",
             name=collection_name,
