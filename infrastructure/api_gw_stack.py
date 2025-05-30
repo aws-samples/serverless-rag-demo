@@ -141,7 +141,11 @@ class ApiGw_Stack(Stack):
         # These are created in buildspec-bedrock.yml file.
         addtional_libs_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'additional-libs-layer-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["addtional_libs_layer_name"]}:1')
+        # This is created in buildspec-bedrock.yml file.
+        addtional_libs_layer_x86 = _lambda.LayerVersion.from_layer_version_arn(self, f'additional-libs-layer-x86-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["addtional_libs_layer_name"]}-x86:1')
         
+        # This is created in buildspec-bedrock.yml file.
         agentic_libs_layer_name = _lambda.LayerVersion.from_layer_version_arn(self, f'strands-layer-name-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["strands_layer_name"]}:1')
         
@@ -151,17 +155,19 @@ class ApiGw_Stack(Stack):
         langchainpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}:1')
         
-        pdfpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'pdfpy-layer-{env_name}',
-                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["pypdf_layer"]}:1')
-        
+        langchainpy_layer_x86 = _lambda.LayerVersion.from_layer_version_arn(self, f'langchain-layer-x86-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["langchainpy_layer_name"]}-x86:1')
+        # This is created in buildspec-bedrock.yml file.
+        pdfpy_layer_x86 = _lambda.LayerVersion.from_layer_version_arn(self, f'pdfpy-layer-x86-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["pypdf_layer"]}-x86:1')
         print('--- Amazon Bedrock Deployment ---')
         
         
         bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
                               function_name=env_params['bedrock_indexing_function_name'],
                               code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/index_lambda/')),
-                              runtime=_lambda.Runtime.PYTHON_3_12,
-                              architecture=_lambda.Architecture.ARM_64,
+                              runtime=_lambda.Runtime.PYTHON_3_11,
+                              architecture=_lambda.Architecture.X86_64,
                               handler="index.handler",
                               role=custom_lambda_role,
                               timeout=_cdk.Duration.seconds(600),
@@ -174,7 +180,7 @@ class ApiGw_Stack(Stack):
                                             'INDEX_DYNAMO_TABLE_NAME': env_params['index_dynamo_table_name']
                               },
                               memory_size=3000,
-                              layers= [addtional_libs_layer, langchainpy_layer, pdfpy_layer])
+                              layers= [addtional_libs_layer_x86, langchainpy_layer_x86, pdfpy_layer_x86])
         multi_agent_model = 'anthropic.claude-3-7-sonnet-20250219-v1:0'
         model_region = region.split('-')[0]
         inference_profile_id = f"{model_region}.{multi_agent_model}"
