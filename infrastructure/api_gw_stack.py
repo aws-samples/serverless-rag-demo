@@ -169,7 +169,7 @@ class ApiGw_Stack(Stack):
         bedrock_indexing_lambda_function = _lambda.Function(self, f'llm-bedrock-index-{env_name}',
                               function_name=env_params['bedrock_indexing_function_name'],
                               code = _cdk.aws_lambda.Code.from_asset(os.path.join(os.getcwd(), 'artifacts/bedrock_lambda/index_lambda/')),
-                              runtime=_lambda.Runtime.PYTHON_3_11,
+                              runtime=_lambda.Runtime.PYTHON_3_12,
                               architecture=_lambda.Architecture.X86_64,
                               handler="index.handler",
                               role=custom_lambda_role,
