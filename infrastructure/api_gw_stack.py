@@ -160,6 +160,9 @@ class ApiGw_Stack(Stack):
         # This is created in buildspec-bedrock.yml file.
         pdfpy_layer_x86 = _lambda.LayerVersion.from_layer_version_arn(self, f'pdfpy-layer-x86-{env_name}',
                                                    f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["pypdf_layer"]}-x86:1')
+        
+        pdfpy_layer = _lambda.LayerVersion.from_layer_version_arn(self, f'pdfy-layer-{env_name}',
+                                                   f'arn:aws:lambda:{region}:{account_id}:layer:{env_params["pypdf_layer"]}:1')
         print('--- Amazon Bedrock Deployment ---')
         
         
