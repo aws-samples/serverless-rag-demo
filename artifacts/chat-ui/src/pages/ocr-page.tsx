@@ -17,9 +17,21 @@ import axios from "axios";
 import config from "../config.json";
 import { AppContext } from "../common/context";
 import defaultConfig from "../default-properties.json";
+import { transformModels } from "../utils/modelRegionTransformer";
+import { ModelSelector } from "../components/ModelSelector";
 
 const documentConfig = defaultConfig["document-chat"]["config"]
 const ocr_placeholder = defaultConfig["ocr"]["defaultOCRPlaceholder"]
+
+interface Model {
+  label: string;
+  value: string;
+}
+
+interface Language {
+  label: string;
+  value: string;
+}
 var base64File = []
 var files = []
 var msgs = null
@@ -37,8 +49,8 @@ function OcrPage(props: AppPage) {
   const [alertMsg, setAlertMsg] = useState("")
   const [alertType, setAlertType] = useState("error")
   const [modalVisible, setModalVisible] = useState(false)
-  const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
-  const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language>(documentConfig["languages"][0])
+  const [selectedModelOption, setSelectedModelOption] = useState<Model>(transformModels(documentConfig["models"])[0]);
   const [inputText, setInputText] = useState("Extract data from the given document");
 
   useEffect(() => {
@@ -350,14 +362,9 @@ function OcrPage(props: AppPage) {
             fitHeight>
             <SpaceBetween size="m">
               <FormField label="Model">
-                <Select
-                  selectedOption={selectedModelOption}
-                  onChange={({ detail }) =>
-                    setSelectedModelOption(detail.selectedOption)
-                  }
-                  options={documentConfig["models"]}
-                  expandToViewport
-                  triggerVariant="option"
+                <ModelSelector
+                  selectedModel={selectedModelOption}
+                  onModelSelect={setSelectedModelOption}
                 />
               </FormField>
 
