@@ -15,7 +15,13 @@ import * as React from "react"
 import { AppContext } from "../common/context";
 import config from "../config.json";
 import defaultConfig from "../default-properties.json";
+import { ModelSelector } from "../components/ModelSelector";
+import { transformModels } from "../utils/modelRegionTransformer";
 
+interface Model {
+  label: string;
+  value: string;
+}
 const default_customer_review = defaultConfig["sentiment"]["defaultReview"]
 const default_sentiment_placeholder = defaultConfig["sentiment"]["defaultSentiment"]
 const documentConfig = defaultConfig["document-chat"]["config"]
@@ -26,7 +32,7 @@ function SentimentPage(props: AppPage) {
   const [modalVisible, setModalVisible] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState(documentConfig["languages"][0])
   const [checkVectorDb, setCheckVectorDb] = useState(true);
-  const [selectedModelOption, setSelectedModelOption] = useState(documentConfig["models"][0]);
+  const [selectedModelOption, setSelectedModelOption] = useState<Model>(transformModels(documentConfig["models"])[0]);
   const [isRunning, setRunning] = useState(false);
   const [isDisabled, setDisabled] = useState(false);
   const [out, setOut] = React.useState("");
@@ -181,14 +187,9 @@ function SentimentPage(props: AppPage) {
             fitHeight>
             <SpaceBetween size="m">
               <FormField label="Model">
-                <Select
-                  selectedOption={selectedModelOption}
-                  onChange={({ detail }) =>
-                    setSelectedModelOption(detail.selectedOption)
-                  }
-                  options={documentConfig["models"]}
-                  expandToViewport
-                  triggerVariant="option"
+                <ModelSelector
+                  selectedModel={selectedModelOption}
+                  onModelSelect={setSelectedModelOption}
                 />
               </FormField>
 
