@@ -82,7 +82,7 @@
       "strands_layer_name": "strands-utils-layer",
       "agents_tools_layer_name": "sagents-tools-layer",
       "langchainpy_layer_name": "langchain-text-splitters-layer",
-      "pypdf_layer": "pypdf-pil-layer",
+      "pypdf_layer": "srd-pypdf-layer",
       "index_dynamo_table_name": "rag-llm-index-table-dev",
       "conversations_dynamo_table_name": "rag-llm-conversations-table-dev"
     },
@@ -105,7 +105,7 @@
       "strands_layer_name": "strands-utils-layer",
       "agents_tools_layer_name": "sagents-tools-layer",
       "langchainpy_layer_name": "langchain-text-splitters-layer",
-      "pypdf_layer": "pypdf-pil-layer",
+      "pypdf_layer": "srd-pypdf-layer",
       "index_dynamo_table_name": "rag-llm-index-table-qa",
       "conversations_dynamo_table_name": "rag-llm-conversations-table-qa"
     },
@@ -128,7 +128,7 @@
       "strands_layer_name": "strands-utils-layer",
       "agents_tools_layer_name": "sagents-tools-layer",
       "langchainpy_layer_name": "langchain-text-splitters-layer",
-      "pypdf_layer": "pypdf-pil-layer",
+      "pypdf_layer": "srd-pypdf-layer",
       "index_dynamo_table_name": "rag-llm-index-table-sandbox",
       "conversations_dynamo_table_name": "rag-llm-conversations-table-sandbox"
     }
