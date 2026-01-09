@@ -23,7 +23,7 @@
     "react-doc-viewer": "^0.1.13",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.1",
-    "react-router-dom": "^6.22.0",
+    "react-router-dom": "^6.30.3",
     "react-textarea-autosize": "^8.5.3",
     "react-use-websocket": "^4.8.1",
     "remark-gfm": "^4.0.0",
