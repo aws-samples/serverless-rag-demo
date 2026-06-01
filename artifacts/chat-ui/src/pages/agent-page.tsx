@@ -35,11 +35,10 @@ function AgentPage(props: AppPage) {
       ]);
     } else if (type === ChatMessageType.AI) {
       setMessages((prevMessages) => {
-        const lastMessage = prevMessages[prevMessages.length - 1];
-        lastMessage.content += message;
-        return [...prevMessages];
+        const prev = prevMessages.slice(0, prevMessages.length - 1);
+        const last = prevMessages[prevMessages.length - 1];
+        return [...prev, { ...last, content: message }];
       });
-      setRunning(false);
     }
   };
   return (
