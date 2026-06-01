@@ -71,6 +71,33 @@ class CognitoStack(Stack):
             ],
         )
 
+        # IAM role for Bedrock Evaluation service
+        eval_service_role = iam.Role(
+            self, f"srd-eval-service-role-{env_name}",
+            assumed_by=iam.ServicePrincipal("bedrock.amazonaws.com"),
+            inline_policies={
+                "EvalKBAccess": iam.PolicyDocument(statements=[
+                    iam.PolicyStatement(
+                        actions=["bedrock:Retrieve", "bedrock:RetrieveAndGenerate"],
+                        resources=[f"arn:aws:bedrock:{region}:{account_id}:knowledge-base/{knowledge_base_id}"],
+                    ),
+                    iam.PolicyStatement(
+                        actions=["bedrock:InvokeModel"],
+                        resources=[
+                            f"arn:aws:bedrock:{region}::foundation-model/anthropic.claude-*",
+                            f"arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
+                        ],
+                    ),
+                ]),
+                "EvalS3Access": iam.PolicyDocument(statements=[
+                    iam.PolicyStatement(
+                        actions=["s3:GetObject", "s3:PutObject"],
+                        resources=[f"arn:aws:s3:::{data_bucket_name}/evaluations/*"],
+                    ),
+                ]),
+            },
+        )
+
         # IAM role for authenticated users — allows invoking AgentCore runtimes
         authenticated_role = iam.Role(
             self, f"srd-cognito-auth-role-{env_name}",
@@ -126,6 +153,12 @@ class CognitoStack(Stack):
                         ],
                         resources=["*"],
                     ),
+                    iam.PolicyStatement(
+                        sid="PassEvalRole",
+                        actions=["iam:PassRole"],
+                        resources=[eval_service_role.role_arn],
+                        conditions={"StringEquals": {"iam:PassedToService": "bedrock.amazonaws.com"}},
+                    ),
                 ]),
                 "S3EvalAndFeedback": iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
@@ -147,33 +180,6 @@ class CognitoStack(Stack):
             self, f"srd-identity-pool-roles-{env_name}",
             identity_pool_id=identity_pool.ref,
             roles={"authenticated": authenticated_role.role_arn},
-        )
-
-        # IAM role for Bedrock Evaluation service
-        eval_service_role = iam.Role(
-            self, f"srd-eval-service-role-{env_name}",
-            assumed_by=iam.ServicePrincipal("bedrock.amazonaws.com"),
-            inline_policies={
-                "EvalKBAccess": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        actions=["bedrock:Retrieve", "bedrock:RetrieveAndGenerate"],
-                        resources=[f"arn:aws:bedrock:{region}:{account_id}:knowledge-base/{knowledge_base_id}"],
-                    ),
-                    iam.PolicyStatement(
-                        actions=["bedrock:InvokeModel"],
-                        resources=[
-                            f"arn:aws:bedrock:{region}::foundation-model/anthropic.claude-*",
-                            f"arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
-                        ],
-                    ),
-                ]),
-                "EvalS3Access": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        actions=["s3:GetObject", "s3:PutObject"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}/evaluations/*"],
-                    ),
-                ]),
-            },
         )
 
         # Outputs
