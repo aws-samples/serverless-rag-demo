@@ -191,7 +191,7 @@ export async function listEvalJobs(idToken: string): Promise<EvalJobSummary[]> {
 
     const response = await bedrock.send(new ListEvaluationJobsCommand({
         maxResults: 20,
-        sortBy: "CreationDate",
+        sortBy: "CreationTime",
         sortOrder: "Descending",
     }));
 
