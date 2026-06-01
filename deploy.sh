@@ -98,7 +98,13 @@ echo "  [D] Deploying AgentCore Runtimes..."
 # Extract Cognito values from CDK outputs
 COGNITO_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"user-pool-id\")) | .value" cdk-outputs.json)
 COGNITO_CLIENT_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"client-id\")) | .value" cdk-outputs.json)
-DISCOVERY_URL="https://cognito-idp.${REGION}.amazonaws.com/${COGNITO_POOL_ID}/.well-known/openid-configuration"
+COGNITO_IDENTITY_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"identity-pool-id\")) | .value" cdk-outputs.json)
+EVAL_ROLE_ARN=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"eval-role-arn\")) | .value" cdk-outputs.json)
+
+# Get Knowledge Base values from CDK outputs
+KB_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"kb-id\")) | .value" cdk-outputs.json)
+DATA_BUCKET=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"data-bucket\")) | .value" cdk-outputs.json)
+DATA_SOURCE_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"data-source-id\")) | .value" cdk-outputs.json)
 
 # Get ECR image URIs from CDK outputs
 RAG_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"rag-query-image\")) | .value" cdk-outputs.json)
@@ -107,6 +113,9 @@ MULTI_AGENT_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | selec
 # Get IAM role ARNs
 RAG_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"rag-query-role\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
 MULTI_AGENT_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multi-agent-role\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
+
+# Environment variables for containers (dynamically extracted from CDK outputs)
+RUNTIME_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-sonnet-4-6\"}"
 
 # Helper: deploy a single AgentCore runtime (idempotent — creates or updates)
 # Prints the runtime ARN to stdout; logs to stderr
@@ -124,14 +133,14 @@ deploy_runtime() {
         --query "agentRuntimeSummaries[?agentRuntimeName=='$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
 
     if [[ "$RUNTIME_ARN" == "None" || -z "$RUNTIME_ARN" ]]; then
-        # Create new runtime
+        # Create new runtime (SigV4 auth — browser uses Identity Pool for temp creds)
         RUNTIME_ARN=$(aws bedrock-agentcore-control create-agent-runtime \
             --agent-runtime-name "$RUNTIME_NAME" \
             --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$IMAGE_URI\"}}" \
             --role-arn "$ROLE_ARN" \
             --network-configuration '{"networkMode":"PUBLIC"}' \
-            --authorizer-configuration "{\"customJWTAuthorizer\":{\"discoveryUrl\":\"$DISCOVERY_URL\",\"allowedClients\":[\"$COGNITO_CLIENT_ID\"]}}" \
             --protocol-configuration '{"serverProtocol":"HTTP"}' \
+            --environment-variables "$RUNTIME_ENV_VARS" \
             --region "$REGION" \
             --query 'agentRuntimeArn' --output text)
         echo "      Created: $RUNTIME_ARN" >&2
@@ -145,12 +154,15 @@ deploy_runtime() {
             --region "$REGION" > /dev/null
         echo "      Endpoint created" >&2
     else
-        # Update existing runtime with new container image
+        # Update existing runtime with new container image and env vars
         local RUNTIME_ID
         RUNTIME_ID=$(echo "$RUNTIME_ARN" | awk -F/ '{print $NF}')
         aws bedrock-agentcore-control update-agent-runtime \
             --agent-runtime-id "$RUNTIME_ID" \
             --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$IMAGE_URI\"}}" \
+            --role-arn "$ROLE_ARN" \
+            --network-configuration '{"networkMode":"PUBLIC"}' \
+            --environment-variables "$RUNTIME_ENV_VARS" \
             --region "$REGION" > /dev/null 2>&1 || true
         echo "      Updated: $RUNTIME_ARN (new image deployed)" >&2
     fi
@@ -167,10 +179,19 @@ RAG_RUNTIME_ARN=$(deploy_runtime "$RAG_RUNTIME_NAME" "$RAG_IMAGE" "$RAG_ROLE_ARN
 MA_RUNTIME_NAME="srd_multi_agent_${ENV_NAME}"
 MA_RUNTIME_ARN=$(deploy_runtime "$MA_RUNTIME_NAME" "$MULTI_AGENT_IMAGE" "$MULTI_AGENT_ROLE_ARN" "Multi-Agent runtime")
 
-# Step E: Update runtime-config.json with AgentCore WebSocket URLs
+# Create CloudWatch log groups for runtimes (AgentCore doesn't auto-create these)
+RAG_RUNTIME_ID=$(echo "$RAG_RUNTIME_ARN" | awk -F/ '{print $NF}')
+MA_RUNTIME_ID=$(echo "$MA_RUNTIME_ARN" | awk -F/ '{print $NF}')
+for LG_SUFFIX in "${RAG_RUNTIME_NAME}_endpoint" "DEFAULT"; do
+    aws logs create-log-group --log-group-name "/aws/bedrock-agentcore/runtimes/${RAG_RUNTIME_ID}-${LG_SUFFIX}" --region "$REGION" 2>/dev/null || true
+done
+for LG_SUFFIX in "${MA_RUNTIME_NAME}_endpoint" "DEFAULT"; do
+    aws logs create-log-group --log-group-name "/aws/bedrock-agentcore/runtimes/${MA_RUNTIME_ID}-${LG_SUFFIX}" --region "$REGION" 2>/dev/null || true
+done
+echo "      Log groups created" >&2
+
+# Step E: Update runtime-config.json with AgentCore Runtime ARNs
 echo "  [E] Updating runtime-config.json..."
-RAG_WS_URL="wss://bedrock-agentcore.${REGION}.amazonaws.com/runtimes/${RAG_RUNTIME_ARN}/ws"
-MA_WS_URL="wss://bedrock-agentcore.${REGION}.amazonaws.com/runtimes/${MA_RUNTIME_ARN}/ws"
 
 # Get the UI bucket name
 UI_BUCKET=$(jq -r ".[\"SRD-CloudFront-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"ui-url\")) | .value" cdk-outputs.json 2>/dev/null | head -1)
@@ -181,9 +202,14 @@ cat <<RCEOF | aws s3 cp - "s3://${UI_BUCKET_NAME}/runtime-config.json" --content
 {
   "cognitoUserPoolId": "$COGNITO_POOL_ID",
   "cognitoClientId": "$COGNITO_CLIENT_ID",
+  "cognitoIdentityPoolId": "$COGNITO_IDENTITY_POOL_ID",
   "cognitoRegion": "$REGION",
-  "ragWebSocketUrl": "$RAG_WS_URL",
-  "multiAgentWebSocketUrl": "$MA_WS_URL"
+  "ragRuntimeArn": "$RAG_RUNTIME_ARN",
+  "multiAgentRuntimeArn": "$MA_RUNTIME_ARN",
+  "dataBucketName": "$DATA_BUCKET",
+  "knowledgeBaseId": "$KB_ID",
+  "dataSourceId": "$DATA_SOURCE_ID",
+  "evalRoleArn": "$EVAL_ROLE_ARN"
 }
 RCEOF
 echo "  Updated runtime-config.json with AgentCore endpoints"
@@ -207,6 +233,4 @@ if command -v jq &>/dev/null && [[ -f cdk-outputs.json ]]; then
 fi
 echo "  RAG Runtime:     $RAG_RUNTIME_ARN"
 echo "  Agent Runtime:   $MA_RUNTIME_ARN"
-echo "  RAG WebSocket:   $RAG_WS_URL"
-echo "  Agent WebSocket: $MA_WS_URL"
 echo ""
