@@ -5,6 +5,7 @@ from aws_cdk import Tags
 from infrastructure.opensearch_nextgen_stack import OpensearchNextgenStack
 from infrastructure.knowledge_base_stack import KnowledgeBaseStack
 from infrastructure.agentcore_stack import AgentCoreStack
+from infrastructure.cognito_stack import CognitoStack
 from infrastructure.cloudfront_hosting_stack import CloudFrontHostingStack
 
 app = cdk.App()
@@ -14,7 +15,7 @@ region = os.getenv("CDK_DEFAULT_REGION")
 env = cdk.Environment(account=account_id, region=region)
 env_name = app.node.try_get_context("environment_name")
 
-# Stack 1: AOSS Collection + Index (deployed independently, survives downstream failures)
+# Stack 1: AOSS Collection + Index Creator Lambda
 kb_role_arn = f"arn:aws:iam::{account_id}:role/srd-kb-role-{env_name}"
 oss_stack = OpensearchNextgenStack(
     app, f"SRD-AOSS-{env_name}",
@@ -44,15 +45,20 @@ agentcore_stack = AgentCoreStack(
 agentcore_stack.add_dependency(kb_stack)
 Tags.of(agentcore_stack).add("project", "serverless-rag-demo-v2")
 
-# Stack 4: CloudFront Hosting
+# Stack 4: Cognito Auth
+cognito_stack = CognitoStack(app, f"SRD-Auth-{env_name}", env=env)
+Tags.of(cognito_stack).add("project", "serverless-rag-demo-v2")
+
+# Stack 5: CloudFront Hosting (depends on Cognito for runtime-config)
 cf_stack = CloudFrontHostingStack(
     app, f"SRD-CloudFront-{env_name}",
-    cognito_user_pool_id="PLACEHOLDER",
-    cognito_client_id="PLACEHOLDER",
+    cognito_user_pool_id=cognito_stack.user_pool_id,
+    cognito_client_id=cognito_stack.client_id,
     rest_endpoint_url=f"https://placeholder.execute-api.{region}.amazonaws.com/{env_name}/rag/",
     websocket_url=f"wss://placeholder.execute-api.{region}.amazonaws.com/{env_name}",
     env=env,
 )
+cf_stack.add_dependency(cognito_stack)
 cf_stack.add_dependency(agentcore_stack)
 Tags.of(cf_stack).add("project", "serverless-rag-demo-v2")
 
