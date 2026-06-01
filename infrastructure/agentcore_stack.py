@@ -47,7 +47,7 @@ class AgentCoreStack(Stack):
             self, f"srd-multi-agent-role-{env_name}",
             assumed_by=iam.CompositePrincipal(
                 iam.ServicePrincipal("bedrock.amazonaws.com"),
-                iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+                iam.ServicePrincipal("bedrock-agentcore.amazonaws.com"),
             ),
             inline_policies={
                 "MultiAgentPolicy": iam.PolicyDocument(statements=[
@@ -76,7 +76,7 @@ class AgentCoreStack(Stack):
             self, f"srd-rag-query-role-{env_name}",
             assumed_by=iam.CompositePrincipal(
                 iam.ServicePrincipal("bedrock.amazonaws.com"),
-                iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
+                iam.ServicePrincipal("bedrock-agentcore.amazonaws.com"),
             ),
             inline_policies={
                 "RAGQueryPolicy": iam.PolicyDocument(statements=[
@@ -108,6 +108,12 @@ class AgentCoreStack(Stack):
         CfnOutput(self, f"rag-query-image-{env_name}",
                   value=rag_query_image.image_uri,
                   description="RAG Query container image URI")
+        CfnOutput(self, f"multi-agent-role-{env_name}",
+                  value=multi_agent_role.role_arn,
+                  description="Multi-Agent IAM role ARN")
+        CfnOutput(self, f"rag-query-role-{env_name}",
+                  value=rag_query_role.role_arn,
+                  description="RAG Query IAM role ARN")
 
         _cdk_nag.NagSuppressions.add_stack_suppressions(self, [
             _cdk_nag.NagPackSuppression(id="AwsSolutions-IAM5",
