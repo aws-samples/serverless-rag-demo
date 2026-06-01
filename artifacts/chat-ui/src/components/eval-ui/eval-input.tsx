@@ -2,7 +2,7 @@
 import { useState } from "react";
 import {
     Box, Button, Checkbox, Container, FileUpload, FormField,
-    Header, SpaceBetween, Tabs, Textarea, Toggle,
+    Header, Icon, Link, SpaceBetween, Tabs, Textarea, Toggle,
 } from "@cloudscape-design/components";
 import { ALL_METRICS, DEFAULT_METRICS, EvalQuestion } from "../../common/evaluation-service";
 
@@ -58,7 +58,7 @@ export function EvalInput({ onStartEvaluation, isRunning }: EvalInputProps) {
     };
 
     return (
-        <Container header={<Header variant="h2">Configure Evaluation</Header>}>
+        <Container header={<Header variant="h2" info={<Link href="#/evaluation" variant="info"><Icon name="status-info" /></Link>}>Configure Evaluation</Header>}>
             <SpaceBetween size="l">
                 <Toggle
                     checked={isGroundTruth}

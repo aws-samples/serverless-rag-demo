@@ -61,7 +61,8 @@ function EvalPageContent(props: AppPage) {
         try {
             const datasetUri = await uploadEvalDataset(questions, jobId, userEmail, idToken);
             const config = getRuntimeConfig();
-            const outputPrefix = `s3://${config.dataBucketName}/evaluations/${userEmail}/${jobId}/output/`;
+            const safeEmail = userEmail.replace(/[^-!_*'().a-z0-9A-Z]/g, "_");
+            const outputPrefix = `s3://${config.dataBucketName}/evaluations/${safeEmail}/${jobId}/output/`;
 
             const jobArn = await createEvalJob(jobName, datasetUri, outputPrefix, metrics, idToken);
 

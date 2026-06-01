@@ -40,7 +40,7 @@ export default function HomePage() {
                   color="text-body-secondary"
                   margin={{ top: "xs", bottom: "l" }}
                 >
-                  A fully managed serverless generative AI solution for various use cases, including Retrieval Augmented Generation, Sentiment Analysis, OCR, and Multi-Agent systems.
+                  A fully managed serverless generative AI solution for Retrieval Augmented Generation and Multi-Agent systems.
                 </Box>
               </Box>
             </Container>
@@ -51,29 +51,13 @@ export default function HomePage() {
       <SpaceBetween size="xxl">
         <Box>&nbsp;</Box>
         <Container>
-          <ColumnLayout borders="vertical" columns={5}>
+          <ColumnLayout borders="vertical" columns={2}>
             <div>
               <Box padding="l" variant="h3">Document Chat</Box>
-              {/* <Box variant="p">Retrieval Augmented Generation Solution</Box> */}
             </div>
             <div>
               <Box padding="l" variant="h3">Multi Agent</Box>
-              {/* <Box variant="p">This solution comprises of multiple-generative AI agents working in tandem to solve a user-problem</Box> */}
             </div>
-            <div>
-              <Box padding="l" variant="h3">Sentiment Analysis</Box>
-              {/* <Box variant="p"></Box> */}
-            </div>
-            <div>
-              <Box padding="l" variant="h3">OCR</Box>
-              {/* <Box variant="p"></Box> */}
-            </div>
-            <div>
-              <Box padding="l" variant="h3">PII Redaction</Box>
-              {/* <Box variant="p"></Box> */}
-            </div>
-
-            
           </ColumnLayout>
         </Container>
 
@@ -133,85 +117,6 @@ export default function HomePage() {
 
 
 
-    <Container
-      media={{
-        content: (
-          <img
-            src="/images/sentiment.png"
-            alt="placeholder"
-          />
-        ),
-        position: "side",
-        width: "14%"
-      }}
-    >
-      <SpaceBetween direction="vertical" size="s">
-        <SpaceBetween direction="vertical" size="xxs">
-          <Box variant="h2">
-            <Link fontSize="heading-m" href="#/sentiment-analysis">
-              Sentiment Analysis
-            </Link>
-          </Box>
-        </SpaceBetween>
-        <Box variant="p">
-          Analyze sentiments of a customer review/tweet/Facebook post through foundation models. The model detects the emotion expressed in the review, rates the review on a scale of 1-10.
-        </Box>
-      </SpaceBetween>
-    </Container>
-
-
-
-    <Container
-      media={{
-        content: (
-          <img
-            src="/images/ocr.png"
-            alt="placeholder"
-          />
-        ),
-        position: "side",
-        width: "14%"
-      }}
-    >
-      <SpaceBetween direction="vertical" size="s">
-        <SpaceBetween direction="vertical" size="xxs">
-          <Box variant="h2">
-            <Link fontSize="heading-m" href="#/ocr">
-              OCR
-            </Link>
-          </Box>
-        </SpaceBetween>
-        <Box variant="p">
-          Perform OCR on PDFs/Images through foundation models.
-        </Box>
-      </SpaceBetween>
-    </Container>
-
-    <Container
-      media={{
-        content: (
-          <img
-            src="/images/ocr.png"
-            alt="placeholder"
-          />
-        ),
-        position: "side",
-        width: "14%"
-      }}
-    >
-      <SpaceBetween direction="vertical" size="s">
-        <SpaceBetween direction="vertical" size="xxs">
-          <Box variant="h2">
-            <Link fontSize="heading-m" href="#/pii">
-              PII Redaction
-            </Link>
-          </Box>
-        </SpaceBetween>
-        <Box variant="p">
-          Identify and Redact PII(Personally Identifiable Information) through foundation models.
-        </Box>
-      </SpaceBetween>
-    </Container>
 
 
       </SpaceBetween>

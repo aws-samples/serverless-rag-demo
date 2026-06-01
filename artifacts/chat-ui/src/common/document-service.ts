@@ -5,7 +5,7 @@
 
 import { S3Client, ListObjectsV2Command, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { BedrockAgentClient, StartIngestionJobCommand } from "@aws-sdk/client-bedrock-agent";
+import { BedrockAgentClient, StartIngestionJobCommand, ListIngestionJobsCommand } from "@aws-sdk/client-bedrock-agent";
 import { getRuntimeConfig } from "../runtime-config";
 import { getAwsCredentials } from "./agentcore-ws";
 
@@ -176,6 +176,51 @@ export async function getDownloadPresignedUrl(
     });
 
     return getSignedUrl(s3, command, { expiresIn: 300 });
+}
+
+export interface IngestionStatus {
+    status: string; // STARTING | IN_PROGRESS | COMPLETE | FAILED | STOPPING | STOPPED
+    startedAt?: Date;
+    updatedAt?: Date;
+    documentsScanned?: number;
+    documentsIndexed?: number;
+    documentsFailed?: number;
+}
+
+/**
+ * Get the latest ingestion job status for the KB.
+ */
+export async function getIngestionStatus(idToken: string): Promise<IngestionStatus | null> {
+    const config = getRuntimeConfig();
+    const credentials = await getAwsCredentials(idToken);
+
+    const client = new BedrockAgentClient({
+        region: config.cognitoRegion,
+        credentials: {
+            accessKeyId: credentials.accessKeyId,
+            secretAccessKey: credentials.secretAccessKey,
+            sessionToken: credentials.sessionToken,
+        },
+    });
+
+    const response = await client.send(new ListIngestionJobsCommand({
+        knowledgeBaseId: config.knowledgeBaseId,
+        dataSourceId: config.dataSourceId,
+        maxResults: 1,
+        sortBy: { attribute: "STARTED_AT", order: "DESCENDING" },
+    }));
+
+    const job = response.ingestionJobSummaries?.[0];
+    if (!job) return null;
+
+    return {
+        status: job.status || "Unknown",
+        startedAt: job.startedAt,
+        updatedAt: job.updatedAt,
+        documentsScanned: job.statistics?.numberOfDocumentsScanned,
+        documentsIndexed: job.statistics?.numberOfNewDocumentsIndexed,
+        documentsFailed: job.statistics?.numberOfDocumentsFailed,
+    };
 }
 
 /**
