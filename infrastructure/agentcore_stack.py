@@ -65,9 +65,8 @@ class AgentCoreStack(Stack):
                     iam.PolicyStatement(
                         actions=["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
                         resources=[
-                            f"arn:aws:bedrock:{region}:{account_id}:inference-profile/{model_id}",
-                            f"arn:aws:bedrock:{region}::foundation-model/anthropic.claude-sonnet-4-6-v1:0",
-                            f"arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-6-v1:0",
+                            f"arn:aws:bedrock:{region}:{account_id}:inference-profile/*",
+                            f"arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
                         ],
                     ),
                     iam.PolicyStatement(
@@ -95,9 +94,8 @@ class AgentCoreStack(Stack):
                     iam.PolicyStatement(
                         actions=["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
                         resources=[
-                            f"arn:aws:bedrock:{region}:{account_id}:inference-profile/{model_id}",
-                            f"arn:aws:bedrock:{region}::foundation-model/anthropic.claude-sonnet-4-6-v1:0",
-                            f"arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-6-v1:0",
+                            f"arn:aws:bedrock:{region}:{account_id}:inference-profile/*",
+                            f"arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
                         ],
                     ),
                     iam.PolicyStatement(

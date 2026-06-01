@@ -17,7 +17,7 @@ export interface ChatUIProps {
   inputPlaceholderText?: string;
   sendButtonText?: string;
   showCopyButton?: boolean;
-  onSendMessage?: (message: string, type: string) => void;
+  onSendMessage?: (message: string, type: string, sources?: any[]) => void;
   userinfo?: any;
   notify_parent?: (message: string, notify_type: string) => void;
 }

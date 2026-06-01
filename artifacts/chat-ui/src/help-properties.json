@@ -30,5 +30,9 @@
     "pii": {
         "title": "PII",
         "description" : "Redact PII data"
+    },
+    "evaluation": {
+        "title": "RAG Evaluation",
+        "description": "<p>Evaluate your RAG system's quality using <a href='https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation.html'>Amazon Bedrock Evaluations</a>.</p><h3>Manual Entry (Reference-Free)</h3><p>Type one question per line. The system will generate answers from your Knowledge Base and score them without needing expected answers.</p><pre>What is the join process?\nHow do I submit a claim?\nWhat are the waiting periods?</pre><h3>File Upload (Reference-Free)</h3><p>Upload a JSON file with an array of questions:</p><pre>[{\"question\": \"What is the join process?\"}, {\"question\": \"How do I submit a claim?\"}]</pre><h3>File Upload (Ground Truth)</h3><p>Enable <b>Ground Truth Mode</b> and upload a JSON file with questions and expected answers:</p><pre>[{\"question\": \"What is the join process?\", \"expected_answer\": \"Submit application online, receive email confirmation...\"}, {\"question\": \"How do I claim?\", \"expected_answer\": \"Log into member portal, select Claims...\"}]</pre><h3>Metrics</h3><ul><li><b>Faithfulness</b> — Is the answer grounded in retrieved context? (no hallucination)</li><li><b>Correctness</b> — Is it factually correct?</li><li><b>Completeness</b> — Does it cover all relevant info?</li><li><b>Helpfulness</b> — Is it useful to the user?</li><li><b>LogicalCoherence</b> — Is the reasoning sound?</li><li><b>ContextRelevance</b> — Are retrieved chunks relevant?</li><li><b>ContextCoverage</b> — Do chunks cover what's needed?</li></ul><p><b>Tip:</b> Evaluations are async and typically take 2–5 minutes. You can navigate away and check results later in the Recent Evaluations table.</p>"
     }
 }

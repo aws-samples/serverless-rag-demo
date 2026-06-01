@@ -37,8 +37,7 @@ class CloudFrontHostingStack(Stack):
         self, scope: Construct, construct_id: str, *,
         cognito_user_pool_id: str,
         cognito_client_id: str,
-        rest_endpoint_url: str,
-        websocket_url: str,
+        cognito_identity_pool_id: str,
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -99,13 +98,14 @@ class CloudFrontHostingStack(Stack):
             distribution_paths=["/*"],
         )
 
-        # Deploy runtime-config.json separately
+        # Deploy runtime-config.json separately (deploy.sh overwrites with AgentCore URLs)
         runtime_config = {
             "cognitoUserPoolId": cognito_user_pool_id,
             "cognitoClientId": cognito_client_id,
+            "cognitoIdentityPoolId": cognito_identity_pool_id,
             "cognitoRegion": region,
-            "restEndpointUrl": rest_endpoint_url,
-            "websocketUrl": websocket_url,
+            "ragWebSocketUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
+            "multiAgentWebSocketUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
         }
 
         s3_deploy.BucketDeployment(

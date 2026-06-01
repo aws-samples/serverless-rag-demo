@@ -87,16 +87,15 @@ export async function uploadEvalDataset(
     const s3 = getS3Client(credentials);
 
     const jsonl = questions.map(q => {
-        const entry: any = {
-            conversationTurnContent: {
-                prompt: { content: [{ text: q.question }] },
-            },
+        const turn: any = {
+            prompt: { content: [{ text: q.question }] },
         };
         if (q.expected_answer) {
-            entry.conversationTurnContent.referenceResponse = {
-                content: [{ text: q.expected_answer }],
-            };
+            turn.referenceResponses = [
+                { content: [{ text: q.expected_answer }] },
+            ];
         }
+        const entry = { conversationTurns: [turn] };
         return JSON.stringify(entry);
     }).join("\n");
 
@@ -138,6 +137,11 @@ export async function createEvalJob(
                         metricNames: metrics,
                     },
                 ],
+                evaluatorModelConfig: {
+                    bedrockEvaluatorModels: [
+                        { modelIdentifier: `arn:aws:bedrock:${config.cognitoRegion}::foundation-model/amazon.nova-pro-v1:0` },
+                    ],
+                },
             },
         },
         inferenceConfig: {

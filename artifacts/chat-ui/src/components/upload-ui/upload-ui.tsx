@@ -1,288 +1,254 @@
-import { useContext, useEffect, useState } from "react";
-import { FileUpload, Button, SpaceBetween, Container, Header, Modal, Box, Table, Input, Grid } from "@cloudscape-design/components";
-import timeago from 'epoch-timeago';
+import { useContext, useEffect, useState, useMemo } from "react";
+import {
+  FileUpload, Button, SpaceBetween, Container, Header,
+  Modal, Box, Table, Toggle, StatusIndicator, Pagination
+} from "@cloudscape-design/components";
 import { LoadingBar } from "@cloudscape-design/chat-components";
-import axios from "axios";
-import config from '../../config.json'
 import { AppContext } from "../../common/context";
+import {
+  listDocuments, getUploadPresignedUrl, uploadMetadata,
+  deleteDocument, syncKnowledgeBase, DocumentInfo
+} from "../../common/document-service";
 
 export interface UploadDocProps {
   running?: boolean;
   notify_parent?: (message: string, notify_type: string) => void;
 }
+
 export function UploadUI(props: UploadDocProps) {
   const [value, setValue] = useState<File[]>([]);
-  const [tag, setTag] = useState();
   const [isLoading, setIsLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [userFiles, setUserFiles] = useState([]);
+  const [userFiles, setUserFiles] = useState<DocumentInfo[]>([]);
+  const [globalView, setGlobalView] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
   const appData = useContext(AppContext);
 
-  const refreshUserFileList = () => {
+  const getUserEmail = (): string => {
+    return appData.userinfo?.signInDetails?.loginId || appData.userinfo?.username || "";
+  };
+
+  const getIdToken = (): string => {
+    return appData.userinfo?.tokens?.idToken?.toString() || "";
+  };
+
+  const notify = (message: string, notify_type: string) => {
+    props.notify_parent?.(message, notify_type);
+  };
+
+  const refreshFileList = async () => {
     setIsLoading(true);
-    axios.get(`${config.apiUrl}get-indexed-files-by-user`, { headers: { authorization: appData.userinfo.tokens.idToken.toString() } })
-      .then((result) => {
-        setUserFiles(result.data.result)
-        setIsLoading(false);
-      })
-  }
+    try {
+      const docs = await listDocuments(getUserEmail(), getIdToken(), globalView);
+      setUserFiles(docs);
+    } catch (err: any) {
+      notify(`Failed to list documents: ${err.message}`, "error");
+    }
+    setIsLoading(false);
+  };
+
   useEffect(() => {
     if (appData.userinfo) {
-      refreshUserFileList()
+      refreshFileList();
     }
-  }, [appData])
+  }, [appData, globalView]);
 
-  function build_form_data(result, formdata) {
-    if ('fields' in result) {
-      for (var key in result['fields']) {
-        formdata.append(key, result['fields'][key])
-      }
-    }
-    return formdata
-  }
-
-  const notify = (message, notify_type) => {
-    props.notify_parent?.(message, notify_type);
-  }
-
-  const upload_file = (files: any) => {
+  const uploadFile = async () => {
+    if (value.length === 0) return;
     setIsLoading(true);
     setIsModalVisible(false);
-    for (var i = 0; i < value.length; i++) {
-      // remove the words after the last dot
-      var file_data = value[i]
-      var file_name = file_data['name'];
-      var period = file_name.lastIndexOf('.');
-      var file_name_no_ext = file_name.substring(0, period);
-      var fileExtension = file_name.substring(period + 1);
-      if(tag == null || tag == undefined || tag == '') {
-        notify("Please enter a tag for the file", "error")
-        return
-      }
-      axios.get(config.apiUrl + 'get-presigned-url', {
-        params: { "file_extension": fileExtension, "file_name": file_name_no_ext, "doc_title": tag },
-        headers: {
-          authorization: appData.userinfo.tokens.idToken.toString()
-        }
-      }) // Handle the response from backend here
-        .then(function (result) {
-          var formData = new FormData();
-          formData = build_form_data(result['data']['result'], formData)
-          formData.append('file', file_data);
-          var upload_url = result['data']['result']['url']
-          axios.post(upload_url, formData)
-            .then(function (result) {
-              setIsModalVisible(false)
-              notify("File uploaded successfully", "info")
-              closeModalandRefresh();
-            })
-        }).catch(function (err) {
-          console.log(err)
-          notify("File not uploaded " + err, "error")
-          setIsModalVisible(false)
 
-        })
-        // Catch errors if any
-        .catch((err) => {
-          console.log(err)
-          notify("File not uploaded " + err, "error")
-          setIsModalVisible(false)
+    const email = getUserEmail();
+    const idToken = getIdToken();
+
+    try {
+      for (const file of value) {
+        // Get presigned URL for upload
+        const presignedUrl = await getUploadPresignedUrl(
+          email, file.name, file.type || "application/octet-stream", idToken
+        );
+
+        // Upload file via presigned URL
+        const response = await fetch(presignedUrl, {
+          method: "PUT",
+          body: file,
+          headers: { "Content-Type": file.type || "application/octet-stream" },
         });
 
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        // Upload metadata sidecar
+        await uploadMetadata(email, file.name, idToken);
+      }
+
+      notify("Files uploaded successfully. Syncing knowledge base...", "info");
+      setValue([]);
+
+      // Trigger KB sync
+      await syncKnowledgeBase(idToken);
+      notify("Knowledge base sync started. Files will be searchable in a few minutes.", "info");
+
+      refreshFileList();
+    } catch (err: any) {
+      notify(`Upload failed: ${err.message}`, "error");
+      setIsLoading(false);
     }
-  }
+  };
 
-  const closeModalandRefresh = () => {
-    setValue([]);
-    setIsModalVisible(false);
-    setIsLoading(true)
-    setTimeout(() => {
-      refreshUserFileList();
-      setIsLoading(false)
-    }, 5000)
+  const handleDelete = async (doc: DocumentInfo) => {
+    if (!confirm(`Delete ${doc.fileName}?`)) return;
 
-  }
-
-  const deleteByKey = (keyid) => {
-    if (confirm(`Are you sure to delete ${keyid}`)) {
-      setIsLoading(true);
-      axios.post(`${config.apiUrl}del-file`, JSON.stringify({ s3_key: keyid }), { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
-        .then((result) => {
-          notify('File was successfully deleted', 'info');
-          setTimeout(() => {
-            refreshUserFileList();
-            setIsLoading(false);
-          }, 5000)
-
-        })
-        .catch((err) => {
-          notify('File was not deleted ' + err, 'error');
-          console.log(err)
-          refreshUserFileList()
-          setIsLoading(false);
-        })
+    setIsLoading(true);
+    try {
+      await deleteDocument(doc.key, getIdToken());
+      notify("File deleted. Syncing knowledge base...", "info");
+      await syncKnowledgeBase(getIdToken());
+      refreshFileList();
+    } catch (err: any) {
+      notify(`Delete failed: ${err.message}`, "error");
+      setIsLoading(false);
     }
-  }
+  };
 
-  const deleteIndex = () => {
-    if (confirm(`Are you sure to delete all your indexed data`)) {
-      setIsLoading(true);
-      axios.delete(`${config.apiUrl}index-documents`, 
-      { headers: { authorization: `Bearer ${appData.userinfo.tokens.idToken.toString()}` } })
-          .then((result) => {
-            notify('Index deleted successfully ', 'info');
-            setTimeout(() => {
-              refreshUserFileList();
-              setIsLoading(false);
-            }, 5000)
-  
-          })
-          .catch((err) => {
-            console.log(err)
-            notify('Index not deleted ' + err, 'error');
-            refreshUserFileList()
-            setIsLoading(false);
-          })
-    }
-  }
+  const paginatedFiles = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return userFiles.slice(start, start + PAGE_SIZE);
+  }, [userFiles, currentPage]);
+
+  const formatSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1048576).toFixed(1)} MB`;
+  };
 
   return (
     <Container
       fitHeight
       variant="embed"
-      header={<Header
-        actions={
-          <SpaceBetween direction="horizontal" size="s">
-            <Button iconName="refresh" onClick={() => refreshUserFileList()}>Refesh</Button>
-            <Button onClick={() => setIsModalVisible(true)} disabled={isLoading}>Upload File</Button>
-            <Button onClick={() => deleteIndex()}variant="primary" iconName="delete-marker" disabled={isLoading}>Delete Index</Button>
-          </SpaceBetween>
-
-        }
-        variant="h2">Upload you documents to index</Header>}
+      header={
+        <Header
+          actions={
+            <SpaceBetween direction="horizontal" size="s">
+              <Toggle
+                checked={globalView}
+                onChange={({ detail }) => { setGlobalView(detail.checked); setCurrentPage(1); }}
+              >
+                Show all users
+              </Toggle>
+              <Button iconName="refresh" onClick={refreshFileList} disabled={isLoading}>
+                Refresh
+              </Button>
+              <Button onClick={() => setIsModalVisible(true)} disabled={isLoading} variant="primary">
+                Upload File
+              </Button>
+            </SpaceBetween>
+          }
+          variant="h2"
+        >
+          Documents
+        </Header>
+      }
     >
       {isLoading && <LoadingBar variant="gen-ai" />}
       <Table
         variant="full-page"
-        renderAriaLive={({
-          firstIndex,
-          lastIndex,
-          totalItemsCount
-        }) =>
-          `Displaying items ${firstIndex} to ${lastIndex} of ${totalItemsCount}`
-        }
         columnDefinitions={[
           {
-            id: "file_id",
+            id: "fileName",
             header: "File Name",
-            cell: item => item.sort_key.split('-fileid-')[1] || "-",
-            sortingField: "file_id",
-            isRowHeader: true
+            cell: (item) => item.fileName,
+            sortingField: "fileName",
+            isRowHeader: true,
           },
           {
-            id: "file_index_status",
-            header: "Index Status",
-            cell: item => item.file_index_status || "-",
-            sortingField: "file_index_status",
-            isRowHeader: true
+            id: "owner",
+            header: "Owner",
+            cell: (item) => item.isOwner ? (
+              <StatusIndicator type="success">You</StatusIndicator>
+            ) : item.userEmail,
           },
           {
-            id: "errors",
-            header: "Message",
-            cell: item => item.idx_err_msg || "-",
-            sortingField: "update_epoch",
-            isRowHeader: true
+            id: "size",
+            header: "Size",
+            cell: (item) => formatSize(item.size),
           },
           {
-            id: "update_epoch",
-            header: "Last Update",
-            cell: item => timeago(item.update_epoch * 1000) || "-",
-            sortingField: "update_epoch"
+            id: "lastModified",
+            header: "Last Modified",
+            cell: (item) => item.lastModified.toLocaleDateString(),
           },
           {
             id: "action",
             header: "Action",
-            cell: item => {
-              if (item.file_index_status !== "success_index_delete")
-                return (<Button iconName="delete-marker" onClick={() => deleteByKey(item.file_id)}>Delete</Button>)
-              else
-                return null
-            }
-          }
+            cell: (item) =>
+              item.isOwner ? (
+                <Button iconName="delete-marker" onClick={() => handleDelete(item)} disabled={isLoading}>
+                  Delete
+                </Button>
+              ) : null,
+          },
         ]}
-        enableKeyboardNavigation
-        items={userFiles}
-        loadingText="Loading Files"
+        items={paginatedFiles}
+        loadingText="Loading documents..."
         wrapLines
         resizableColumns
         stickyHeader
         stripedRows
         sortingDisabled
+        pagination={
+          <Pagination
+            currentPageIndex={currentPage}
+            pagesCount={Math.ceil(userFiles.length / PAGE_SIZE)}
+            onChange={({ detail }) => setCurrentPage(detail.currentPageIndex)}
+          />
+        }
         empty={
-          <Box
-            margin={{ vertical: "xs" }}
-            textAlign="center"
-            color="inherit"
-          >
+          <Box margin={{ vertical: "xs" }} textAlign="center" color="inherit">
             <SpaceBetween size="m">
-              <b>No Files</b>
+              <b>No documents</b>
+              <p>Upload documents to start using RAG search.</p>
             </SpaceBetween>
           </Box>
         }
       />
+
       <Modal
         size="small"
-        onDismiss={() => {
-          if (!isLoading) {
-            setIsModalVisible(false)
-          }
-        }}
+        onDismiss={() => !isLoading && setIsModalVisible(false)}
         visible={isModalVisible}
         footer={
           <Box float="right">
             <SpaceBetween direction="horizontal" size="xs">
-              <Button variant="link" onClick={() => setIsModalVisible(false)} disabled={isLoading}>Cancel</Button>
-              <Button variant="primary" onClick={(event) => upload_file(event)} disabled={isLoading}>Save</Button>
+              <Button variant="link" onClick={() => setIsModalVisible(false)} disabled={isLoading}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={uploadFile} disabled={isLoading || value.length === 0}>
+                Upload
+              </Button>
             </SpaceBetween>
           </Box>
         }
-        header="Upload file"
+        header="Upload document"
       >
-
-<Grid
-      gridDefinition={[{ colspan: 5 }, { colspan: 10 }]}>
-        <div><Input onChange={({ detail }) => setTag(detail.value)} value={tag} placeholder="Doc Tag"/></div>
-        <div>
-      <FileUpload
-          accept=".pdf,.png,.jpg"
-          onChange={({ detail }) => {
-            setValue(detail.value);
-          }}
+        <FileUpload
+          accept=".pdf,.txt,.md,.html,.doc,.docx,.csv"
+          onChange={({ detail }) => setValue(detail.value)}
           value={value}
           i18nStrings={{
-            uploadButtonText: e =>
-              e ? "Choose files" : "Choose file",
-            dropzoneText: e =>
-              e
-                ? "Drop files to upload"
-                : "Drop file to upload",
-            removeFileAriaLabel: e =>
-              `Remove file ${e + 1}`,
+            uploadButtonText: (e) => (e ? "Choose files" : "Choose file"),
+            dropzoneText: (e) => (e ? "Drop files to upload" : "Drop file to upload"),
+            removeFileAriaLabel: (e) => `Remove file ${e + 1}`,
             limitShowFewer: "Show fewer files",
             limitShowMore: "Show more files",
-            errorIconAriaLabel: "Error"
+            errorIconAriaLabel: "Error",
           }}
           showFileLastModified
           showFileSize
-          showFileThumbnail
-        /></div>
-  </Grid>
-
-      
-        
+        />
       </Modal>
     </Container>
   );
-
-
 }

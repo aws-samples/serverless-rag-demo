@@ -115,7 +115,7 @@ RAG_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.ke
 MULTI_AGENT_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multi-agent-role\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
 
 # Environment variables for containers (dynamically extracted from CDK outputs)
-RUNTIME_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-sonnet-4-6\"}"
+RUNTIME_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-opus-4-6-v1\"}"
 
 # Helper: deploy a single AgentCore runtime (idempotent — creates or updates)
 # Prints the runtime ARN to stdout; logs to stderr

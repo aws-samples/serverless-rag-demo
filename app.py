@@ -46,7 +46,14 @@ agentcore_stack.add_dependency(kb_stack)
 Tags.of(agentcore_stack).add("project", "serverless-rag-demo-v2")
 
 # Stack 4: Cognito Auth
-cognito_stack = CognitoStack(app, f"SRD-Auth-{env_name}", env=env)
+cognito_stack = CognitoStack(
+    app, f"SRD-Auth-{env_name}",
+    data_bucket_name=kb_stack.data_bucket_name,
+    knowledge_base_id=kb_stack.knowledge_base_id,
+    data_source_id=kb_stack.data_source_id,
+    env=env,
+)
+cognito_stack.add_dependency(kb_stack)
 Tags.of(cognito_stack).add("project", "serverless-rag-demo-v2")
 
 # Stack 5: CloudFront Hosting (depends on Cognito for runtime-config)
@@ -54,8 +61,7 @@ cf_stack = CloudFrontHostingStack(
     app, f"SRD-CloudFront-{env_name}",
     cognito_user_pool_id=cognito_stack.user_pool_id,
     cognito_client_id=cognito_stack.client_id,
-    rest_endpoint_url=f"https://placeholder.execute-api.{region}.amazonaws.com/{env_name}/rag/",
-    websocket_url=f"wss://placeholder.execute-api.{region}.amazonaws.com/{env_name}",
+    cognito_identity_pool_id=cognito_stack.identity_pool_id,
     env=env,
 )
 cf_stack.add_dependency(cognito_stack)

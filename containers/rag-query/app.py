@@ -21,6 +21,7 @@ async def websocket_handler(websocket, context):
             query = data.get("query", "")
             user_email = data.get("user_email")
             search_scope = data.get("search_scope", "all")
+            search_type = data.get("search_type", "HYBRID")
             chat_history = data.get("chat_history", [])
 
             if not query:
@@ -35,6 +36,7 @@ async def websocket_handler(websocket, context):
                     query=query,
                     user_email=user_email,
                     search_scope=search_scope,
+                    search_type=search_type,
                     chat_history=chat_history,
                 ):
                     await websocket.send_json(chunk)
