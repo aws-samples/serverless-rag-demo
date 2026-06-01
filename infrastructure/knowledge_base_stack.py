@@ -41,9 +41,11 @@ class KnowledgeBaseStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
             enforce_ssl=True,
             cors=[s3.CorsRule(
-                allowed_methods=[s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.GET],
+                allowed_methods=[s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.GET, s3.HttpMethods.DELETE, s3.HttpMethods.HEAD],
                 allowed_origins=["*"],
                 allowed_headers=["*"],
+                exposed_headers=["ETag"],
+                max_age=3600,
             )],
         )
 
@@ -120,6 +122,9 @@ class KnowledgeBaseStack(Stack):
         CfnOutput(self, f"data-bucket-{env_name}",
                   value=data_bucket.bucket_name,
                   description="Document upload bucket")
+        CfnOutput(self, f"data-source-id-{env_name}",
+                  value=data_source.attr_data_source_id,
+                  description="KB Data Source ID")
 
         # Nag suppressions
         _cdk_nag.NagSuppressions.add_stack_suppressions(self, [
