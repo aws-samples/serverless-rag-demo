@@ -130,7 +130,7 @@ deploy_runtime() {
     # Check if runtime already exists
     local RUNTIME_ARN
     RUNTIME_ARN=$(aws bedrock-agentcore-control list-agent-runtimes --region "$REGION" \
-        --query "agentRuntimeSummaries[?agentRuntimeName=='$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
+        --query "agentRuntimes[?agentRuntimeName=='$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
 
     if [[ "$RUNTIME_ARN" == "None" || -z "$RUNTIME_ARN" ]]; then
         # Create new runtime (SigV4 auth — browser uses Identity Pool for temp creds)
