@@ -103,7 +103,7 @@ EVAL_ROLE_ARN=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | 
 
 # Get Knowledge Base values from CDK outputs
 KB_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"kbid\")) | .value" cdk-outputs.json)
-DATA_BUCKET=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"databucket\")) | .value" cdk-outputs.json)
+DATA_BUCKET=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | startswith(\"databucket\")) | .value" cdk-outputs.json)
 DATA_SOURCE_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"datasourceid\")) | .value" cdk-outputs.json)
 
 # Get ECR image URIs from CDK outputs (CDK strips hyphens from output keys)
