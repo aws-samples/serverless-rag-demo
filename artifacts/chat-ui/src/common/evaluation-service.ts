@@ -154,7 +154,7 @@ export async function createEvalJob(
                             type: "KNOWLEDGE_BASE",
                             knowledgeBaseConfiguration: {
                                 knowledgeBaseId: config.knowledgeBaseId,
-                                modelArn: `arn:aws:bedrock:${config.cognitoRegion}::foundation-model/anthropic.claude-sonnet-4-6-v1:0`,
+                                modelArn: "global.anthropic.claude-sonnet-4-6",
                             },
                         },
                     },
@@ -166,7 +166,7 @@ export async function createEvalJob(
         },
     }));
 
-    return response.jobIdentifier!;
+    return response.jobArn || response.jobIdentifier || "";
 }
 
 /**

@@ -106,6 +106,7 @@ class KnowledgeBaseStack(Stack):
                 type="S3",
                 s3_configuration=bedrock.CfnDataSource.S3DataSourceConfigurationProperty(
                     bucket_arn=data_bucket.bucket_arn,
+                    inclusion_prefixes=["documents/"],
                 ),
             ),
         )
