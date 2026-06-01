@@ -145,8 +145,11 @@ export async function createEvalJob(
                 {
                     knowledgeBaseConfig: {
                         retrieveAndGenerateConfig: {
-                            knowledgeBaseId: config.knowledgeBaseId,
-                            modelArn: `arn:aws:bedrock:${config.cognitoRegion}::foundation-model/anthropic.claude-sonnet-4-6-v1:0`,
+                            type: "KNOWLEDGE_BASE",
+                            knowledgeBaseConfiguration: {
+                                knowledgeBaseId: config.knowledgeBaseId,
+                                modelArn: `arn:aws:bedrock:${config.cognitoRegion}::foundation-model/anthropic.claude-sonnet-4-6-v1:0`,
+                            },
                         },
                     },
                 },
