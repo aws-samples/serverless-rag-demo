@@ -6,6 +6,8 @@ import aws_cdk as cdk
 def app():
     return cdk.App(context={
         "environment_name": "test",
+        # Skip Docker bundling during unit tests
+        "aws:cdk:bundling-stacks": [],
         "is_aoss": "yes",
         "embed_model_id": "amazon.titan-embed-text-v2:0",
         "test": {
