@@ -96,23 +96,23 @@ cdk deploy --all $CDK_CONTEXT --require-approval never --outputs-file cdk-output
 echo "  [D] Deploying AgentCore Runtimes..."
 
 # Extract Cognito values from CDK outputs
-COGNITO_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"user-pool-id\")) | .value" cdk-outputs.json)
-COGNITO_CLIENT_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"client-id\")) | .value" cdk-outputs.json)
-COGNITO_IDENTITY_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"identity-pool-id\")) | .value" cdk-outputs.json)
-EVAL_ROLE_ARN=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"eval-role-arn\")) | .value" cdk-outputs.json)
+COGNITO_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"userpoolid\")) | .value" cdk-outputs.json)
+COGNITO_CLIENT_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"clientid\")) | .value" cdk-outputs.json)
+COGNITO_IDENTITY_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"identitypoolid\")) | .value" cdk-outputs.json)
+EVAL_ROLE_ARN=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"evalrolearn\")) | .value" cdk-outputs.json)
 
 # Get Knowledge Base values from CDK outputs
-KB_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"kb-id\")) | .value" cdk-outputs.json)
-DATA_BUCKET=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"data-bucket\")) | .value" cdk-outputs.json)
-DATA_SOURCE_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"data-source-id\")) | .value" cdk-outputs.json)
+KB_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"kbid\")) | .value" cdk-outputs.json)
+DATA_BUCKET=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"databucket\")) | .value" cdk-outputs.json)
+DATA_SOURCE_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"datasourceid\")) | .value" cdk-outputs.json)
 
-# Get ECR image URIs from CDK outputs
-RAG_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"rag-query-image\")) | .value" cdk-outputs.json)
-MULTI_AGENT_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multi-agent-image\")) | .value" cdk-outputs.json)
+# Get ECR image URIs from CDK outputs (CDK strips hyphens from output keys)
+RAG_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"ragqueryimage\")) | .value" cdk-outputs.json)
+MULTI_AGENT_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multiagentimage\")) | .value" cdk-outputs.json)
 
-# Get IAM role ARNs
-RAG_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"rag-query-role\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
-MULTI_AGENT_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multi-agent-role\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
+# Get IAM role ARNs (CDK strips hyphens from output keys)
+RAG_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"ragqueryrole\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
+MULTI_AGENT_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multiagentrole\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
 
 # Environment variables for containers (dynamically extracted from CDK outputs)
 RUNTIME_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-opus-4-6-v1\"}"
@@ -130,7 +130,7 @@ deploy_runtime() {
     # Check if runtime already exists
     local RUNTIME_ARN
     RUNTIME_ARN=$(aws bedrock-agentcore-control list-agent-runtimes --region "$REGION" \
-        --query "agentRuntimeSummaries[?agentRuntimeName=='$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
+        --query "agentRuntimes[?agentRuntimeName=='$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
 
     if [[ "$RUNTIME_ARN" == "None" || -z "$RUNTIME_ARN" ]]; then
         # Create new runtime (SigV4 auth — browser uses Identity Pool for temp creds)
@@ -194,7 +194,7 @@ echo "      Log groups created" >&2
 echo "  [E] Updating runtime-config.json..."
 
 # Get the UI bucket name
-UI_BUCKET=$(jq -r ".[\"SRD-CloudFront-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"ui-url\")) | .value" cdk-outputs.json 2>/dev/null | head -1)
+UI_BUCKET=$(jq -r ".[\"SRD-CloudFront-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"uiurl\")) | .value" cdk-outputs.json 2>/dev/null | head -1)
 UI_BUCKET_NAME=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'srduibucket')].Name | [0]" --output text)
 
 # Write updated runtime-config.json to S3
@@ -226,7 +226,7 @@ echo ""
 
 # Display summary
 if command -v jq &>/dev/null && [[ -f cdk-outputs.json ]]; then
-    UI_URL=$(jq -r '.. | objects | to_entries[] | select(.key | contains("ui-url")) | .value' cdk-outputs.json 2>/dev/null | head -1)
+    UI_URL=$(jq -r '.. | objects | to_entries[] | select(.key | contains("uiurl")) | .value' cdk-outputs.json 2>/dev/null | head -1)
     if [[ -n "$UI_URL" ]]; then
         echo "  UI:              $UI_URL"
     fi
