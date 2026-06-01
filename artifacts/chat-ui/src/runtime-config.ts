@@ -1,9 +1,14 @@
 export interface RuntimeConfig {
     cognitoUserPoolId: string;
     cognitoClientId: string;
+    cognitoIdentityPoolId: string;
     cognitoRegion: string;
-    restEndpointUrl: string;
-    websocketUrl: string;
+    ragRuntimeArn: string;
+    multiAgentRuntimeArn: string;
+    dataBucketName: string;
+    knowledgeBaseId: string;
+    dataSourceId: string;
+    evalRoleArn: string;
 }
 
 let cachedConfig: RuntimeConfig | null = null;
