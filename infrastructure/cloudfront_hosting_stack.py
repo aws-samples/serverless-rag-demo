@@ -114,6 +114,7 @@ class CloudFrontHostingStack(Stack):
             destination_bucket=site_bucket,
             distribution=distribution,
             distribution_paths=["/runtime-config.json"],
+            prune=False,  # Don't delete UI files deployed by the other BucketDeployment
         )
 
         # Outputs
