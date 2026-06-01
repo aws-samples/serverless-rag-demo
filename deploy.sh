@@ -108,61 +108,64 @@ MULTI_AGENT_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | selec
 RAG_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"rag-query-role\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
 MULTI_AGENT_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multi-agent-role\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
 
-# Create or update RAG Query runtime
-echo "  [D1] RAG Query runtime..."
+# Helper: deploy a single AgentCore runtime (idempotent — creates or updates)
+# Prints the runtime ARN to stdout; logs to stderr
+deploy_runtime() {
+    local RUNTIME_NAME="$1"
+    local IMAGE_URI="$2"
+    local ROLE_ARN="$3"
+    local LABEL="$4"
+
+    echo "  [D] $LABEL..." >&2
+
+    # Check if runtime already exists
+    local RUNTIME_ARN
+    RUNTIME_ARN=$(aws bedrock-agentcore-control list-agent-runtimes --region "$REGION" \
+        --query "agentRuntimeSummaries[?agentRuntimeName=='$RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
+
+    if [[ "$RUNTIME_ARN" == "None" || -z "$RUNTIME_ARN" ]]; then
+        # Create new runtime
+        RUNTIME_ARN=$(aws bedrock-agentcore-control create-agent-runtime \
+            --agent-runtime-name "$RUNTIME_NAME" \
+            --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$IMAGE_URI\"}}" \
+            --role-arn "$ROLE_ARN" \
+            --network-configuration '{"networkMode":"PUBLIC"}' \
+            --authorizer-configuration "{\"customJWTAuthorizer\":{\"discoveryUrl\":\"$DISCOVERY_URL\",\"allowedClients\":[\"$COGNITO_CLIENT_ID\"]}}" \
+            --protocol-configuration '{"serverProtocol":"HTTP"}' \
+            --region "$REGION" \
+            --query 'agentRuntimeArn' --output text)
+        echo "      Created: $RUNTIME_ARN" >&2
+
+        # Create endpoint
+        local RUNTIME_ID
+        RUNTIME_ID=$(echo "$RUNTIME_ARN" | awk -F/ '{print $NF}')
+        aws bedrock-agentcore-control create-agent-runtime-endpoint \
+            --agent-runtime-id "$RUNTIME_ID" \
+            --name "${RUNTIME_NAME}-endpoint" \
+            --region "$REGION" > /dev/null
+        echo "      Endpoint created" >&2
+    else
+        # Update existing runtime with new container image
+        local RUNTIME_ID
+        RUNTIME_ID=$(echo "$RUNTIME_ARN" | awk -F/ '{print $NF}')
+        aws bedrock-agentcore-control update-agent-runtime \
+            --agent-runtime-id "$RUNTIME_ID" \
+            --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$IMAGE_URI\"}}" \
+            --region "$REGION" > /dev/null 2>&1 || true
+        echo "      Updated: $RUNTIME_ARN (new image deployed)" >&2
+    fi
+
+    # Return the ARN via stdout
+    echo "$RUNTIME_ARN"
+}
+
+# Deploy RAG Query runtime
 RAG_RUNTIME_NAME="srd-rag-query-$ENV_NAME"
-RAG_RUNTIME_ARN=$(aws bedrock-agentcore-control list-agent-runtimes --region "$REGION" \
-    --query "agentRuntimeSummaries[?agentRuntimeName=='$RAG_RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
+RAG_RUNTIME_ARN=$(deploy_runtime "$RAG_RUNTIME_NAME" "$RAG_IMAGE" "$RAG_ROLE_ARN" "RAG Query runtime")
 
-if [[ "$RAG_RUNTIME_ARN" == "None" || -z "$RAG_RUNTIME_ARN" ]]; then
-    RAG_RUNTIME_ARN=$(aws bedrock-agentcore-control create-agent-runtime \
-        --agent-runtime-name "$RAG_RUNTIME_NAME" \
-        --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$RAG_IMAGE\"}}" \
-        --role-arn "$RAG_ROLE_ARN" \
-        --network-configuration '{"networkMode":"PUBLIC"}' \
-        --authorizer-configuration "{\"customJWTAuthorizer\":{\"discoveryUrl\":\"$DISCOVERY_URL\",\"allowedClients\":[\"$COGNITO_CLIENT_ID\"]}}" \
-        --protocol-configuration '{"serverProtocol":"HTTP"}' \
-        --region "$REGION" \
-        --query 'agentRuntimeArn' --output text)
-    echo "  Created runtime: $RAG_RUNTIME_ARN"
-
-    # Create endpoint
-    aws bedrock-agentcore-control create-agent-runtime-endpoint \
-        --agent-runtime-id "$(echo $RAG_RUNTIME_ARN | awk -F/ '{print $NF}')" \
-        --name "${RAG_RUNTIME_NAME}-endpoint" \
-        --region "$REGION" > /dev/null
-    echo "  Created endpoint for RAG Query"
-else
-    echo "  RAG Query runtime already exists: $RAG_RUNTIME_ARN"
-fi
-
-# Create or update Multi-Agent runtime
-echo "  [D2] Multi-Agent runtime..."
+# Deploy Multi-Agent runtime
 MA_RUNTIME_NAME="srd-multi-agent-$ENV_NAME"
-MA_RUNTIME_ARN=$(aws bedrock-agentcore-control list-agent-runtimes --region "$REGION" \
-    --query "agentRuntimeSummaries[?agentRuntimeName=='$MA_RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
-
-if [[ "$MA_RUNTIME_ARN" == "None" || -z "$MA_RUNTIME_ARN" ]]; then
-    MA_RUNTIME_ARN=$(aws bedrock-agentcore-control create-agent-runtime \
-        --agent-runtime-name "$MA_RUNTIME_NAME" \
-        --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$MULTI_AGENT_IMAGE\"}}" \
-        --role-arn "$MULTI_AGENT_ROLE_ARN" \
-        --network-configuration '{"networkMode":"PUBLIC"}' \
-        --authorizer-configuration "{\"customJWTAuthorizer\":{\"discoveryUrl\":\"$DISCOVERY_URL\",\"allowedClients\":[\"$COGNITO_CLIENT_ID\"]}}" \
-        --protocol-configuration '{"serverProtocol":"HTTP"}' \
-        --region "$REGION" \
-        --query 'agentRuntimeArn' --output text)
-    echo "  Created runtime: $MA_RUNTIME_ARN"
-
-    # Create endpoint
-    aws bedrock-agentcore-control create-agent-runtime-endpoint \
-        --agent-runtime-id "$(echo $MA_RUNTIME_ARN | awk -F/ '{print $NF}')" \
-        --name "${MA_RUNTIME_NAME}-endpoint" \
-        --region "$REGION" > /dev/null
-    echo "  Created endpoint for Multi-Agent"
-else
-    echo "  Multi-Agent runtime already exists: $MA_RUNTIME_ARN"
-fi
+MA_RUNTIME_ARN=$(deploy_runtime "$MA_RUNTIME_NAME" "$MULTI_AGENT_IMAGE" "$MULTI_AGENT_ROLE_ARN" "Multi-Agent runtime")
 
 # Step E: Update runtime-config.json with AgentCore WebSocket URLs
 echo "  [E] Updating runtime-config.json..."
