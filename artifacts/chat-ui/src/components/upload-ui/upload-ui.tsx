@@ -7,7 +7,8 @@ import { LoadingBar } from "@cloudscape-design/chat-components";
 import { AppContext } from "../../common/context";
 import {
   listDocuments, getUploadPresignedUrl, uploadMetadata,
-  deleteDocument, syncKnowledgeBase, DocumentInfo
+  deleteDocument, syncKnowledgeBase, getIngestionStatus,
+  DocumentInfo, IngestionStatus
 } from "../../common/document-service";
 
 export interface UploadDocProps {
@@ -22,6 +23,7 @@ export function UploadUI(props: UploadDocProps) {
   const [userFiles, setUserFiles] = useState<DocumentInfo[]>([]);
   const [globalView, setGlobalView] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [syncStatus, setSyncStatus] = useState<IngestionStatus | null>(null);
   const PAGE_SIZE = 20;
   const appData = useContext(AppContext);
 
@@ -37,6 +39,15 @@ export function UploadUI(props: UploadDocProps) {
     props.notify_parent?.(message, notify_type);
   };
 
+  const refreshSyncStatus = async () => {
+    try {
+      const status = await getIngestionStatus(getIdToken());
+      setSyncStatus(status);
+    } catch {
+      // silently ignore - non-critical
+    }
+  };
+
   const refreshFileList = async () => {
     setIsLoading(true);
     try {
@@ -46,6 +57,7 @@ export function UploadUI(props: UploadDocProps) {
       notify(`Failed to list documents: ${err.message}`, "error");
     }
     setIsLoading(false);
+    refreshSyncStatus();
   };
 
   useEffect(() => {
@@ -53,6 +65,13 @@ export function UploadUI(props: UploadDocProps) {
       refreshFileList();
     }
   }, [appData, globalView]);
+
+  // Auto-poll sync status while in progress
+  useEffect(() => {
+    if (!syncStatus || !["STARTING", "IN_PROGRESS"].includes(syncStatus.status)) return;
+    const interval = setInterval(refreshSyncStatus, 5000);
+    return () => clearInterval(interval);
+  }, [syncStatus?.status]);
 
   const uploadFile = async () => {
     if (value.length === 0) return;
@@ -153,6 +172,27 @@ export function UploadUI(props: UploadDocProps) {
       }
     >
       {isLoading && <LoadingBar variant="gen-ai" />}
+      {syncStatus && (
+        <Box margin={{ bottom: "s" }}>
+          <StatusIndicator
+            type={
+              syncStatus.status === "COMPLETE" ? "success" :
+              syncStatus.status === "FAILED" ? "error" :
+              ["STARTING", "IN_PROGRESS"].includes(syncStatus.status) ? "in-progress" :
+              "info"
+            }
+          >
+            {syncStatus.status === "COMPLETE" && (
+              <>Last sync complete{syncStatus.updatedAt ? ` — ${syncStatus.updatedAt.toLocaleString()}` : ""}{syncStatus.documentsIndexed != null ? ` (${syncStatus.documentsIndexed} indexed${syncStatus.documentsFailed ? `, ${syncStatus.documentsFailed} failed` : ""})` : ""}</>
+            )}
+            {syncStatus.status === "FAILED" && "Last sync failed"}
+            {["STARTING", "IN_PROGRESS"].includes(syncStatus.status) && (
+              <>Sync in progress...{syncStatus.documentsScanned != null ? ` (${syncStatus.documentsScanned} scanned)` : ""}</>
+            )}
+            {!["COMPLETE", "FAILED", "STARTING", "IN_PROGRESS"].includes(syncStatus.status) && `Sync: ${syncStatus.status}`}
+          </StatusIndicator>
+        </Box>
+      )}
       <Table
         variant="full-page"
         columnDefinitions={[

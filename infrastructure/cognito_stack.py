@@ -140,7 +140,7 @@ class CognitoStack(Stack):
                 ]),
                 "KBSync": iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
-                        actions=["bedrock:StartIngestionJob"],
+                        actions=["bedrock:StartIngestionJob", "bedrock:ListIngestionJobs"],
                         resources=[f"arn:aws:bedrock:{region}:{account_id}:knowledge-base/{knowledge_base_id}"],
                     ),
                 ]),
