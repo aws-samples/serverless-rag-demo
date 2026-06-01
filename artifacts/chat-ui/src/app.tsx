@@ -4,7 +4,7 @@ import { AppLayout, TopNavigation, SideNavigation, Badge, Alert } from '@cloudsc
 import { Hub } from 'aws-amplify/utils';
 import { signOut } from 'aws-amplify/auth';
 import { AppContext } from "./common/context";
-import { NotFound, ChatPage, AgentPage, OcrPage, SentimentPage, HomePage, Help, PIIPage } from './pages'
+import { NotFound, ChatPage, AgentPage, HomePage, Help } from './pages'
 import '@aws-amplify/ui-react/styles.css';
 
 export default function App() {
@@ -76,10 +76,7 @@ export default function App() {
               <Route path="/" element={<Help setPageId="home" />} />
               <Route path="/document-chat" element={<Help setPageId="doc-chat" />} />
               <Route path="/document-chat/manage-document" element={<Help setPageId="doc-chat-manage" />} />
-              <Route path="/sentiment-analysis" element={<Help setPageId="sentiment" />} />
               <Route path="/multi-agent" element={<Help setPageId="multi-agent" />} />
-              <Route path="/ocr" element={<Help setPageId="ocr" />} />
-              <Route path="/pii" element={<Help setPageId="pii" />} />
               <Route path="*" element={<Help setPageId="404" />} />
             </Routes>
           </Router>
@@ -101,9 +98,6 @@ export default function App() {
               ]
             },
             { type: "link", text: "Multi-Agent", href: "#/multi-agent" },
-            { type: "link", text: "Sentiment Analysis", href: "#/sentiment-analysis" },
-            { type: "link", text: "OCR", href: "#/ocr" },
-            { type: "link", text: "PII Identification", href: "#/pii" },
           ]}
         />}
         content={
@@ -112,10 +106,7 @@ export default function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/document-chat" element={<ChatPage setAppData={setAppData} manageDocument={false} />} />
               <Route path="/document-chat/manage-document" element={<ChatPage setAppData={setAppData} manageDocument={true} />} />
-              <Route path="/sentiment-analysis" element={<SentimentPage setAppData={setAppData} />} />
               <Route path="/multi-agent" element={<AgentPage setAppData={setAppData} />} />
-              <Route path="/ocr" element={<OcrPage setAppData={setAppData} />} />
-              <Route path="/pii" element={<PIIPage setAppData={setAppData} />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>

@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import aws_cdk as cdk
 from aws_cdk import (
     NestedStack,
@@ -13,6 +14,21 @@ from aws_cdk import (
 )
 from constructs import Construct
 import cdk_nag as _cdk_nag
+
+
+def _build_ui(source_path: str) -> str:
+    """Build React UI locally and return the output directory path."""
+    subprocess.run(["npm", "install"], cwd=source_path, check=True, capture_output=True)
+    subprocess.run(["npm", "run", "build"], cwd=source_path, check=True, capture_output=True)
+    # Vite outputs to dist/
+    dist_dir = os.path.join(source_path, "dist")
+    if os.path.isdir(dist_dir):
+        return dist_dir
+    # CRA fallback
+    build_dir = os.path.join(source_path, "build")
+    if os.path.isdir(build_dir):
+        return build_dir
+    raise RuntimeError(f"No build output found in {source_path}. Run 'npm run build' manually.")
 
 
 class CloudFrontHostingStack(NestedStack):
@@ -63,21 +79,21 @@ class CloudFrontHostingStack(NestedStack):
             ],
         )
 
-        # Deploy React build to S3 (uses Docker bundling for npm build)
+        # Build React UI locally and deploy to S3 (no Docker needed)
+        chat_ui_path = os.path.join(os.getcwd(), "artifacts/chat-ui")
+        bundling_stacks = self.node.try_get_context("aws:cdk:bundling-stacks")
+        skip_bundling = bundling_stacks == []
+
+        if not skip_bundling:
+            build_output = _build_ui(chat_ui_path)
+            ui_source = s3_deploy.Source.asset(build_output)
+        else:
+            # During tests, use the source dir as-is (no build step)
+            ui_source = s3_deploy.Source.asset(chat_ui_path)
+
         s3_deploy.BucketDeployment(
             self, f"srd-ui-deploy-{env_name}",
-            sources=[
-                s3_deploy.Source.asset(
-                    os.path.join(os.getcwd(), "artifacts/chat-ui"),
-                    bundling=cdk.BundlingOptions(
-                        image=cdk.DockerImage.from_registry("node:20-slim"),
-                        command=[
-                            "bash", "-c",
-                            "npm ci && npm run build && cp -r build/* /asset-output/",
-                        ],
-                    ),
-                ),
-            ],
+            sources=[ui_source],
             destination_bucket=site_bucket,
             distribution=distribution,
             distribution_paths=["/*"],
@@ -112,4 +128,8 @@ class CloudFrontHostingStack(NestedStack):
             _cdk_nag.NagPackSuppression(id="AwsSolutions-S1", reason="Access logs not needed for demo UI bucket"),
             _cdk_nag.NagPackSuppression(id="AwsSolutions-CFR1", reason="Geo restriction not needed for demo"),
             _cdk_nag.NagPackSuppression(id="AwsSolutions-CFR2", reason="WAF not needed for demo"),
+            _cdk_nag.NagPackSuppression(id="AwsSolutions-CFR3", reason="Access logging not needed for demo"),
+            _cdk_nag.NagPackSuppression(id="AwsSolutions-IAM5", reason="BucketDeployment custom resource requires wildcard permissions"),
+            _cdk_nag.NagPackSuppression(id="AwsSolutions-IAM4", reason="BucketDeployment uses AWS managed Lambda execution policy"),
+            _cdk_nag.NagPackSuppression(id="AwsSolutions-L1", reason="BucketDeployment Lambda runtime managed by CDK"),
         ])
