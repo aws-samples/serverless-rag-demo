@@ -160,11 +160,11 @@ deploy_runtime() {
 }
 
 # Deploy RAG Query runtime
-RAG_RUNTIME_NAME="srd-rag-query-$ENV_NAME"
+RAG_RUNTIME_NAME="srd_rag_query_${ENV_NAME}"
 RAG_RUNTIME_ARN=$(deploy_runtime "$RAG_RUNTIME_NAME" "$RAG_IMAGE" "$RAG_ROLE_ARN" "RAG Query runtime")
 
 # Deploy Multi-Agent runtime
-MA_RUNTIME_NAME="srd-multi-agent-$ENV_NAME"
+MA_RUNTIME_NAME="srd_multi_agent_${ENV_NAME}"
 MA_RUNTIME_ARN=$(deploy_runtime "$MA_RUNTIME_NAME" "$MULTI_AGENT_IMAGE" "$MULTI_AGENT_ROLE_ARN" "Multi-Agent runtime")
 
 # Step E: Update runtime-config.json with AgentCore WebSocket URLs

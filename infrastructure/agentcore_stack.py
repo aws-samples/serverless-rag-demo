@@ -42,6 +42,16 @@ class AgentCoreStack(Stack):
             platform=ecr_assets.Platform.LINUX_ARM64,
         )
 
+        # ECR pull permissions (required by AgentCore to pull container images)
+        ecr_pull_statement = iam.PolicyStatement(
+            actions=[
+                "ecr:GetAuthorizationToken",
+                "ecr:BatchGetImage",
+                "ecr:GetDownloadUrlForLayer",
+            ],
+            resources=["*"],
+        )
+
         # IAM role for Multi-Agent runtime
         multi_agent_role = iam.Role(
             self, f"srd-multi-agent-role-{env_name}",
@@ -51,6 +61,7 @@ class AgentCoreStack(Stack):
             ),
             inline_policies={
                 "MultiAgentPolicy": iam.PolicyDocument(statements=[
+                    ecr_pull_statement,
                     iam.PolicyStatement(
                         actions=["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
                         resources=[
@@ -80,6 +91,7 @@ class AgentCoreStack(Stack):
             ),
             inline_policies={
                 "RAGQueryPolicy": iam.PolicyDocument(statements=[
+                    ecr_pull_statement,
                     iam.PolicyStatement(
                         actions=["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
                         resources=[
