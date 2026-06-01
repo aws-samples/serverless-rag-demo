@@ -1,0 +1,21 @@
+version: 1
+tools:
+  formatter: "ruff format"
+  linter: "ruff check"
+  test: "pytest --cov=. --cov-report=term-missing"
+  security: "bandit -r ."
+  type_check: "mypy ."
+  iac_validate: "cdk synth --quiet"
+  dep_audit: "pip-audit"
+coverage:
+  min: 70
+  fail_on_drop: 5
+review:
+  threshold: "high"
+  max_fix_cycles: 3
+exclude:
+  - "node_modules/"
+  - ".venv/"
+  - "cdk.out/"
+  - "artifacts/chat-ui/node_modules/"
+branch_prefix: "aidlc"
