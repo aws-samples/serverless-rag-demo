@@ -50,7 +50,7 @@ function ChatPage(props: AppPage) {
     init();
   }, [])
 
-  const sendMessage = (message: string, type: string) => {
+  const sendMessage = (message: string, type: string, sources?: any[]) => {
     if (type === ChatMessageType.Human) {
       setMessages((prevMessages) => [
         ...prevMessages,
@@ -58,16 +58,22 @@ function ChatPage(props: AppPage) {
         {
           type: ChatMessageType.AI,
           content: "",
+          question: message,
         },
       ]);
     } else if (type === ChatMessageType.AI) {
-      setMessages((prevMessages) => [
-        ...prevMessages.splice(0, prevMessages.length - 1),
-        {
-          type: ChatMessageType.AI,
-          content: message,
-        },
-      ]);
+      setMessages((prevMessages) => {
+        const prev = prevMessages.slice(0, prevMessages.length - 1);
+        const last = prevMessages[prevMessages.length - 1];
+        return [
+          ...prev,
+          {
+            ...last,
+            content: message,
+            sources,
+          },
+        ];
+      });
       setRunning(false);
     }
   };
