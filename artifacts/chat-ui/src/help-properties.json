@@ -13,7 +13,7 @@
     },
     "doc-chat-manage":{
         "title":"Manage Documents",
-        "description": "Upload PDF files, that are then vectorized and stored in <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon Opensearch serverless service(AOSS)</a>. AOSS supports semantic searches which is a key requirement when building a <a href='https://aws.amazon.com/blogs/big-data/build-scalable-and-serverless-rag-workflows-with-a-vector-engine-for-amazon-opensearch-serverless-and-amazon-bedrock-claude-models/'>Retrieval Augmented Generation</a> based solution"
+        "description": "<p>Upload documents that are indexed into a <a href='https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html'>Bedrock Knowledge Base</a> backed by <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon OpenSearch Serverless (NextGen)</a>.</p><h3>Sync Status</h3><p>After uploading or deleting documents, an ingestion job syncs your files to the Knowledge Base index. The status indicator above the table shows:</p><ul><li><b>Sync in progress</b> — Files are being processed (auto-refreshes every 5s)</li><li><b>Last sync complete</b> — Shows timestamp, documents indexed, and any failures</li><li><b>Last sync failed</b> — Check file formats or permissions</li></ul><p>Supported formats: PDF, TXT, MD, HTML, DOC, DOCX, CSV.</p><p><b>Tip:</b> Files become searchable in Document Chat within 1–3 minutes after sync completes.</p>"
     },
     "sentiment": {
         "title": "Sentiment Analysis",

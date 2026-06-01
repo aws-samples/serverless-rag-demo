@@ -58,7 +58,7 @@ export function EvalInput({ onStartEvaluation, isRunning }: EvalInputProps) {
     };
 
     return (
-        <Container header={<Header variant="h2">Configure Evaluation</Header>}>
+        <Container header={<Header variant="h2" info={<a href="#/evaluation">Help</a>}>Configure Evaluation</Header>}>
             <SpaceBetween size="l">
                 <Toggle
                     checked={isGroundTruth}

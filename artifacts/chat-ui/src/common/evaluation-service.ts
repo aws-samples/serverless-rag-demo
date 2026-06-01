@@ -99,7 +99,9 @@ export async function uploadEvalDataset(
         return JSON.stringify(entry);
     }).join("\n");
 
-    const key = `evaluations/${userEmail}/${jobId}/input.jsonl`;
+    // Sanitize email for S3 path — Bedrock URI regex only allows [-!_*'().a-z0-9A-Z]
+    const safeEmail = userEmail.replace(/[^-!_*'().a-z0-9A-Z]/g, "_");
+    const key = `evaluations/${safeEmail}/${jobId}/input.jsonl`;
     await s3.send(new PutObjectCommand({
         Bucket: config.dataBucketName,
         Key: key,
@@ -219,7 +221,8 @@ export async function getEvalResults(
     const credentials = await getAwsCredentials(idToken);
     const s3 = getS3Client(credentials);
 
-    const key = `evaluations/${userEmail}/${jobId}/output/results.jsonl`;
+    const safeEmail = userEmail.replace(/[^-!_*'().a-z0-9A-Z]/g, "_");
+    const key = `evaluations/${safeEmail}/${jobId}/output/results.jsonl`;
 
     try {
         const response = await s3.send(new GetObjectCommand({
