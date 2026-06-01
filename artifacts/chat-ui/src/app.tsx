@@ -4,7 +4,7 @@ import { AppLayout, TopNavigation, SideNavigation, Badge, Alert } from '@cloudsc
 import { Hub } from 'aws-amplify/utils';
 import { signOut } from 'aws-amplify/auth';
 import { AppContext } from "./common/context";
-import { NotFound, ChatPage, AgentPage, HomePage, Help } from './pages'
+import { NotFound, ChatPage, AgentPage, HomePage, Help, EvalPage } from './pages'
 import '@aws-amplify/ui-react/styles.css';
 
 export default function App() {
@@ -77,6 +77,7 @@ export default function App() {
               <Route path="/document-chat" element={<Help setPageId="doc-chat" />} />
               <Route path="/document-chat/manage-document" element={<Help setPageId="doc-chat-manage" />} />
               <Route path="/multi-agent" element={<Help setPageId="multi-agent" />} />
+              <Route path="/evaluation" element={<Help setPageId="evaluation" />} />
               <Route path="*" element={<Help setPageId="404" />} />
             </Routes>
           </Router>
@@ -98,6 +99,7 @@ export default function App() {
               ]
             },
             { type: "link", text: "Multi-Agent", href: "#/multi-agent" },
+            { type: "link", text: "Evaluation", href: "#/evaluation" },
           ]}
         />}
         content={
@@ -107,6 +109,7 @@ export default function App() {
               <Route path="/document-chat" element={<ChatPage setAppData={setAppData} manageDocument={false} />} />
               <Route path="/document-chat/manage-document" element={<ChatPage setAppData={setAppData} manageDocument={true} />} />
               <Route path="/multi-agent" element={<AgentPage setAppData={setAppData} />} />
+              <Route path="/evaluation" element={<EvalPage setAppData={setAppData} />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>
