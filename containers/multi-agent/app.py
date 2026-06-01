@@ -1,59 +1,50 @@
 import json
 import logging
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from graph import run_graph
+import os
+from bedrock_agentcore import BedrockAgentCoreApp
+from graph import run_graph_stream
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-PORT = 8080
+app = BedrockAgentCoreApp()
 
 
-class AgentCoreHandler(BaseHTTPRequestHandler):
+@app.websocket
+async def websocket_handler(websocket, context):
+    """Multi-Agent WebSocket handler with streaming responses."""
+    await websocket.accept()
 
-    def do_GET(self):
-        if self.path == "/ping":
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps({"status": "healthy"}).encode())
-        else:
-            self.send_response(404)
-            self.end_headers()
-
-    def do_POST(self):
-        if self.path == "/invocations":
-            content_length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(content_length))
-
-            query = body.get("query", "")
-            context = {
-                "user_email": body.get("user_email"),
-                "search_scope": body.get("search_scope", "all"),
-                "connection_id": body.get("connection_id"),
+    try:
+        while True:
+            data = await websocket.receive_json()
+            query = data.get("query", "")
+            user_context = {
+                "user_email": data.get("user_email"),
+                "search_scope": data.get("search_scope", "all"),
             }
 
-            try:
-                result = run_graph(query, context)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps({"response": result}).encode())
-            except Exception as e:
-                logger.error(f"Invocation error: {e}")
-                self.send_response(500)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode())
-        else:
-            self.send_response(404)
-            self.end_headers()
+            if not query:
+                await websocket.send_json({"type": "error", "message": "No query provided"})
+                continue
 
-    def log_message(self, format, *args):
-        logger.info(f"{self.address_string()} - {format % args}")
+            await websocket.send_json({"type": "start", "query": query})
+
+            try:
+                async for chunk in run_graph_stream(query, user_context):
+                    await websocket.send_json(chunk)
+
+                await websocket.send_json({"type": "end"})
+            except Exception as e:
+                logger.error(f"Multi-agent error: {e}")
+                await websocket.send_json({"type": "error", "message": str(e)})
+
+    except Exception as e:
+        if "disconnect" not in str(e).lower():
+            logger.error(f"WebSocket error: {e}")
+    finally:
+        await websocket.close()
 
 
 if __name__ == "__main__":
-    server = HTTPServer(("0.0.0.0", PORT), AgentCoreHandler)
-    logger.info(f"Multi-Agent runtime listening on port {PORT}")
-    server.serve_forever()
+    app.run(log_level="info")
