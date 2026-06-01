@@ -60,6 +60,7 @@ fi
 # Export for CDK
 export CDK_DEFAULT_REGION="$REGION"
 export CDK_DEFAULT_ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+DEPLOYER_ARN=$(aws sts get-caller-identity --query Arn --output text)
 
 echo ""
 echo "  Deploying..."
@@ -67,14 +68,29 @@ echo "  Deploying..."
 # Bootstrap CDK if needed
 cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/$REGION" 2>/dev/null || true
 
-# Deploy all stacks
-cdk deploy --all \
-    --context environment_name="$ENV_NAME" \
-    --context is_aoss="yes" \
-    --context embed_model_id="amazon.titan-embed-text-v2:0" \
-    --context ocu_mode="$OCU_MODE" \
-    --require-approval never \
-    --outputs-file cdk-outputs.json
+CDK_CONTEXT="--context environment_name=$ENV_NAME --context is_aoss=yes --context embed_model_id=amazon.titan-embed-text-v2:0 --context ocu_mode=$OCU_MODE --context deployer_arn=$DEPLOYER_ARN"
+
+# Step A: Deploy AOSS collection
+echo "  [A] Deploying OpenSearch Serverless collection..."
+cdk deploy "SRD-AOSS-$ENV_NAME" $CDK_CONTEXT --require-approval never --outputs-file cdk-outputs.json
+
+# Step B: Create AOSS index via Lambda (role is pre-authorized in data access policy)
+echo "  [B] Creating vector index..."
+INDEX_NAME=$(python3 -c "import json; d=json.load(open('cdk.json')); print(d['context']['$ENV_NAME']['index_name'])")
+LAMBDA_NAME="srd-index-creator-$ENV_NAME"
+PAYLOAD=$(printf '{"IndexName": "%s", "VectorDimensions": "1024"}' "$INDEX_NAME")
+RESULT=$(aws lambda invoke --function-name "$LAMBDA_NAME" --payload "$PAYLOAD" --cli-binary-format raw-in-base64-out /dev/stdout --region "$REGION" 2>/dev/null | head -1)
+echo "  Index creation result: $RESULT"
+if echo "$RESULT" | grep -q '"status": "ERROR"'; then
+    echo "  ⚠ Index creation failed. Retrying..."
+    sleep 30
+    RESULT=$(aws lambda invoke --function-name "$LAMBDA_NAME" --payload "$PAYLOAD" --cli-binary-format raw-in-base64-out /dev/stdout --region "$REGION" 2>/dev/null | head -1)
+    echo "  Retry result: $RESULT"
+fi
+
+# Step C: Deploy remaining stacks (KB, AgentCore, CloudFront)
+echo "  [C] Deploying Knowledge Base, AgentCore, and CloudFront..."
+cdk deploy --all $CDK_CONTEXT --require-approval never --outputs-file cdk-outputs.json
 
 echo ""
 echo "  ✓ Deployment complete!"

@@ -1,6 +1,6 @@
 import os
 from aws_cdk import (
-    NestedStack,
+    Stack,
     RemovalPolicy,
     CfnOutput,
     aws_iam as iam,
@@ -12,7 +12,7 @@ from constructs import Construct
 import cdk_nag as _cdk_nag
 
 
-class KnowledgeBaseStack(NestedStack):
+class KnowledgeBaseStack(Stack):
 
     def __init__(
         self, scope: Construct, construct_id: str, *,
@@ -50,6 +50,7 @@ class KnowledgeBaseStack(NestedStack):
         # KB execution role
         kb_role = iam.Role(
             self, f"srd-kb-role-{env_name}",
+            role_name=f"srd-kb-role-{env_name}",
             assumed_by=iam.ServicePrincipal("bedrock.amazonaws.com"),
             inline_policies={
                 "BedrockKBPolicy": iam.PolicyDocument(statements=[

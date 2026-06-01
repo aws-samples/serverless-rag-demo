@@ -1,6 +1,6 @@
 import os
 from aws_cdk import (
-    NestedStack,
+    Stack,
     CfnOutput,
     aws_iam as iam,
     aws_ecr_assets as ecr_assets,
@@ -10,7 +10,7 @@ from constructs import Construct
 import cdk_nag as _cdk_nag
 
 
-class AgentCoreStack(NestedStack):
+class AgentCoreStack(Stack):
 
     def __init__(
         self, scope: Construct, construct_id: str, *,

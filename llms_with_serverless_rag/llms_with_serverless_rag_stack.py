@@ -16,8 +16,9 @@ class LlmsWithServerlessRagStack(Stack):
         region = os.getenv("CDK_DEFAULT_REGION", "us-east-1")
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT", "123456789012")
 
-        # 1. OpenSearch Serverless NextGen
-        oss_stack = OpensearchNextgenStack(self, f"AOSS-{env_name}")
+        # 1. OpenSearch Serverless NextGen (standalone — survives downstream failures)
+        kb_role_arn = f"arn:aws:iam::{account_id}:role/srd-kb-role-{env_name}"
+        oss_stack = OpensearchNextgenStack(self, f"AOSS-{env_name}", kb_role_arn=kb_role_arn)
 
         # 2. Bedrock Knowledge Base (depends on AOSS)
         kb_stack = KnowledgeBaseStack(
@@ -37,10 +38,6 @@ class LlmsWithServerlessRagStack(Stack):
         agentcore_stack.node.add_dependency(kb_stack)
 
         # 4. CloudFront Hosting
-        # Note: In full implementation, Cognito + API GW would be separate stacks
-        # providing user_pool_id, client_id, rest_url, wss_url.
-        # For now, create CloudFront with placeholder values that get overridden
-        # by runtime-config.json at deploy time.
         cf_stack = CloudFrontHostingStack(
             self, f"CloudFront-{env_name}",
             cognito_user_pool_id="PLACEHOLDER",

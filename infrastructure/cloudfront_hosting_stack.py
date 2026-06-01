@@ -3,7 +3,7 @@ import os
 import subprocess
 import aws_cdk as cdk
 from aws_cdk import (
-    NestedStack,
+    Stack,
     RemovalPolicy,
     CfnOutput,
     aws_s3 as s3,
@@ -31,7 +31,7 @@ def _build_ui(source_path: str) -> str:
     raise RuntimeError(f"No build output found in {source_path}. Run 'npm run build' manually.")
 
 
-class CloudFrontHostingStack(NestedStack):
+class CloudFrontHostingStack(Stack):
 
     def __init__(
         self, scope: Construct, construct_id: str, *,
