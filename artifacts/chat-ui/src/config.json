@@ -1,0 +1,7 @@
+{
+  "region": "us-east-1",
+  "userPoolId": "PLACEHOLDER",
+  "clientId": "PLACEHOLDER",
+  "apiUrl": "http://localhost:3001/rag/",
+  "websocketUrl": "ws://localhost:3001/ws"
+}

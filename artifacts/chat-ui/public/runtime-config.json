@@ -1,0 +1,7 @@
+{
+    "cognitoUserPoolId": "PLACEHOLDER",
+    "cognitoClientId": "PLACEHOLDER",
+    "cognitoRegion": "us-east-1",
+    "restEndpointUrl": "http://localhost:3001/rag/",
+    "websocketUrl": "ws://localhost:3001/ws"
+}

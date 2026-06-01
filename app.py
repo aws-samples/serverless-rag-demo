@@ -1,47 +1,71 @@
 #!/usr/bin/env python3
 import os
-
 import aws_cdk as cdk
-from aws_cdk import Stack, Tags
-from infrastructure.apprunner_hosting_stack import AppRunnerHostingStack
-from infrastructure.ecr_ui_stack import ECRUIStack
-from llms_with_serverless_rag.llms_with_serverless_rag_stack import LlmsWithServerlessRagStack
-from infrastructure.api_gw_stack import ApiGw_Stack
+from aws_cdk import Tags
+from infrastructure.opensearch_nextgen_stack import OpensearchNextgenStack
+from infrastructure.knowledge_base_stack import KnowledgeBaseStack
+from infrastructure.agentcore_stack import AgentCoreStack
+from infrastructure.cognito_stack import CognitoStack
+from infrastructure.cloudfront_hosting_stack import CloudFrontHostingStack
 
 app = cdk.App()
 
-def tag_my_stack(stack):
-    tags = Tags.of(stack)
-    tags.add("project", "llms-with-serverless-rag")
-
-account_id = os.getenv('CDK_DEFAULT_ACCOUNT')
-region = os.getenv('CDK_DEFAULT_REGION')
-env=cdk.Environment(account=account_id, region=region)
-
+account_id = os.getenv("CDK_DEFAULT_ACCOUNT")
+region = os.getenv("CDK_DEFAULT_REGION")
+env = cdk.Environment(account=account_id, region=region)
 env_name = app.node.try_get_context("environment_name")
-LlmsWithServerlessRagStack(app, f"LlmsWithServerlessRag{env_name}Stack", env=env
-    # If you don't specify 'env', this stack will be environment-agnostic.
-    # Account/Region-dependent features and context lookups will not work,
-    # but a single synthesized template can be deployed anywhere.
 
-    # Uncomment the next line to specialize this stack for the AWS Account
-    # and Region that are implied by the current CLI configuration.
+# Stack 1: AOSS Collection + Index Creator Lambda
+kb_role_arn = f"arn:aws:iam::{account_id}:role/srd-kb-role-{env_name}"
+oss_stack = OpensearchNextgenStack(
+    app, f"SRD-AOSS-{env_name}",
+    kb_role_arn=kb_role_arn,
+    env=env,
+)
+Tags.of(oss_stack).add("project", "serverless-rag-demo-v2")
 
-    #env=cdk.Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
+# Stack 2: Bedrock Knowledge Base
+kb_stack = KnowledgeBaseStack(
+    app, f"SRD-KB-{env_name}",
+    collection_arn=oss_stack.collection_arn,
+    collection_endpoint=oss_stack.collection_endpoint,
+    env=env,
+)
+kb_stack.add_dependency(oss_stack)
+Tags.of(kb_stack).add("project", "serverless-rag-demo-v2")
 
-    # Uncomment the next line if you know exactly what Account and Region you
-    # want to deploy the stack to. */
+# Stack 3: AgentCore Runtimes
+agentcore_stack = AgentCoreStack(
+    app, f"SRD-AgentCore-{env_name}",
+    knowledge_base_id=kb_stack.knowledge_base_id,
+    data_bucket_name=kb_stack.data_bucket_name,
+    collection_endpoint=oss_stack.collection_endpoint,
+    env=env,
+)
+agentcore_stack.add_dependency(kb_stack)
+Tags.of(agentcore_stack).add("project", "serverless-rag-demo-v2")
 
-    #env=cdk.Environment(account='123456789012', region='us-east-1'),
+# Stack 4: Cognito Auth
+cognito_stack = CognitoStack(
+    app, f"SRD-Auth-{env_name}",
+    data_bucket_name=kb_stack.data_bucket_name,
+    knowledge_base_id=kb_stack.knowledge_base_id,
+    data_source_id=kb_stack.data_source_id,
+    env=env,
+)
+cognito_stack.add_dependency(kb_stack)
+Tags.of(cognito_stack).add("project", "serverless-rag-demo-v2")
 
-    # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-    )
-
-api_gw_stack = ApiGw_Stack(app, f'ApiGwLlmsLambda{env_name}Stack')
-tag_my_stack(api_gw_stack)
-
-apprunner_stack = AppRunnerHostingStack(app, f"AppRunnerHosting{env_name}Stack") 
-tag_my_stack(apprunner_stack)
+# Stack 5: CloudFront Hosting (depends on Cognito for runtime-config)
+cf_stack = CloudFrontHostingStack(
+    app, f"SRD-CloudFront-{env_name}",
+    cognito_user_pool_id=cognito_stack.user_pool_id,
+    cognito_client_id=cognito_stack.client_id,
+    cognito_identity_pool_id=cognito_stack.identity_pool_id,
+    env=env,
+)
+cf_stack.add_dependency(cognito_stack)
+cf_stack.add_dependency(agentcore_stack)
+Tags.of(cf_stack).add("project", "serverless-rag-demo-v2")
 
 app.synth()
-

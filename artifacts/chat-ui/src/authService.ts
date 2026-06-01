@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { CognitoIdentityProviderClient, InitiateAuthCommand, SignUpCommand, ConfirmSignUpCommand } from "@aws-sdk/client-cognito-identity-provider";
-import config from "./config.json";
+import { getRuntimeConfig } from "./runtime-config";
 
-export const cognitoClient = new CognitoIdentityProviderClient({
-  region: config.region,
-});
+function getClient() {
+  const config = getRuntimeConfig();
+  return new CognitoIdentityProviderClient({ region: config.cognitoRegion });
+}
 
 export const signIn = async (username: string, password: string) => {
+  const config = getRuntimeConfig();
   const params = {
-    AuthFlow: "USER_PASSWORD_AUTH",
-    ClientId: config.clientId,
+    AuthFlow: "USER_PASSWORD_AUTH" as const,
+    ClientId: config.cognitoClientId,
     AuthParameters: {
       USERNAME: username,
       PASSWORD: password,
@@ -20,7 +22,7 @@ export const signIn = async (username: string, password: string) => {
 
   try {
     const command = new InitiateAuthCommand(params);
-    const { AuthenticationResult } = await cognitoClient.send(command);
+    const { AuthenticationResult } = await getClient().send(command);
     if (AuthenticationResult) {
       sessionStorage.setItem("idToken", AuthenticationResult.IdToken || '');
       sessionStorage.setItem("accessToken", AuthenticationResult.AccessToken || '');
@@ -34,8 +36,9 @@ export const signIn = async (username: string, password: string) => {
 };
 
 export const signUp = async (email: string, password: string) => {
+  const config = getRuntimeConfig();
   const params = {
-    ClientId: config.clientId,
+    ClientId: config.cognitoClientId,
     Username: email,
     Password: password,
     UserAttributes: [
@@ -47,7 +50,7 @@ export const signUp = async (email: string, password: string) => {
   };
   try {
     const command = new SignUpCommand(params);
-    const response = await cognitoClient.send(command);
+    const response = await getClient().send(command);
     console.log("Sign up success: ", response);
     return response;
   } catch (error) {
@@ -57,14 +60,15 @@ export const signUp = async (email: string, password: string) => {
 };
 
 export const confirmSignUp = async (username: string, code: string) => {
+  const config = getRuntimeConfig();
   const params = {
-    ClientId: config.clientId,
+    ClientId: config.cognitoClientId,
     Username: username,
     ConfirmationCode: code,
   };
   try {
     const command = new ConfirmSignUpCommand(params);
-    await cognitoClient.send(command);
+    await getClient().send(command);
     console.log("User confirmed successfully");
     return true;
   } catch (error) {

@@ -2,16 +2,18 @@ import {
   Button,
   Container,
   SpaceBetween,
-  Spinner, Textarea, Grid
+  Spinner, Textarea
 } from "@cloudscape-design/components";
 import { useContext, useEffect, useLayoutEffect, useState } from "react";
 import { ChatScrollState } from "./agent-ui";
 import { ChatMessage, ChatMessageType } from "./types";
-import config from "../../config.json";
 import { AppContext } from "../../common/context";
+import { getRuntimeConfig } from "../../runtime-config";
+import { createAgentCoreWebSocket, AgentCoreMessage } from "../../common/agentcore-ws";
 
-var ws = null;
-var agent_prompt_flow = []
+let ws: WebSocket | null = null;
+let chatHistory: { role: string; content: string }[] = [];
+let streamedText = "";
 
 export interface AgentChatUIInputPanelProps {
   inputPlaceholderText?: string;
@@ -24,9 +26,7 @@ export interface AgentChatUIInputPanelProps {
 
 export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps) {
   const [inputText, setInputText] = useState("");
-  const socketUrl = config.websocketUrl;
-  const [message, setMessage] = useState('');
-  const [isDisabled, setDisabled] = useState(false)
+  const [isDisabled, setDisabled] = useState(false);
   const appData = useContext(AppContext);
 
   useEffect(() => {
@@ -35,33 +35,27 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
         ChatScrollState.skipNextScrollEvent = false;
         return;
       }
-    
-    const isScrollToTheEnd =
+      const isScrollToTheEnd =
         Math.abs(
           window.innerHeight +
           window.scrollY -
           document.documentElement.scrollHeight
         ) <= 10;
-
-      if (!isScrollToTheEnd) {
-        ChatScrollState.userHasScrolled = true;
-      } else {
-        ChatScrollState.userHasScrolled = false;
-      }
+      ChatScrollState.userHasScrolled = !isScrollToTheEnd;
     };
-
     window.addEventListener("scroll", onWindowScroll);
-
-    return () => {
-      window.removeEventListener("scroll", onWindowScroll);
-    };
+    return () => window.removeEventListener("scroll", onWindowScroll);
   }, []);
 
   useEffect(() => {
     if (props.clear_socket) {
-      ws=null;
-      agent_prompt_flow=[]
-      setDisabled(false)
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      chatHistory = [];
+      streamedText = "";
+      setDisabled(false);
     }
   }, [props.clear_socket]);
 
@@ -70,7 +64,6 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
       ChatScrollState.skipNextHistoryUpdate = false;
       return;
     }
-
     if (!ChatScrollState.userHasScrolled && (props.messages ?? []).length > 0) {
       ChatScrollState.skipNextScrollEvent = true;
       window.scrollTo({
@@ -80,74 +73,104 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
     }
   }, [props.messages]);
 
-  const onSendMessage = () => {
+  const onSendMessage = async () => {
+    if (inputText.trim() === "") return;
+
     ChatScrollState.userHasScrolled = false;
     props.onSendMessage?.(inputText, ChatMessageType.Human);
+    const query = inputText;
     setInputText("");
-    if (inputText.trim() !== '') {
-      if ("WebSocket" in window) {
-        setDisabled(true)
-        agent_prompt_flow.push({ 'role': 'user', 'content': [{ "type": "text", "text": inputText }] })
-        if (ws == null || ws.readyState == 3 || ws.readyState == 2) {
-          var idToken = appData.userinfo.tokens.idToken.toString()
-          ws = new WebSocket(socketUrl + "?access_token=" + idToken);
-          ws.onerror = function (event) {
-            console.log(event);
-            setDisabled(false);
-          }
-        } else {
-          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
-        }
 
-        ws.onopen = () => {
-          ws.send(JSON.stringify({ query: (JSON.stringify(agent_prompt_flow)), behaviour: 'advanced-agent', 'query_vectordb': 'yes', 'model_id': 'anthropic.claude-3-haiku-20240307-v1:0' }));
-        };
-        
-        ws.onmessage = (event) => {
-          if (event.data) {
-            var decodedMessage = ""
-            try{
-               decodedMessage = atob(event.data);
-            }
-            catch(e){
-              // If decoding fails, use the original message
-              decodedMessage = event.data;
-            }
-            try {
-              const parsedMessage = JSON.parse(decodedMessage);
-              const messageText = parsedMessage.text || parsedMessage;
-              const cleanMessage = messageText.replace(/""/g, '"');
-              props.onSendMessage?.(cleanMessage, ChatMessageType.AI);
-            } catch (e) {
-              // If parsing fails, just use the decoded message
-              const cleanMessage = decodedMessage.replace(/""/g, '"');
-              props.onSendMessage?.(cleanMessage, ChatMessageType.AI);
-            }
-            setDisabled(false);
-          }
-        };
+    if (!("WebSocket" in window)) {
+      console.log("WebSocket is not supported by your browser.");
+      return;
+    }
 
-        ws.onclose = () => {
-          console.log('WebSocket connection closed');
-          agent_prompt_flow = []
-        };
-      } else {
-        console.log('WebSocket is not supported by your browser.');
-        agent_prompt_flow = []
+    setDisabled(true);
+    streamedText = "";
+    chatHistory.push({ role: "user", content: query });
+
+    const sendQuery = () => {
+      ws!.send(JSON.stringify({
+        query,
+        chat_history: chatHistory.slice(-10),
+      }));
+    };
+
+    const handleMessage = (msg: AgentCoreMessage) => {
+      switch (msg.type) {
+        case "start":
+          break;
+        case "intent":
+          props.onSendMessage?.(`[${msg.intent}]`, ChatMessageType.AI);
+          break;
+        case "sources":
+          if (msg.sources && msg.sources.length > 0) {
+            const sourceText = msg.sources.map((s: any) =>
+              `[${s.title || s.uri || "Source"}](${s.uri || "#"})`
+            ).join(" | ");
+            props.onSendMessage?.(`Sources: ${sourceText}`, ChatMessageType.AI);
+          }
+          break;
+        case "token":
+          streamedText += msg.text || "";
+          props.onSendMessage?.(streamedText, ChatMessageType.AI);
+          break;
+        case "result":
+          props.onSendMessage?.(msg.text || JSON.stringify(msg), ChatMessageType.AI);
+          setDisabled(false);
+          break;
+        case "end":
+          chatHistory.push({ role: "assistant", content: streamedText });
+          setDisabled(false);
+          break;
+        case "error":
+          props.onSendMessage?.(msg.message || "Unknown error", ChatMessageType.AI);
+          setDisabled(false);
+          break;
+        default:
+          break;
       }
+    };
+
+    const handleError = (error: string) => {
+      props.onSendMessage?.(error, ChatMessageType.AI);
+      setDisabled(false);
+    };
+
+    const handleClose = () => {
+      ws = null;
+      setDisabled(false);
+    };
+
+    if (ws == null || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+      try {
+        const config = getRuntimeConfig();
+        const idToken = appData.userinfo.tokens.idToken.toString();
+        ws = await createAgentCoreWebSocket(
+          config.multiAgentRuntimeArn,
+          idToken,
+          handleMessage,
+          handleError,
+          handleClose,
+        );
+        ws.onopen = () => sendQuery();
+      } catch (err: any) {
+        props.onSendMessage?.(`Connection failed: ${err.message}`, ChatMessageType.AI);
+        setDisabled(false);
+      }
+    } else {
+      sendQuery();
     }
   };
 
-  function capitalizeFirstLetter(val) {
-    return val.charAt(0).toUpperCase() + val.slice(1);
-  }
-
-  const OnTextareaKeyDown = (event) => {
+  const OnTextareaKeyDown = (event: any) => {
     if (!props.running && event.detail.key === "Enter" && !event.detail.shiftKey) {
-      event.preventDefault()
+      event.preventDefault();
       onSendMessage();
     }
-  }
+  };
+
   return (
     <Container disableContentPaddings disableHeaderPaddings variant="stacked">
       <SpaceBetween size="s">
@@ -165,7 +188,7 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
           onClick={onSendMessage}
           iconAlign="right"
           iconName={!props.running ? "angle-right-double" : undefined}
-          variant="primary" >
+          variant="primary">
           {props.running ? (
             <>
               Loading&nbsp;&nbsp;

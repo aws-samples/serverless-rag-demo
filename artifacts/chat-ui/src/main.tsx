@@ -2,24 +2,30 @@ import ReactDOM from "react-dom/client";
 import { StorageHelper } from "./common/helpers/storage-helper";
 import App from "./app";
 import { Amplify } from 'aws-amplify';
-import config from "./config.json";
+import { loadRuntimeConfig } from "./runtime-config";
 import "@cloudscape-design/global-styles/index.css";
 
 
-Amplify.configure({
-  "aws_project_region": config.region,
-  "aws_cognito_region": config.region,
-  "aws_user_pools_id": config.userPoolId,
-  "aws_user_pools_web_client_id": config.clientId,
-});
+async function init() {
+  const config = await loadRuntimeConfig();
 
-const root = ReactDOM.createRoot(
-  document.getElementById("root") as HTMLElement
-);
+  Amplify.configure({
+    "aws_project_region": config.cognitoRegion,
+    "aws_cognito_region": config.cognitoRegion,
+    "aws_user_pools_id": config.cognitoUserPoolId,
+    "aws_user_pools_web_client_id": config.cognitoClientId,
+  });
 
-const theme = StorageHelper.getTheme();
-StorageHelper.applyTheme(theme);
+  const root = ReactDOM.createRoot(
+    document.getElementById("root") as HTMLElement
+  );
 
-root.render(
-    <App />
-);
+  const theme = StorageHelper.getTheme();
+  StorageHelper.applyTheme(theme);
+
+  root.render(
+      <App />
+  );
+}
+
+init();
