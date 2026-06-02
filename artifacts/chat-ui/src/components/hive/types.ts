@@ -14,7 +14,7 @@ export interface ChannelConfig {
     id: string;
     type: "communication" | "data";
     provider: string;
-    config: Record<string, string>;
+    config: Record<string, any>;
     permissions: string[];
     agents: string[];
 }
@@ -51,6 +51,7 @@ export type HiveMessage =
     | { type: "add_channel"; channel: ChannelConfig }
     | { type: "remove_channel"; channel_id: string }
     | { type: "list_channels" }
+    | { type: "wa_approve"; channel_id: string; approval_id: string; action: "send" | "edit" | "reject"; response?: string }
     | { type: "wipe" };
 
 export type HiveResponse =
@@ -59,7 +60,11 @@ export type HiveResponse =
     | { type: "response"; data: Record<string, any> }
     | { type: "events"; events: HiveEvent[] }
     | { type: "config"; config: HiveConfig }
-    | { type: "channel_added"; channel_id: string }
+    | { type: "channel_added"; channel_id: string; channel?: any; config?: HiveConfig }
     | { type: "channels"; channels: any[] }
+    | { type: "wa_qr"; channel_id: string; qr: string }
+    | { type: "wa_connected"; channel_id: string; phone: string }
+    | { type: "wa_incoming"; channel_id: string; from: string; from_name: string; message: string; mode: string; proposed_response?: string; response?: string; approval_id?: string }
+    | { type: "wa_status"; channel_id: string; connected: boolean }
     | { type: "wiped" }
     | { type: "error"; message: string };
