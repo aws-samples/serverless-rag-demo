@@ -26,7 +26,7 @@
     "@cloudscape-design/global-styles": "^1.0.27",
     "@smithy/protocol-http": "^4.1.0",
     "@smithy/signature-v4": "^4.1.0",
-    "axios": "^1.7.4",
+    "axios": "^1.16.1",
     "epoch-timeago": "^1.1.9",
     "react": "^18.2.0",
     "react-doc-viewer": "^0.1.13",
@@ -48,7 +48,7 @@
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "postcss": "^8.4.35",
+    "postcss": "^8.5.15",
     "sass": "^1.70.0",
     "typescript": "^5.2.2",
     "vite": "^5.4.19"
@@ -59,6 +59,10 @@
   "overrides": {
     "react-virtual": {
       "react": "^18.0.0"
-    }
+    },
+    "tar": "^7.5.16",
+    "brace-expansion": "^2.0.2",
+    "js-cookie": "^3.0.8",
+    "uuid": "^11.1.0"
   }
 }
