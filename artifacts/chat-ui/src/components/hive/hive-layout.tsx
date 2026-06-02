@@ -7,6 +7,8 @@ import {
     Button,
     Header,
     StatusIndicator,
+    ExpandableSection,
+    Grid,
 } from "@cloudscape-design/components";
 import { AgentGraph } from "./agent-graph";
 import { ChatPanel } from "./chat-panel";
@@ -38,6 +40,7 @@ export function HiveLayout() {
     const [showChannelWizard, setShowChannelWizard] = useState(false);
     const [activeTab, setActiveTab] = useState("chat");
     const [jobs, setJobs] = useState<CronJob[]>([]);
+    const [graphExpanded, setGraphExpanded] = useState(true);
 
     // Connect to Hive on mount
     useEffect(() => {
@@ -146,92 +149,135 @@ export function HiveLayout() {
     }
 
     return (
-        <SpaceBetween size="l">
+        <SpaceBetween size="s">
             {/* Connection status */}
             <StatusIndicator type={connected ? "success" : "error"}>
                 {connected ? "Connected to Hive" : "Disconnected"}
             </StatusIndicator>
 
-            {/* Agent Graph */}
-            <Container header={<Header variant="h2">Agent Network</Header>}>
-                <AgentGraph
-                    config={config}
-                    events={events}
-                    activeAgent={activeAgent}
-                    onNodeClick={handleNodeClick}
-                />
-            </Container>
+            {/* Vertical split: Graph (collapsible) | Chat + Tabs */}
+            <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                {/* Left: Agent Graph (collapsible) */}
+                <div style={{
+                    width: graphExpanded ? 360 : 0,
+                    minWidth: graphExpanded ? 360 : 0,
+                    transition: "width 0.3s ease, min-width 0.3s ease",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                }}>
+                    {graphExpanded && (
+                        <Container
+                            header={
+                                <Header
+                                    variant="h3"
+                                    actions={
+                                        <Button
+                                            variant="icon"
+                                            iconName="angle-left"
+                                            onClick={() => setGraphExpanded(false)}
+                                        />
+                                    }
+                                >
+                                    Agent Network
+                                </Header>
+                            }
+                        >
+                            <div style={{ height: 320 }}>
+                                <AgentGraph
+                                    config={config}
+                                    events={events}
+                                    activeAgent={activeAgent}
+                                    onNodeClick={handleNodeClick}
+                                />
+                            </div>
+                        </Container>
+                    )}
+                </div>
 
-            {/* Tabbed panel: Chat, Agents, Channels, Jobs */}
-            <Tabs
-                activeTabId={activeTab}
-                onChange={({ detail }) => setActiveTab(detail.activeTabId)}
-                tabs={[
-                    {
-                        id: "chat",
-                        label: "Chat",
-                        content: (
-                            <ChatPanel
-                                messages={messages}
-                                onSend={handleSend}
-                                isLoading={isLoading}
-                                activeAgent={activeAgent}
-                            />
-                        ),
-                    },
-                    {
-                        id: "agents",
-                        label: "Agents",
-                        content: (
-                            <AgentConfigPanel
-                                agents={config?.agents || []}
-                                onAdd={handleAddAgent}
-                                onRemove={handleRemoveAgent}
-                            />
-                        ),
-                    },
-                    {
-                        id: "channels",
-                        label: "Channels",
-                        content: (
-                            <Container
-                                header={
-                                    <Header
-                                        variant="h3"
-                                        actions={
-                                            <Button onClick={() => setShowChannelWizard(true)}>
-                                                Add Channel
-                                            </Button>
+                {/* Expand button when collapsed */}
+                {!graphExpanded && (
+                    <div style={{ flexShrink: 0, paddingTop: 4 }}>
+                        <Button
+                            variant="icon"
+                            iconName="angle-right"
+                            onClick={() => setGraphExpanded(true)}
+                        />
+                    </div>
+                )}
+
+                {/* Right: Chat + Tabs */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <Tabs
+                        activeTabId={activeTab}
+                        onChange={({ detail }) => setActiveTab(detail.activeTabId)}
+                        tabs={[
+                            {
+                                id: "chat",
+                                label: "Chat",
+                                content: (
+                                    <ChatPanel
+                                        messages={messages}
+                                        onSend={handleSend}
+                                        isLoading={isLoading}
+                                        activeAgent={activeAgent}
+                                    />
+                                ),
+                            },
+                            {
+                                id: "agents",
+                                label: "Agents",
+                                content: (
+                                    <AgentConfigPanel
+                                        agents={config?.agents || []}
+                                        onAdd={handleAddAgent}
+                                        onRemove={handleRemoveAgent}
+                                    />
+                                ),
+                            },
+                            {
+                                id: "channels",
+                                label: "Channels",
+                                content: (
+                                    <Container
+                                        header={
+                                            <Header
+                                                variant="h3"
+                                                actions={
+                                                    <Button onClick={() => setShowChannelWizard(true)}>
+                                                        Add Channel
+                                                    </Button>
+                                                }
+                                            >
+                                                Channels
+                                            </Header>
                                         }
                                     >
-                                        Channels
-                                    </Header>
-                                }
-                            >
-                                {config?.channels.length === 0 ? (
-                                    <SpaceBetween size="s" alignItems="center">
-                                        No channels configured. Add a Slack, WhatsApp, or MCP channel.
-                                    </SpaceBetween>
-                                ) : (
-                                    <SpaceBetween size="s">
-                                        {config?.channels.map((ch) => (
-                                            <div key={ch.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <StatusIndicator type="success" />
-                                                <strong>{ch.id}</strong> — {ch.provider} ({ch.type})
-                                            </div>
-                                        ))}
-                                    </SpaceBetween>
-                                )}
-                            </Container>
-                        ),
-                    },
-                    {
-                        id: "jobs",
-                        label: "Jobs",
-                        content: <JobViewer jobs={jobs} onDelete={(id) => setJobs(jobs.filter((j) => j.id !== id))} />,
-                    },
-                ]}
-            />
+                                        {config?.channels.length === 0 ? (
+                                            <SpaceBetween size="s" alignItems="center">
+                                                No channels configured. Add a Slack, WhatsApp, or MCP channel.
+                                            </SpaceBetween>
+                                        ) : (
+                                            <SpaceBetween size="s">
+                                                {config?.channels.map((ch) => (
+                                                    <div key={ch.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <StatusIndicator type="success" />
+                                                        <strong>{ch.id}</strong> — {ch.provider} ({ch.type})
+                                                    </div>
+                                                ))}
+                                            </SpaceBetween>
+                                        )}
+                                    </Container>
+                                ),
+                            },
+                            {
+                                id: "jobs",
+                                label: "Jobs",
+                                content: <JobViewer jobs={jobs} onDelete={(id) => setJobs(jobs.filter((j) => j.id !== id))} />,
+                            },
+                        ]}
+                    />
+                </div>
+            </div>
         </SpaceBetween>
     );
 }

@@ -209,9 +209,14 @@ echo "  [E] Updating runtime-config.json..."
 
 # Get the UI bucket name
 UI_BUCKET=$(jq -r ".[\"SRD-CloudFront-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"uiurl\")) | .value" cdk-outputs.json 2>/dev/null | head -1)
-UI_BUCKET_NAME=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'srduibucket')].Name | [0]" --output text)
+UI_BUCKET_NAME=$(aws s3api list-buckets --query "Buckets[?contains(Name, 'srduibucket${ENV_NAME}')].Name | [0]" --output text)
 
 # Write updated runtime-config.json to S3
+HIVE_RUNTIME_ARN=""
+if [[ "$HIVE_ENABLED" == "true" ]]; then
+    HIVE_RUNTIME_ARN=$(jq -r ".[\"SRD-Hive-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"hiveimage\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
+fi
+
 cat <<RCEOF | aws s3 cp - "s3://${UI_BUCKET_NAME}/runtime-config.json" --content-type application/json
 {
   "cognitoUserPoolId": "$COGNITO_POOL_ID",
@@ -223,20 +228,78 @@ cat <<RCEOF | aws s3 cp - "s3://${UI_BUCKET_NAME}/runtime-config.json" --content
   "dataBucketName": "$DATA_BUCKET",
   "knowledgeBaseId": "$KB_ID",
   "dataSourceId": "$DATA_SOURCE_ID",
-  "evalRoleArn": "$EVAL_ROLE_ARN"
+  "evalRoleArn": "$EVAL_ROLE_ARN",
+  "hiveEnabled": $HIVE_ENABLED
 }
 RCEOF
 echo "  Updated runtime-config.json with AgentCore endpoints"
 
 # Invalidate CloudFront cache
-CF_DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, 'srduibucket')].Id | [0]" --output text 2>/dev/null || echo "")
+CF_DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, 'srduibucket${ENV_NAME}')].Id | [0]" --output text 2>/dev/null || echo "")
 if [[ -n "$CF_DIST_ID" && "$CF_DIST_ID" != "None" ]]; then
     aws cloudfront create-invalidation --distribution-id "$CF_DIST_ID" --paths "/runtime-config.json" > /dev/null 2>&1 || true
 fi
 
 if [[ "$HIVE_ENABLED" == "true" ]]; then
-    echo "  [E] Deploying Hive Multi-Agent Platform..."
+    echo "  [F] Deploying Hive Multi-Agent Platform..."
     cdk deploy "SRD-Hive-$ENV_NAME" $CDK_CONTEXT --require-approval never --outputs-file cdk-outputs.json
+
+    # Deploy Hive AgentCore runtime
+    HIVE_IMAGE=$(jq -r ".[\"SRD-Hive-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"hiveimage\")) | .value" cdk-outputs.json)
+    HIVE_ROLE_ARN=$(jq -r ".[\"SRD-Hive-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"hiverole\")) | .value" cdk-outputs.json)
+    HIVE_STATE_BUCKET=$(jq -r ".[\"SRD-Hive-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"hivestatebucket\")) | .value" cdk-outputs.json)
+    HIVE_KMS_KEY=$(jq -r ".[\"SRD-Hive-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"hivekmskey\")) | .value" cdk-outputs.json)
+    HIVE_RUNTIME_NAME="srd_hive_${ENV_NAME}"
+    HIVE_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-sonnet-4-6-v1:0\",\"HIVE_STATE_BUCKET\":\"$HIVE_STATE_BUCKET\",\"HIVE_KMS_KEY_ID\":\"$HIVE_KMS_KEY\"}"
+
+    HIVE_RUNTIME_ARN=$(aws bedrock-agentcore-control list-agent-runtimes --region "$REGION" \
+        --query "agentRuntimes[?agentRuntimeName=='$HIVE_RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
+
+    if [[ "$HIVE_RUNTIME_ARN" == "None" || -z "$HIVE_RUNTIME_ARN" ]]; then
+        HIVE_RUNTIME_ARN=$(aws bedrock-agentcore-control create-agent-runtime \
+            --agent-runtime-name "$HIVE_RUNTIME_NAME" \
+            --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$HIVE_IMAGE\"}}" \
+            --role-arn "$HIVE_ROLE_ARN" \
+            --network-configuration '{"networkMode":"PUBLIC"}' \
+            --protocol-configuration '{"serverProtocol":"HTTP"}' \
+            --environment-variables "$HIVE_ENV_VARS" \
+            --region "$REGION" \
+            --query 'agentRuntimeArn' --output text)
+        echo "      Hive runtime created: $HIVE_RUNTIME_ARN"
+        HIVE_RUNTIME_ID=$(echo "$HIVE_RUNTIME_ARN" | awk -F/ '{print $NF}')
+        aws bedrock-agentcore-control create-agent-runtime-endpoint \
+            --agent-runtime-id "$HIVE_RUNTIME_ID" \
+            --name "${HIVE_RUNTIME_NAME}_endpoint" \
+            --region "$REGION" > /dev/null
+    else
+        HIVE_RUNTIME_ID=$(echo "$HIVE_RUNTIME_ARN" | awk -F/ '{print $NF}')
+        aws bedrock-agentcore-control update-agent-runtime \
+            --agent-runtime-id "$HIVE_RUNTIME_ID" \
+            --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$HIVE_IMAGE\"}}" \
+            --role-arn "$HIVE_ROLE_ARN" \
+            --network-configuration '{"networkMode":"PUBLIC"}' \
+            --environment-variables "$HIVE_ENV_VARS" \
+            --region "$REGION" > /dev/null 2>&1 || true
+        echo "      Hive runtime updated: $HIVE_RUNTIME_ARN"
+    fi
+
+    # Update runtime-config with hiveRuntimeArn
+    cat <<RCEOF | aws s3 cp - "s3://${UI_BUCKET_NAME}/runtime-config.json" --content-type application/json
+{
+  "cognitoUserPoolId": "$COGNITO_POOL_ID",
+  "cognitoClientId": "$COGNITO_CLIENT_ID",
+  "cognitoIdentityPoolId": "$COGNITO_IDENTITY_POOL_ID",
+  "cognitoRegion": "$REGION",
+  "ragRuntimeArn": "$RAG_RUNTIME_ARN",
+  "multiAgentRuntimeArn": "$MA_RUNTIME_ARN",
+  "dataBucketName": "$DATA_BUCKET",
+  "knowledgeBaseId": "$KB_ID",
+  "dataSourceId": "$DATA_SOURCE_ID",
+  "evalRoleArn": "$EVAL_ROLE_ARN",
+  "hiveEnabled": true,
+  "hiveRuntimeArn": "$HIVE_RUNTIME_ARN"
+}
+RCEOF
 fi
 
 echo ""

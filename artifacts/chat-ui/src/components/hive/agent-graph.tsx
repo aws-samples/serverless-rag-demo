@@ -74,7 +74,7 @@ export function AgentGraph({ config, events, activeAgent, onNodeClick }: AgentGr
     }, [onNodeClick]);
 
     return (
-        <div style={{ width: "100%", height: 400 }}>
+        <div style={{ width: "100%", height: "100%" }}>
             <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
                 onNodeClick={handleNodeClick} nodeTypes={nodeTypes} fitView proOptions={{ hideAttribution: true }}>
                 <Background />

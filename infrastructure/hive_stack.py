@@ -38,6 +38,17 @@ class HiveStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
+        # Access logs bucket
+        access_logs_bucket = s3.Bucket(
+            self, f"srd-hive-logs-{env_name}",
+            bucket_name=f"srd-hive-logs-{env_name}-{account_id}",
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
+            enforce_ssl=True,
+        )
+
         # S3 bucket for per-user state
         state_bucket = s3.Bucket(
             self, f"srd-hive-state-{env_name}",
@@ -47,6 +58,9 @@ class HiveStack(Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=RemovalPolicy.DESTROY,
             auto_delete_objects=True,
+            enforce_ssl=True,
+            server_access_logs_bucket=access_logs_bucket,
+            server_access_logs_prefix="state-bucket-logs/",
         )
 
         # DynamoDB table for user -> container mapping
@@ -59,6 +73,9 @@ class HiveStack(Stack):
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             removal_policy=RemovalPolicy.DESTROY,
             time_to_live_attribute="ttl",
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True
+            ),
         )
 
         # Container image
@@ -130,6 +147,10 @@ class HiveStack(Stack):
                   value=hive_kms_key.key_id,
                   description="Hive KMS key ID")
 
+        _cdk_nag.NagSuppressions.add_resource_suppressions(access_logs_bucket, [
+            _cdk_nag.NagPackSuppression(id="AwsSolutions-S1",
+                reason="Access logs bucket does not need its own access logs (recursive)"),
+        ])
         _cdk_nag.NagSuppressions.add_stack_suppressions(self, [
             _cdk_nag.NagPackSuppression(id="AwsSolutions-IAM5",
                 reason="ECR pull requires wildcard; S3 scoped to hive bucket"),

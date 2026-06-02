@@ -9,8 +9,10 @@ logger = logging.getLogger(__name__)
 # Lazy import: strands may not be installed in test environments
 try:
     from strands import Agent as StrandsAgent
+    from strands.models import BedrockModel
 except ImportError:
     StrandsAgent = None
+    BedrockModel = None
 
 
 class HiveAgent:
@@ -62,7 +64,9 @@ class HiveAgent:
         query = payload.get("query", "")
         if not self._strands_agent:
             self._init_strands_agent()
-        result = self._strands_agent(query)
+        # Strands Agent.__call__ is synchronous — run in thread to avoid blocking event loop
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(None, self._strands_agent, query)
         return str(result)
 
     def _init_strands_agent(self):
@@ -72,9 +76,12 @@ class HiveAgent:
                 "strands package is required to use _init_strands_agent. "
                 "Install it with: pip install strands-agents"
             )
+        import os
+        region = os.getenv("REGION", "us-east-1")
+        model = BedrockModel(model_id=self.model_id, region_name=region)
         self._strands_agent = StrandsAgent(
             system_prompt=self.system_prompt,
-            model=self.model_id,
+            model=model,
             tools=self.tools,
         )
 
