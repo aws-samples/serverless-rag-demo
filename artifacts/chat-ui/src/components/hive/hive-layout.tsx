@@ -8,6 +8,7 @@ import {
     Header,
     StatusIndicator,
     ExpandableSection,
+    Flashbar,
     Grid,
 } from "@cloudscape-design/components";
 import { WaQrModal } from "./wa-qr-modal";
@@ -46,6 +47,7 @@ export function HiveLayout() {
     const [waQrData, setWaQrData] = useState<string | null>(null);
     const [waConnected, setWaConnected] = useState(false);
     const [waPhone, setWaPhone] = useState("");
+    const [flashItems, setFlashItems] = useState<any[]>([]);
 
     // Connect to Hive on mount
     useEffect(() => {
@@ -109,17 +111,22 @@ export function HiveLayout() {
                     if (ws2) sendHiveMessage(ws2, { type: "get_config" });
                 }
                 break;
-            case "channel_test":
-                setMessages((prev) => [
+            case "channel_test": {
+                const flashId = crypto.randomUUID();
+                setFlashItems((prev) => [
                     ...prev,
                     {
-                        id: crypto.randomUUID(),
-                        role: "system" as const,
-                        content: `Channel "${msg.channel_id}": ${msg.connected ? "✓ Connected" : "✗ Not connected"}${msg.phone ? ` (${msg.phone})` : ""}${msg.message ? ` — ${msg.message}` : ""}`,
-                        timestamp: Date.now(),
+                        id: flashId,
+                        type: msg.connected ? "success" : "warning",
+                        content: `${msg.channel_id}: ${msg.connected ? "Connected" : "Not connected"}${msg.phone ? ` (${msg.phone})` : ""}${msg.message ? ` — ${msg.message}` : ""}`,
+                        dismissible: true,
+                        onDismiss: () => setFlashItems((f) => f.filter((i) => i.id !== flashId)),
                     },
                 ]);
+                // Auto-dismiss after 5s
+                setTimeout(() => setFlashItems((f) => f.filter((i) => i.id !== flashId)), 5000);
                 break;
+            }
             case "config":
                 setConfig(msg.config);
                 break;
@@ -217,6 +224,7 @@ export function HiveLayout() {
 
     return (
         <SpaceBetween size="s">
+            {flashItems.length > 0 && <Flashbar items={flashItems} />}
             {/* Connection status */}
             <StatusIndicator type={connected ? "success" : "error"}>
                 {connected ? "Connected to Hive" : "Disconnected"}
