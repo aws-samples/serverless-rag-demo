@@ -4,7 +4,7 @@ from typing import Any
 
 VALID_AUTONOMY = ("ask", "notify", "silent")
 VALID_CHANNEL_TYPES = ("communication", "data")
-DEFAULT_MODEL = "global.anthropic.claude-sonnet-4-6-v1:0"
+DEFAULT_MODEL = "global.anthropic.claude-sonnet-4-6"
 
 
 @dataclass

@@ -17,7 +17,7 @@ class PersonalAssistantAgent(HiveAgent):
                 "summaries, and code execution. When the user asks you to write code, "
                 "write it and offer to execute it. Be concise and helpful."
             ),
-            model_id="global.anthropic.claude-sonnet-4-6-v1:0",
+            model_id="global.anthropic.claude-sonnet-4-6",
             tools=[],
             bus=bus,
             event_log=event_log,

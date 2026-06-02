@@ -18,7 +18,7 @@ class ReminderAgent(HiveAgent):
                 "Create, list, and manage cron jobs. Always confirm scheduling "
                 "details with the user before creating a job."
             ),
-            model_id="global.anthropic.claude-sonnet-4-6-v1:0",
+            model_id="global.anthropic.claude-sonnet-4-6",
             tools=[],
             bus=bus,
             event_log=event_log,

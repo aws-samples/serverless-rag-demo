@@ -134,8 +134,7 @@ async def websocket_handler(websocket, context):
     finally:
         if session:
             session.shutdown()
-        await websocket.close()
 
 
 if __name__ == "__main__":
-    app.run(log_level="info")
+    app.run(host="0.0.0.0", log_level="info")

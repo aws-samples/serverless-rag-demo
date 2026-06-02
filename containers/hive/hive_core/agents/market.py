@@ -16,7 +16,7 @@ class MarketAgent(HiveAgent):
                 "and provide portfolio insights. Use available MCP data channels for "
                 "real-time data. If no data channel is connected, use web search."
             ),
-            model_id="global.anthropic.claude-sonnet-4-6-v1:0",
+            model_id="global.anthropic.claude-sonnet-4-6",
             tools=[],
             bus=bus,
             event_log=event_log,
