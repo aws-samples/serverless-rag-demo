@@ -18,6 +18,16 @@ def set_channel_manager(cm):
         _event_loop = None
 
 
+def _run_async(coro):
+    """Run async coroutine from sync Strands tool context."""
+    global _event_loop
+    if _event_loop and _event_loop.is_running():
+        future = asyncio.run_coroutine_threadsafe(coro, _event_loop)
+        return future.result(timeout=10)
+    else:
+        return asyncio.run(coro)
+
+
 def send_channel_message(channel_id: str, to: str, message: str) -> dict:
     """Send a message through a configured channel (WhatsApp, Slack, etc).
 
@@ -29,7 +39,7 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
     Returns:
         dict with success status and details.
     """
-    global _channel_manager, _event_loop
+    global _channel_manager
     if not _channel_manager:
         return {"success": False, "error": "No channel manager available"}
 
@@ -38,17 +48,21 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
         available = list(_channel_manager.communication_channels.keys())
         return {"success": False, "error": f"Channel '{channel_id}' not found. Available: {available}"}
 
-    if hasattr(ch, "_connected") and not ch._connected:
-        return {"success": False, "error": f"Channel '{channel_id}' is not connected"}
+    # For WhatsApp, check actual sidecar status (don't rely on cached _connected)
+    if hasattr(ch, "get_status"):
+        try:
+            status = _run_async(ch.get_status())
+            if not status.get("connected"):
+                return {"success": False, "error": f"Channel '{channel_id}' sidecar reports not connected"}
+            # Sync the flag
+            if hasattr(ch, "_connected"):
+                ch._connected = True
+        except Exception as e:
+            return {"success": False, "error": f"Cannot reach channel sidecar: {e}"}
 
     try:
-        if _event_loop and _event_loop.is_running():
-            # Called from Strands thread — schedule on main event loop
-            future = asyncio.run_coroutine_threadsafe(ch.send(to, message), _event_loop)
-            future.result(timeout=10)
-        else:
-            asyncio.run(ch.send(to, message))
-        return {"success": True, "channel_id": channel_id, "to": to, "message_sent": message[:50]}
+        _run_async(ch.send(to, message))
+        return {"success": True, "channel_id": channel_id, "to": to, "message_sent": message[:100]}
     except Exception as e:
         logger.error(f"send_channel_message failed: {e}")
         return {"success": False, "error": str(e)}

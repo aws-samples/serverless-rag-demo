@@ -95,12 +95,12 @@ class HiveSession:
         if self.config.channels:
             ch_lines = []
             for ch in self.config.channels:
-                status = ""
+                status = " [active]"
                 comm_ch = self.channel_manager.communication_channels.get(ch.id)
-                if comm_ch and hasattr(comm_ch, '_connected'):
-                    status = " [connected]" if comm_ch._connected else " [disconnected]"
+                if not comm_ch:
+                    status = " [not initialized]"
                 ch_lines.append(f"  - {ch.id} ({ch.provider}, {ch.type}){status}")
-            parts.append("Connected channels:\n" + "\n".join(ch_lines))
+            parts.append("Configured channels:\n" + "\n".join(ch_lines))
         agents_str = ", ".join(a.id for a in self.config.agents) if hasattr(self.config, 'agents') else ""
         if agents_str:
             parts.append(f"Available agents: {agents_str}")
