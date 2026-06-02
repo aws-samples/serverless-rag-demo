@@ -1,6 +1,22 @@
 [
   {
-    "question": "What are the new tax reforms?",
-    "expected_answer": "The Australian Government announced several key tax reforms: 1) Working Australians Tax Offset (WATO) - a $250 permanent annual tax offset for every working Australian taxpayer from 1 July 2027, benefiting over 13 million workers and increasing the effective tax-free threshold by nearly $1,800 to $19,985. 2) $1,000 Instant Tax Deduction for work-related expenses. 3) Negative Gearing & CGT Reform from 1 July 2027 - limiting negative gearing for residential property to new builds only, replacing the 50% CGT discount with cost base indexation and a 30% minimum tax rate on capital gains. 4) Medicare Levy Low-Income Thresholds increased by 2.9% for singles, families, seniors and pensioners from 1 July 2025. A worker on average earnings would receive a combined benefit of up to $2,816 from the 2027-28 income year."
+    "question": "What are the new tax reforms announced by the Australian Government?",
+    "expected_answer": "The Australian Government announced several key tax reforms: 1) Working Australians Tax Offset (WATO) - a $250 permanent annual tax offset for every working Australian taxpayer from 1 July 2027, benefiting over 13 million workers. 2) $1,000 Instant Tax Deduction for work-related expenses. 3) Negative Gearing & CGT Reform from 1 July 2027 limiting negative gearing to new builds only and replacing the 50% CGT discount with cost base indexation and a 30% minimum tax rate. 4) Medicare Levy Low-Income Thresholds increased by 2.9% from 1 July 2025."
+  },
+  {
+    "question": "What is the Working Australians Tax Offset (WATO)?",
+    "expected_answer": "WATO is a $250 permanent annual tax offset for every working Australian taxpayer, effective from 1 July 2027. Over 13 million Australian workers will benefit. It increases the effective tax-free threshold by nearly $1,800 to $19,985, or up to $24,985 for those eligible for the Low Income Tax Offset. It is the largest permanent increase in the effective tax-free threshold since 2012-13 and is also available to sole traders."
+  },
+  {
+    "question": "How are negative gearing rules changing?",
+    "expected_answer": "From 1 July 2027, negative gearing for residential property investments will be limited to new builds only. The 50% CGT discount for individuals, trusts, and partnerships will be replaced with cost base indexation (re-introduced) and a 30% minimum tax rate on capital gains. Treasury modelling suggests around 75,000 additional owner-occupiers over the next decade."
+  },
+  {
+    "question": "What is the combined tax benefit for a worker on average earnings?",
+    "expected_answer": "A worker on average earnings would receive a combined benefit of up to $2,816 from the 2027-28 income year, combining WATO, three rounds of tax cuts, and the instant tax deduction relative to 2023-24. The overall package is described as broadly revenue neutral over the forward estimates."
+  },
+  {
+    "question": "How are Medicare Levy thresholds changing?",
+    "expected_answer": "Medicare Levy low-income thresholds are being increased by 2.9% for singles, families, seniors and pensioners from 1 July 2025. Over 1 million lower-income Australians will continue to be exempt or pay a reduced rate of Medicare Levy."
   }
 ]
