@@ -250,7 +250,7 @@ if [[ "$HIVE_ENABLED" == "true" ]]; then
     HIVE_STATE_BUCKET=$(jq -r ".[\"SRD-Hive-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"hivestatebucket\")) | .value" cdk-outputs.json)
     HIVE_KMS_KEY=$(jq -r ".[\"SRD-Hive-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"hivekmskey\")) | .value" cdk-outputs.json)
     HIVE_RUNTIME_NAME="srd_hive_${ENV_NAME}"
-    HIVE_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-sonnet-4-6-v1:0\",\"HIVE_STATE_BUCKET\":\"$HIVE_STATE_BUCKET\",\"HIVE_KMS_KEY_ID\":\"$HIVE_KMS_KEY\"}"
+    HIVE_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-sonnet-4-6\",\"HIVE_STATE_BUCKET\":\"$HIVE_STATE_BUCKET\",\"HIVE_KMS_KEY_ID\":\"$HIVE_KMS_KEY\"}"
 
     HIVE_RUNTIME_ARN=$(aws bedrock-agentcore-control list-agent-runtimes --region "$REGION" \
         --query "agentRuntimes[?agentRuntimeName=='$HIVE_RUNTIME_NAME'].agentRuntimeArn | [0]" --output text 2>/dev/null || echo "None")
