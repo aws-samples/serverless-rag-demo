@@ -67,6 +67,13 @@ class StateManager:
         )
         return resp["Body"].read().decode()
 
+    def save_cron_jobs(self, jobs: list[dict]):
+        self._put_json(f"{self.prefix}/cron/jobs.json", {"jobs": jobs})
+
+    def load_cron_jobs(self) -> list[dict]:
+        data = self._get_json(f"{self.prefix}/cron/jobs.json", {"jobs": []})
+        return data.get("jobs", [])
+
     def wipe(self):
         """Delete all state for this user."""
         resp = self.s3.list_objects_v2(
