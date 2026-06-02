@@ -19,6 +19,7 @@ from hive_core.agents.pa import PersonalAssistantAgent
 from hive_core.agents.reminder import ReminderAgent
 from hive_core.agents.market import MarketAgent
 from hive_core.channels.manager import ChannelManager
+from hive_core.tools.channel_send import set_channel_manager as _set_channel_manager_ref
 from hive_core.wa_handler import WhatsAppIncomingHandler
 
 logging.basicConfig(level=logging.INFO)
@@ -63,6 +64,7 @@ class HiveSession:
 
         self._register_default_agents()
         await self._restore_channels()
+        _set_channel_manager_ref(self.channel_manager)
         self.router.set_context_provider(self._build_context)
         self.scheduler.load()
         self.scheduler.start()
@@ -254,6 +256,9 @@ async def websocket_handler(websocket, context):
                 if ch and hasattr(ch, "get_status"):
                     try:
                         status = await ch.get_status()
+                        # Sync _connected flag from actual sidecar status
+                        if hasattr(ch, "_connected"):
+                            ch._connected = status.get("connected", False)
                         await websocket.send_json({"type": "channel_test", "channel_id": channel_id, **status})
                     except Exception as e:
                         await websocket.send_json({"type": "channel_test", "channel_id": channel_id, "connected": False, "message": f"Error: {e}"})
@@ -327,12 +332,18 @@ async def handle_wa_event(request: Request):
                 "channel_id": "whatsapp",
                 "phone": payload.get("phone", ""),
             })
-            # Persist auth state on successful connection
+            # Update channel state and persist auth
             if _active_session:
                 for ch in _active_session.channel_manager.communication_channels.values():
+                    if hasattr(ch, "_connected"):
+                        ch._connected = True
                     if hasattr(ch, "persist_auth_to_s3"):
                         ch.persist_auth_to_s3()
         elif event == "disconnected":
+            if _active_session:
+                for ch in _active_session.channel_manager.communication_channels.values():
+                    if hasattr(ch, "_connected"):
+                        ch._connected = False
             await _active_websocket.send_json({
                 "type": "wa_status",
                 "channel_id": "whatsapp",
