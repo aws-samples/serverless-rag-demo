@@ -63,6 +63,7 @@ class HiveSession:
 
         self._register_default_agents()
         await self._restore_channels()
+        self.router.set_context_provider(self._build_context)
         self.scheduler.load()
         self.scheduler.start()
         self.bus.subscribe("__user__", self._collect_response)
@@ -85,6 +86,23 @@ class HiveSession:
         PersonalAssistantAgent(bus=self.bus, event_log=self.event_log, executor=self.executor)
         ReminderAgent(bus=self.bus, event_log=self.event_log, scheduler=self.scheduler)
         MarketAgent(bus=self.bus, event_log=self.event_log)
+
+    def _build_context(self) -> str:
+        """Build runtime context string for agents (channels, agents, capabilities)."""
+        parts = []
+        if self.config.channels:
+            ch_lines = []
+            for ch in self.config.channels:
+                status = ""
+                comm_ch = self.channel_manager.communication_channels.get(ch.id)
+                if comm_ch and hasattr(comm_ch, '_connected'):
+                    status = " [connected]" if comm_ch._connected else " [disconnected]"
+                ch_lines.append(f"  - {ch.id} ({ch.provider}, {ch.type}){status}")
+            parts.append("Connected channels:\n" + "\n".join(ch_lines))
+        agents_str = ", ".join(a.id for a in self.config.agents) if hasattr(self.config, 'agents') else ""
+        if agents_str:
+            parts.append(f"Available agents: {agents_str}")
+        return "\n".join(parts) if parts else ""
 
     async def _collect_response(self, message: Message):
         await self._response_queue.put(message)

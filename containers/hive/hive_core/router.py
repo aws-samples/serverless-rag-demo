@@ -18,6 +18,11 @@ class HiveRouter:
         self.bus = bus
         self.registry = registry
         self.event_log = event_log
+        self._context_fn = None
+
+    def set_context_provider(self, fn):
+        """Set a function that returns runtime context string for agents."""
+        self._context_fn = fn
 
     def classify(self, query: str) -> str:
         q = query.lower()
@@ -34,10 +39,11 @@ class HiveRouter:
         self.event_log.append("router", "classified", {"query": query, "target": target})
         if target == "__system__":
             return target
+        context = self._context_fn() if self._context_fn else ""
         await self.bus.publish(Message(
             source="__user__",
             target=target,
             msg_type="task",
-            payload={"query": query, "user_id": user_id},
+            payload={"query": query, "user_id": user_id, "context": context},
         ))
         return target

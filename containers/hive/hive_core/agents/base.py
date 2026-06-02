@@ -62,6 +62,9 @@ class HiveAgent:
     async def process(self, payload: dict) -> Any:
         """Process a task payload. Override in subclasses for custom behavior."""
         query = payload.get("query", "")
+        context = payload.get("context", "")
+        if context:
+            query = f"{context}\n\nUser: {query}"
         if not self._strands_agent:
             self._init_strands_agent()
         # Strands Agent.__call__ is synchronous — run in thread to avoid blocking event loop
