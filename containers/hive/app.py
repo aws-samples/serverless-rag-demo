@@ -68,11 +68,12 @@ class HiveSession:
         target = await self.router.route(self.user_id, query)
         return target
 
-    async def get_response(self, timeout: float = 30.0) -> dict | None:
+    async def get_response(self, timeout: float = 60.0) -> dict | None:
         try:
             msg = await asyncio.wait_for(self._response_queue.get(), timeout=timeout)
             return msg.payload
         except asyncio.TimeoutError:
+            logger.error("Agent response timeout after 60s")
             return None
 
     def shutdown(self):

@@ -35,7 +35,7 @@ class HiveRouter:
         if target == "__system__":
             return target
         await self.bus.publish(Message(
-            source="router",
+            source="__user__",
             target=target,
             msg_type="task",
             payload={"query": query, "user_id": user_id},

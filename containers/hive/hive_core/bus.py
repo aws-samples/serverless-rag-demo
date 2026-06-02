@@ -38,9 +38,15 @@ class MessageBus:
         self.history.append(message)
         handler = self._subscribers.get(message.target)
         if handler:
-            asyncio.create_task(handler(message))
+            task = asyncio.create_task(handler(message))
+            task.add_done_callback(self._task_done)
         else:
             logger.warning(f"No subscriber for target '{message.target}'")
+
+    def _task_done(self, task: asyncio.Task):
+        """Log any exceptions from message handler tasks."""
+        if task.exception():
+            logger.error(f"Message handler failed: {task.exception()}", exc_info=task.exception())
 
     async def broadcast(self, message: Message):
         """Send message to all subscribers."""
