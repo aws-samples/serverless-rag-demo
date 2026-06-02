@@ -17,6 +17,7 @@ interface ChannelConfigProps {
     agents: AgentConfig[];
     onSave: (config: ChannelConfig) => void;
     onCancel: () => void;
+    initialChannel?: ChannelConfig | null;
 }
 
 const PROVIDERS = [
@@ -26,12 +27,18 @@ const PROVIDERS = [
     { label: "MCP Server (stdio)", value: "mcp-stdio" },
 ];
 
-export function ChannelConfigWizard({ agents, onSave, onCancel }: ChannelConfigProps) {
-    const [provider, setProvider] = useState<string>("");
-    const [channelId, setChannelId] = useState("");
-    const [config, setConfig] = useState<Record<string, string>>({});
-    const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
-    const [permissions, setPermissions] = useState<string[]>(["read"]);
+export function ChannelConfigWizard({ agents, onSave, onCancel, initialChannel }: ChannelConfigProps) {
+    const resolveProvider = (ch: ChannelConfig | null | undefined) => {
+        if (!ch) return "";
+        if (ch.provider === "mcp") return ch.config?.transport === "stdio" ? "mcp-stdio" : "mcp-sse";
+        return ch.provider;
+    };
+
+    const [provider, setProvider] = useState<string>(resolveProvider(initialChannel));
+    const [channelId, setChannelId] = useState(initialChannel?.id || "");
+    const [config, setConfig] = useState<Record<string, string>>(initialChannel?.config as Record<string, string> || {});
+    const [selectedAgents, setSelectedAgents] = useState<string[]>(initialChannel?.agents || []);
+    const [permissions, setPermissions] = useState<string[]>(initialChannel?.permissions || ["read"]);
 
     const handleSubmit = () => {
         const channelType = provider.startsWith("mcp") ? "data" : "communication";

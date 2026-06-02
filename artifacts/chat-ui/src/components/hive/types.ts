@@ -50,6 +50,8 @@ export type HiveMessage =
     | { type: "get_config" }
     | { type: "add_channel"; channel: ChannelConfig }
     | { type: "remove_channel"; channel_id: string }
+    | { type: "update_channel"; channel: ChannelConfig }
+    | { type: "test_channel"; channel_id: string }
     | { type: "list_channels" }
     | { type: "wa_approve"; channel_id: string; approval_id: string; action: "send" | "edit" | "reject"; response?: string }
     | { type: "wipe" };
@@ -61,6 +63,9 @@ export type HiveResponse =
     | { type: "events"; events: HiveEvent[] }
     | { type: "config"; config: HiveConfig }
     | { type: "channel_added"; channel_id: string; channel?: any; config?: HiveConfig }
+    | { type: "channel_removed"; channel_id: string; config?: HiveConfig }
+    | { type: "channel_updated"; channel?: any; config?: HiveConfig }
+    | { type: "channel_test"; channel_id: string; connected?: boolean; phone?: string; message?: string }
     | { type: "channels"; channels: any[] }
     | { type: "wa_qr"; channel_id: string; qr: string }
     | { type: "wa_connected"; channel_id: string; phone: string }

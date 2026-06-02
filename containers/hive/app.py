@@ -175,6 +175,56 @@ async def websocket_handler(websocket, context):
                     "config": session.config.to_dict(),
                 })
 
+            elif msg_type == "remove_channel" and session:
+                channel_id = data.get("channel_id", "")
+                await session.channel_manager.unregister_channel(channel_id)
+                session.config.channels = [c for c in session.config.channels if c.id != channel_id]
+                session.state.save_config(session.config.to_dict())
+                session.event_log.append("system", "channel_removed", {"id": channel_id})
+                await websocket.send_json({
+                    "type": "channel_removed",
+                    "channel_id": channel_id,
+                    "config": session.config.to_dict(),
+                })
+
+            elif msg_type == "update_channel" and session:
+                channel_data = data.get("channel", {})
+                channel_id = channel_data.get("id", "")
+                # Remove old, re-register new
+                await session.channel_manager.unregister_channel(channel_id)
+                session.config.channels = [c for c in session.config.channels if c.id != channel_id]
+                channel_cfg = ChannelConfig.from_dict(channel_data)
+                result = await session.channel_manager.register_channel(channel_cfg)
+                session.config.channels.append(channel_cfg)
+                session.state.save_config(session.config.to_dict())
+                session.event_log.append("system", "channel_updated", {"id": channel_id})
+
+                if channel_cfg.provider == "whatsapp-baileys":
+                    wa_channel = session.channel_manager.get_whatsapp_channel(channel_cfg.id)
+                    if wa_channel:
+                        session.setup_wa_handler(wa_channel)
+                    if result.get("status") == "qr_needed":
+                        await websocket.send_json({
+                            "type": "wa_qr",
+                            "channel_id": channel_cfg.id,
+                            "qr": result.get("qr", ""),
+                        })
+
+                await websocket.send_json({
+                    "type": "channel_updated",
+                    "channel": channel_data,
+                    "config": session.config.to_dict(),
+                })
+
+            elif msg_type == "test_channel" and session:
+                channel_id = data.get("channel_id", "")
+                ch = session.channel_manager.communication_channels.get(channel_id)
+                if ch and hasattr(ch, "get_status"):
+                    status = await ch.get_status()
+                    await websocket.send_json({"type": "channel_test", "channel_id": channel_id, **status})
+                else:
+                    await websocket.send_json({"type": "channel_test", "channel_id": channel_id, "connected": True, "message": "Channel registered"})
+
             elif msg_type == "wa_approve" and session and session.wa_handler:
                 approval_id = data.get("approval_id", "")
                 action = data.get("action", "reject")

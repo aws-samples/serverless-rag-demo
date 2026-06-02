@@ -101,8 +101,24 @@ export function HiveLayout() {
                 ]);
                 break;
             case "channel_added":
-                const ws = getHiveSocket();
-                if (ws) sendHiveMessage(ws, { type: "get_config" });
+            case "channel_removed":
+            case "channel_updated":
+                if (msg.config) setConfig(msg.config);
+                else {
+                    const ws2 = getHiveSocket();
+                    if (ws2) sendHiveMessage(ws2, { type: "get_config" });
+                }
+                break;
+            case "channel_test":
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        role: "system" as const,
+                        content: `Channel "${msg.channel_id}": ${msg.connected ? "✓ Connected" : "✗ Not connected"}${msg.phone ? ` (${msg.phone})` : ""}${msg.message ? ` — ${msg.message}` : ""}`,
+                        timestamp: Date.now(),
+                    },
+                ]);
                 break;
             case "config":
                 setConfig(msg.config);
@@ -143,10 +159,32 @@ export function HiveLayout() {
         if (ws) sendHiveMessage(ws, { type: "chat", query: text });
     };
 
+    const [editingChannel, setEditingChannel] = useState<ChannelConfig | null>(null);
+
     const handleAddChannel = (channelConfig: ChannelConfig) => {
         const ws = getHiveSocket();
-        if (ws) sendHiveMessage(ws, { type: "add_channel", channel: channelConfig });
+        if (editingChannel) {
+            if (ws) sendHiveMessage(ws, { type: "update_channel", channel: channelConfig });
+            setEditingChannel(null);
+        } else {
+            if (ws) sendHiveMessage(ws, { type: "add_channel", channel: channelConfig });
+        }
         setShowChannelWizard(false);
+    };
+
+    const handleRemoveChannel = (channelId: string) => {
+        const ws = getHiveSocket();
+        if (ws) sendHiveMessage(ws, { type: "remove_channel", channel_id: channelId });
+    };
+
+    const handleTestChannel = (channelId: string) => {
+        const ws = getHiveSocket();
+        if (ws) sendHiveMessage(ws, { type: "test_channel", channel_id: channelId });
+    };
+
+    const handleEditChannel = (ch: ChannelConfig) => {
+        setEditingChannel(ch);
+        setShowChannelWizard(true);
     };
 
     const handleAddAgent = (agent: AgentConfig) => {
@@ -171,7 +209,8 @@ export function HiveLayout() {
             <ChannelConfigWizard
                 agents={config?.agents || []}
                 onSave={handleAddChannel}
-                onCancel={() => setShowChannelWizard(false)}
+                onCancel={() => { setShowChannelWizard(false); setEditingChannel(null); }}
+                initialChannel={editingChannel}
             />
         );
     }
@@ -288,8 +327,13 @@ export function HiveLayout() {
                                             <SpaceBetween size="s">
                                                 {config?.channels.map((ch) => (
                                                     <div key={ch.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                        <StatusIndicator type="success" />
+                                                        <StatusIndicator type={ch.provider === "whatsapp-baileys" && waConnected ? "success" : "info"} />
                                                         <strong>{ch.id}</strong> — {ch.provider} ({ch.type})
+                                                        <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
+                                                            <Button variant="inline-link" onClick={() => handleTestChannel(ch.id)}>Test</Button>
+                                                            <Button variant="inline-link" onClick={() => handleEditChannel(ch)}>Edit</Button>
+                                                            <Button variant="inline-link" onClick={() => handleRemoveChannel(ch.id)}>Delete</Button>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </SpaceBetween>
