@@ -9,6 +9,8 @@ export interface RuntimeConfig {
     knowledgeBaseId: string;
     dataSourceId: string;
     evalRoleArn: string;
+    hiveEnabled?: boolean;
+    hiveRuntimeArn?: string;
 }
 
 let cachedConfig: RuntimeConfig | null = null;

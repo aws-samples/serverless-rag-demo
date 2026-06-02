@@ -44,11 +44,25 @@ else
     OCU_MODE="demo"
 fi
 
+# Step 3b: Hive (Multi-Agent Platform)
+echo ""
+echo "  [3b] Enable Hive (Multi-Agent Platform)?"
+echo "       Adds per-user agent containers with channel support (Slack, WhatsApp, MCP)"
+echo "       Additional cost: ~\$0.05/hr per active user + S3/KMS"
+read -p "       Enable? [y/N]: " HIVE_CHOICE
+HIVE_CHOICE="${HIVE_CHOICE:-N}"
+if [[ "$HIVE_CHOICE" == "y" || "$HIVE_CHOICE" == "Y" ]]; then
+    HIVE_ENABLED="true"
+else
+    HIVE_ENABLED="false"
+fi
+
 echo ""
 echo "  [4] Deploying with:"
 echo "      Region:      $REGION"
 echo "      Environment: $ENV_NAME"
 echo "      OCU Mode:    $OCU_MODE"
+echo "      Hive:        $HIVE_ENABLED"
 echo ""
 read -p "  Proceed? [Y/n]: " CONFIRM
 CONFIRM="${CONFIRM:-Y}"
@@ -68,7 +82,7 @@ echo "  Deploying..."
 # Bootstrap CDK if needed
 cdk bootstrap "aws://$CDK_DEFAULT_ACCOUNT/$REGION" 2>/dev/null || true
 
-CDK_CONTEXT="--context environment_name=$ENV_NAME --context is_aoss=yes --context embed_model_id=amazon.titan-embed-text-v2:0 --context ocu_mode=$OCU_MODE --context deployer_arn=$DEPLOYER_ARN"
+CDK_CONTEXT="--context environment_name=$ENV_NAME --context is_aoss=yes --context embed_model_id=amazon.titan-embed-text-v2:0 --context ocu_mode=$OCU_MODE --context deployer_arn=$DEPLOYER_ARN --context hive_enabled=$HIVE_ENABLED"
 
 # Step A: Deploy AOSS collection
 echo "  [A] Deploying OpenSearch Serverless collection..."
@@ -218,6 +232,11 @@ echo "  Updated runtime-config.json with AgentCore endpoints"
 CF_DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?contains(Origins.Items[0].DomainName, 'srduibucket')].Id | [0]" --output text 2>/dev/null || echo "")
 if [[ -n "$CF_DIST_ID" && "$CF_DIST_ID" != "None" ]]; then
     aws cloudfront create-invalidation --distribution-id "$CF_DIST_ID" --paths "/runtime-config.json" > /dev/null 2>&1 || true
+fi
+
+if [[ "$HIVE_ENABLED" == "true" ]]; then
+    echo "  [E] Deploying Hive Multi-Agent Platform..."
+    cdk deploy "SRD-Hive-$ENV_NAME" $CDK_CONTEXT --require-approval never --outputs-file cdk-outputs.json
 fi
 
 echo ""

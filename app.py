@@ -68,4 +68,16 @@ cf_stack.add_dependency(cognito_stack)
 cf_stack.add_dependency(agentcore_stack)
 Tags.of(cf_stack).add("project", "serverless-rag-demo-v2")
 
+# Stack 6 (optional): Hive Multi-Agent Platform
+hive_enabled = app.node.try_get_context("hive_enabled") == "true"
+if hive_enabled:
+    from infrastructure.hive_stack import HiveStack
+    hive_stack = HiveStack(
+        app, f"SRD-Hive-{env_name}",
+        cognito_identity_pool_id=cognito_stack.identity_pool_id,
+        env=env,
+    )
+    hive_stack.add_dependency(cognito_stack)
+    Tags.of(hive_stack).add("project", "serverless-rag-demo-v2")
+
 app.synth()
