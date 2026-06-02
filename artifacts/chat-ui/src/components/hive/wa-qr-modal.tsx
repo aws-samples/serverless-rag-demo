@@ -1,4 +1,4 @@
-import { Modal, Box, SpaceBetween, StatusIndicator, Spinner } from "@cloudscape-design/components";
+import { Modal, SpaceBetween, StatusIndicator, Spinner } from "@cloudscape-design/components";
 
 interface WaQrModalProps {
     visible: boolean;
