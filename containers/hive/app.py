@@ -20,6 +20,7 @@ from hive_core.agents.reminder import ReminderAgent
 from hive_core.agents.market import MarketAgent
 from hive_core.channels.manager import ChannelManager
 from hive_core.tools.channel_send import set_channel_manager as _set_channel_manager_ref
+from hive_core.tools.mcp_bridge import set_mcp_pool as _set_mcp_pool_ref
 from hive_core.wa_handler import WhatsAppIncomingHandler
 
 logging.basicConfig(level=logging.INFO)
@@ -65,6 +66,7 @@ class HiveSession:
         self._register_default_agents()
         await self._restore_channels()
         _set_channel_manager_ref(self.channel_manager)
+        _set_mcp_pool_ref(self.channel_manager.mcp_pool)
         self.router.set_context_provider(self._build_context)
         self.scheduler.load()
         self.scheduler.start()
@@ -85,9 +87,16 @@ class HiveSession:
                 logger.warning(f"Failed to restore channel {ch_cfg.id}: {e}")
 
     def _register_default_agents(self):
-        PersonalAssistantAgent(bus=self.bus, event_log=self.event_log, executor=self.executor)
-        ReminderAgent(bus=self.bus, event_log=self.event_log, scheduler=self.scheduler)
-        MarketAgent(bus=self.bus, event_log=self.event_log)
+        self._agents = [
+            PersonalAssistantAgent(bus=self.bus, event_log=self.event_log, executor=self.executor),
+            ReminderAgent(bus=self.bus, event_log=self.event_log, scheduler=self.scheduler),
+            MarketAgent(bus=self.bus, event_log=self.event_log),
+        ]
+
+    def _reload_agent_tools(self):
+        """Force all agents to re-initialize with updated MCP tools."""
+        for agent in self._agents:
+            agent.reload_tools()
 
     def _build_context(self) -> str:
         """Build runtime context string for agents (channels, agents, capabilities)."""
@@ -185,6 +194,11 @@ async def websocket_handler(websocket, context):
                 session.state.save_config(session.config.to_dict())
                 session.event_log.append("system", "channel_added", {"id": channel_cfg.id})
 
+                # If MCP data channel, reload agent tools
+                if channel_cfg.type == "data" and channel_cfg.provider == "mcp":
+                    _set_mcp_pool_ref(session.channel_manager.mcp_pool)
+                    session._reload_agent_tools()
+
                 # If WhatsApp, set up handler and relay QR/status
                 if channel_cfg.provider == "whatsapp-baileys":
                     wa_channel = session.channel_manager.get_whatsapp_channel(channel_cfg.id)
@@ -211,10 +225,14 @@ async def websocket_handler(websocket, context):
 
             elif msg_type == "remove_channel" and session:
                 channel_id = data.get("channel_id", "")
+                # Check if it's an MCP channel before removing
+                cfg = next((c for c in session.config.channels if c.id == channel_id), None)
                 await session.channel_manager.unregister_channel(channel_id)
                 session.config.channels = [c for c in session.config.channels if c.id != channel_id]
                 session.state.save_config(session.config.to_dict())
                 session.event_log.append("system", "channel_removed", {"id": channel_id})
+                if cfg and cfg.type == "data" and cfg.provider == "mcp":
+                    session._reload_agent_tools()
                 await websocket.send_json({
                     "type": "channel_removed",
                     "channel_id": channel_id,

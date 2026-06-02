@@ -82,11 +82,27 @@ class HiveAgent:
         import os
         region = os.getenv("REGION", "us-east-1")
         model = BedrockModel(model_id=self.model_id, region_name=region)
+
+        # Merge static tools with any MCP tools mapped to this agent
+        all_tools = list(self.tools)
+        try:
+            from hive_core.tools.mcp_bridge import create_mcp_tools_for_agent
+            mcp_tools = create_mcp_tools_for_agent(self.agent_id)
+            if mcp_tools:
+                all_tools.extend(mcp_tools)
+                logger.info(f"Agent {self.agent_id}: {len(mcp_tools)} MCP tools loaded")
+        except Exception as e:
+            logger.warning(f"Failed to load MCP tools for {self.agent_id}: {e}")
+
         self._strands_agent = StrandsAgent(
             system_prompt=self.system_prompt,
             model=model,
-            tools=self.tools,
+            tools=all_tools,
         )
+
+    def reload_tools(self):
+        """Force re-initialization of Strands agent (e.g., after MCP channels change)."""
+        self._strands_agent = None
 
     async def request_agent(self, target_agent_id: str, msg_type: str, payload: dict):
         """Request another agent to do something via the bus."""
