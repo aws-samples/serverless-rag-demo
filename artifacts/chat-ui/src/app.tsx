@@ -4,7 +4,8 @@ import { AppLayout, TopNavigation, SideNavigation, Badge, Alert } from '@cloudsc
 import { Hub } from 'aws-amplify/utils';
 import { signOut } from 'aws-amplify/auth';
 import { AppContext } from "./common/context";
-import { NotFound, ChatPage, AgentPage, HomePage, Help, EvalPage } from './pages'
+import { NotFound, ChatPage, AgentPage, HomePage, Help, EvalPage, HivePage } from './pages'
+import { loadRuntimeConfig } from "./runtime-config";
 import '@aws-amplify/ui-react/styles.css';
 
 export default function App() {
@@ -13,7 +14,16 @@ export default function App() {
   const [appData, setAppData] = useState({ userinfo: null })
   const [notificationVisible, setNotificationVisible] = useState(false);
   const [notificationMsg, setNotificationMsg] = useState("");
+  const [hiveEnabled, setHiveEnabled] = useState(false);
   const Router = HashRouter;
+
+  useEffect(() => {
+    loadRuntimeConfig().then((cfg) => {
+      setHiveEnabled(cfg.hiveEnabled === true);
+    }).catch(() => {
+      // runtime-config.json not available or missing hiveEnabled
+    });
+  }, []);
 
   useEffect(() => {
     Hub.listen("auth", (data) => {
@@ -77,6 +87,7 @@ export default function App() {
               <Route path="/document-chat" element={<Help setPageId="doc-chat" />} />
               <Route path="/document-chat/manage-document" element={<Help setPageId="doc-chat-manage" />} />
               <Route path="/multi-agent" element={<Help setPageId="multi-agent" />} />
+              <Route path="/hive" element={<Help setPageId="hive" />} />
               <Route path="/evaluation" element={<Help setPageId="evaluation" />} />
               <Route path="*" element={<Help setPageId="404" />} />
             </Routes>
@@ -99,6 +110,7 @@ export default function App() {
               ]
             },
             { type: "link", text: "Multi-Agent", href: "#/multi-agent" },
+            ...(hiveEnabled ? [{ type: "link" as const, text: "Hive", href: "#/hive" }] : []),
             { type: "link", text: "Evaluation", href: "#/evaluation" },
           ]}
         />}
@@ -109,6 +121,7 @@ export default function App() {
               <Route path="/document-chat" element={<ChatPage setAppData={setAppData} manageDocument={false} />} />
               <Route path="/document-chat/manage-document" element={<ChatPage setAppData={setAppData} manageDocument={true} />} />
               <Route path="/multi-agent" element={<AgentPage setAppData={setAppData} />} />
+              <Route path="/hive" element={<HivePage setAppData={setAppData} />} />
               <Route path="/evaluation" element={<EvalPage setAppData={setAppData} />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

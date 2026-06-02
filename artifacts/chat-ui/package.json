@@ -26,6 +26,7 @@
     "@cloudscape-design/global-styles": "^1.0.27",
     "@smithy/protocol-http": "^4.1.0",
     "@smithy/signature-v4": "^4.1.0",
+    "@xyflow/react": "^12.4.0",
     "axios": "^1.7.4",
     "epoch-timeago": "^1.1.9",
     "react": "^18.2.0",
