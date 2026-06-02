@@ -84,6 +84,32 @@ export function ChannelConfigWizard({ agents, onSave, onCancel }: ChannelConfigP
                                 placeholder="+61..."
                             />
                         </FormField>
+                        <FormField label="Incoming Message Mode" description="How to handle messages received on WhatsApp">
+                            <Select
+                                selectedOption={
+                                    [
+                                        { label: "Ask (show in UI, wait for approval)", value: "ask" },
+                                        { label: "Notify (auto-reply, show in UI)", value: "notify" },
+                                        { label: "Silent (auto-reply, no UI notification)", value: "silent" },
+                                        { label: "Redirect to Agent (Hive takes over)", value: "redirect-to-agent" },
+                                    ].find((o) => o.value === (config.incoming_mode || "notify")) || null
+                                }
+                                onChange={({ detail }) => setConfig({ ...config, incoming_mode: detail.selectedOption?.value || "notify" })}
+                                options={[
+                                    { label: "Ask (show in UI, wait for approval)", value: "ask" },
+                                    { label: "Notify (auto-reply, show in UI)", value: "notify" },
+                                    { label: "Silent (auto-reply, no UI notification)", value: "silent" },
+                                    { label: "Redirect to Agent (Hive takes over)", value: "redirect-to-agent" },
+                                ]}
+                            />
+                        </FormField>
+                        <FormField label="Reply Prefix (optional)" description="Text prepended to all agent replies, e.g. '[AI] '">
+                            <Input
+                                value={config.reply_prefix || ""}
+                                onChange={({ detail }) => setConfig({ ...config, reply_prefix: detail.value })}
+                                placeholder="[AI] "
+                            />
+                        </FormField>
                         <Alert type="info">
                             After saving, you'll need to scan a QR code with your WhatsApp to link the device.
                             Note: Baileys is unofficial — WhatsApp may break compatibility.
@@ -145,6 +171,15 @@ export function ChannelConfigWizard({ agents, onSave, onCancel }: ChannelConfigP
         <Wizard
             onCancel={onCancel}
             onSubmit={handleSubmit}
+            submitButtonText="Save Channel"
+            i18nStrings={{
+                stepNumberLabel: (n) => `Step ${n}`,
+                collapsedStepsLabel: (step, total) => `Step ${step} of ${total}`,
+                cancelButton: "Cancel",
+                previousButton: "Previous",
+                nextButton: "Next",
+                optional: "optional",
+            }}
             steps={[
                 {
                     title: "Choose Provider",
