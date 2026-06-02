@@ -8,6 +8,13 @@ from hive_core.state import StateManager
 from hive_core.bus import MessageBus, Message
 from hive_core.event_log import EventLog
 from hive_core.config import HiveConfig, default_config
+from hive_core.registry import AgentRegistry
+from hive_core.router import HiveRouter
+from hive_core.executor import CodeExecutor
+from hive_core.scheduler import HiveScheduler
+from hive_core.agents.pa import PersonalAssistantAgent
+from hive_core.agents.reminder import ReminderAgent
+from hive_core.agents.market import MarketAgent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,29 +27,62 @@ app = BedrockAgentCoreApp()
 
 
 class HiveSession:
-    """Per-user Hive session. Created on WebSocket connect."""
+    """Per-user Hive session with full agent orchestration."""
 
-    def __init__(self, user_id: str):
+    def __init__(self, user_id: str, workspace_dir: str = "/tmp/hive"):
         self.user_id = user_id
         self.state = StateManager(bucket=BUCKET, user_id=user_id, kms_key_id=KMS_KEY_ID)
         self.bus = MessageBus()
         self.event_log = EventLog(bucket=BUCKET, user_id=user_id)
+        self.executor = CodeExecutor(workspace_dir=workspace_dir)
+        self.scheduler = HiveScheduler(state=self.state, bus=self.bus)
+        self.registry = AgentRegistry(bus=self.bus, event_log=self.event_log)
+        self.router = HiveRouter(bus=self.bus, registry=self.registry, event_log=self.event_log)
         self.config: HiveConfig = default_config()
+        self._response_queue: asyncio.Queue = asyncio.Queue()
 
     async def initialize(self):
-        """Load state from S3 and set up agents."""
+        """Load state and initialize agents."""
         stored = self.state.load_config()
         if stored.get("agents"):
             self.config = HiveConfig.from_dict(stored)
         else:
             self.config = default_config()
             self.state.save_config(self.config.to_dict())
-        logger.info(f"Session initialized for {self.user_id} with {len(self.config.agents)} agents")
+
+        self._register_default_agents()
+        self.scheduler.load()
+        self.scheduler.start()
+        self.bus.subscribe("__user__", self._collect_response)
+        logger.info(f"Session initialized for {self.user_id}")
+
+    def _register_default_agents(self):
+        PersonalAssistantAgent(bus=self.bus, event_log=self.event_log, executor=self.executor)
+        ReminderAgent(bus=self.bus, event_log=self.event_log, scheduler=self.scheduler)
+        MarketAgent(bus=self.bus, event_log=self.event_log)
+
+    async def _collect_response(self, message: Message):
+        await self._response_queue.put(message)
+
+    async def handle_query(self, query: str):
+        target = await self.router.route(self.user_id, query)
+        return target
+
+    async def get_response(self, timeout: float = 30.0) -> dict | None:
+        try:
+            msg = await asyncio.wait_for(self._response_queue.get(), timeout=timeout)
+            return msg.payload
+        except asyncio.TimeoutError:
+            return None
+
+    def shutdown(self):
+        self.scheduler.stop()
+        self.event_log.flush()
 
 
 @app.websocket
 async def websocket_handler(websocket, context):
-    """Hive WebSocket handler."""
+    """Hive WebSocket handler with full agent orchestration."""
     await websocket.accept()
     session = None
 
@@ -63,17 +103,26 @@ async def websocket_handler(websocket, context):
             elif msg_type == "chat" and session:
                 query = data.get("query", "")
                 session.event_log.append("user", "message", {"query": query})
-                # Route to core agent (implemented in Plan 2)
-                await websocket.send_json({
-                    "type": "ack",
-                    "message": f"Received: {query}",
-                })
+                target = await session.handle_query(query)
+                await websocket.send_json({"type": "routed", "target": target})
+                response = await session.get_response()
+                if response:
+                    await websocket.send_json({"type": "response", "data": response})
+                else:
+                    await websocket.send_json({"type": "error", "message": "Agent timeout"})
 
             elif msg_type == "get_events" and session:
                 events = session.event_log.get_recent(data.get("count", 50))
                 await websocket.send_json({"type": "events", "events": events})
 
+            elif msg_type == "get_config" and session:
+                await websocket.send_json({
+                    "type": "config",
+                    "config": session.config.to_dict(),
+                })
+
             elif msg_type == "wipe" and session:
+                session.shutdown()
                 session.state.wipe()
                 session = None
                 await websocket.send_json({"type": "wiped"})
@@ -83,7 +132,7 @@ async def websocket_handler(websocket, context):
             logger.error(f"WebSocket error: {e}")
     finally:
         if session:
-            session.event_log.flush()
+            session.shutdown()
         await websocket.close()
 
 
