@@ -1,12 +1,14 @@
 {
-  "name": "hive-sidecar",
+  "name": "hive-wa-sidecar",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "scripts": { "start": "node index.js" },
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.0",
+    "@whiskeysockets/baileys": "^6.7.16",
     "express": "^4.21.0",
-    "pino": "^9.0.0"
+    "qrcode": "^1.5.4",
+    "pino": "^9.6.0"
   }
 }
