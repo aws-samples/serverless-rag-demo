@@ -22,6 +22,7 @@ export interface ChatUIInputPanelProps {
   sendButtonText?: string;
   running?: boolean;
   messages?: ChatMessage[];
+  selected_model_option?: string;
   check_vector_db?: boolean;
   is_hybrid_search?: boolean;
   clear_socket?: boolean;
@@ -106,6 +107,7 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
       const searchType = props.is_hybrid_search ? "HYBRID" : "SEMANTIC";
       ws!.send(JSON.stringify({
         query,
+        model_id: props.selected_model_option,
         search_scope: searchScope,
         search_type: searchType,
         chat_history: chatHistory.slice(-10),

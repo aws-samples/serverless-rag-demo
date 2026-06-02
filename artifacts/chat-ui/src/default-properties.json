@@ -33,6 +33,14 @@
                     "description": "Most capable | US-only routing | Up to 200k context",
                     "tags": ["Anthropic"],
                     "labelTag": "US Region"
+                },
+                {
+                    "label": "Nova 2 Lite (Global)",
+                    "value": "global.amazon.nova-2-lite-v1:0",
+                    "iconName": "keyboard",
+                    "description": "Fast & cost-effective | Global routing | Up to 300k context",
+                    "tags": ["Amazon"],
+                    "labelTag": "Cost Optimized"
                 }
             ],
             "languages": [
