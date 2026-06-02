@@ -11,8 +11,9 @@ MODEL_ID = os.getenv("MODEL_ID", "global.anthropic.claude-sonnet-4-6")
 bedrock_agent_runtime = boto3.client("bedrock-agent-runtime", region_name=REGION)
 
 
-async def rag_query_stream(query: str, user_email: str = None, search_scope: str = "all", search_type: str = "HYBRID", chat_history: list = None):
+async def rag_query_stream(query: str, model_id: str = None, user_email: str = None, search_scope: str = "all", search_type: str = "HYBRID", chat_history: list = None):
     """Stream RAG query response with native citations via retrieve_and_generate_stream."""
+    model_id = model_id or MODEL_ID
 
     # Build retrieval filter for per-user search
     filter_config = None
@@ -24,7 +25,7 @@ async def rag_query_stream(query: str, user_email: str = None, search_scope: str
     retrieval_config = {
         "knowledgeBaseConfiguration": {
             "knowledgeBaseId": KB_ID,
-            "modelArn": f"arn:aws:bedrock:{REGION}::foundation-model/{MODEL_ID}" if not MODEL_ID.startswith("arn:") else MODEL_ID,
+            "modelArn": f"arn:aws:bedrock:{REGION}::foundation-model/{model_id}" if not model_id.startswith("arn:") else model_id,
             "retrievalConfiguration": {
                 "vectorSearchConfiguration": {
                     "numberOfResults": 5,
@@ -52,7 +53,7 @@ async def rag_query_stream(query: str, user_email: str = None, search_scope: str
         query = f"Context from recent conversation:\n{history_text}\n\nCurrent question: {query}"
 
     # Use model ARN for retrieve_and_generate_stream
-    model_arn = MODEL_ID
+    model_arn = model_id
     if not model_arn.startswith("arn:"):
         # For global inference profiles
         if model_arn.startswith("global."):
@@ -73,7 +74,7 @@ async def rag_query_stream(query: str, user_email: str = None, search_scope: str
     except Exception as e:
         logger.error(f"retrieve_and_generate_stream failed: {e}")
         # Fallback to separate retrieve + converse if streaming RAG not available
-        async for chunk in _fallback_rag_stream(query, user_email, search_scope, search_type, chat_history):
+        async for chunk in _fallback_rag_stream(query, model_id, user_email, search_scope, search_type, chat_history):
             yield chunk
         return
 
@@ -106,8 +107,9 @@ async def rag_query_stream(query: str, user_email: str = None, search_scope: str
                     citations_sent = True
 
 
-async def _fallback_rag_stream(query: str, user_email: str = None, search_scope: str = "all", search_type: str = "HYBRID", chat_history: list = None):
+async def _fallback_rag_stream(query: str, model_id: str = None, user_email: str = None, search_scope: str = "all", search_type: str = "HYBRID", chat_history: list = None):
     """Fallback: separate Retrieve + ConverseStream if retrieve_and_generate_stream unavailable."""
+    model_id = model_id or MODEL_ID
     bedrock_runtime = boto3.client("bedrock-runtime", region_name=REGION)
 
     retrieval_config = {
@@ -160,7 +162,7 @@ Retrieved Context:
 {context}"""
 
     response = bedrock_runtime.converse_stream(
-        modelId=MODEL_ID,
+        modelId=model_id,
         messages=[{"role": "user", "content": [{"text": query}]}],
         system=[{"text": system_prompt}],
         inferenceConfig={"maxTokens": 4096},

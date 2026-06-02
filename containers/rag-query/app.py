@@ -19,6 +19,7 @@ async def websocket_handler(websocket, context):
         while True:
             data = await websocket.receive_json()
             query = data.get("query", "")
+            model_id = data.get("model_id")
             user_email = data.get("user_email")
             search_scope = data.get("search_scope", "all")
             search_type = data.get("search_type", "HYBRID")
@@ -34,6 +35,7 @@ async def websocket_handler(websocket, context):
             try:
                 async for chunk in rag_query_stream(
                     query=query,
+                    model_id=model_id,
                     user_email=user_email,
                     search_scope=search_scope,
                     search_type=search_type,
