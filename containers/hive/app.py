@@ -4,10 +4,13 @@ import json
 import logging
 import os
 from bedrock_agentcore import BedrockAgentCoreApp
+from starlette.requests import Request
+from starlette.responses import JSONResponse
+from starlette.routing import Route
 from hive_core.state import StateManager
 from hive_core.bus import MessageBus, Message
 from hive_core.event_log import EventLog
-from hive_core.config import HiveConfig, default_config
+from hive_core.config import HiveConfig, ChannelConfig, default_config
 from hive_core.registry import AgentRegistry
 from hive_core.router import HiveRouter
 from hive_core.executor import CodeExecutor
@@ -15,6 +18,8 @@ from hive_core.scheduler import HiveScheduler
 from hive_core.agents.pa import PersonalAssistantAgent
 from hive_core.agents.reminder import ReminderAgent
 from hive_core.agents.market import MarketAgent
+from hive_core.channels.manager import ChannelManager
+from hive_core.wa_handler import WhatsAppIncomingHandler
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,6 +29,10 @@ KMS_KEY_ID = os.getenv("HIVE_KMS_KEY_ID", "")
 REGION = os.getenv("REGION", "us-east-1")
 
 app = BedrockAgentCoreApp()
+
+# Global reference to active session (single-user per container)
+_active_session = None
+_active_websocket = None
 
 
 class HiveSession:
@@ -38,8 +47,10 @@ class HiveSession:
         self.scheduler = HiveScheduler(state=self.state, bus=self.bus)
         self.registry = AgentRegistry(bus=self.bus, event_log=self.event_log)
         self.router = HiveRouter(bus=self.bus, registry=self.registry, event_log=self.event_log)
+        self.channel_manager = ChannelManager(bus=self.bus, bucket=BUCKET, user_id=user_id)
         self.config: HiveConfig = default_config()
         self._response_queue: asyncio.Queue = asyncio.Queue()
+        self.wa_handler: WhatsAppIncomingHandler | None = None
 
     async def initialize(self):
         """Load state and initialize agents."""
@@ -76,6 +87,23 @@ class HiveSession:
             logger.error("Agent response timeout after 60s")
             return None
 
+    def setup_wa_handler(self, channel):
+        """Wire up WhatsApp incoming handler for a channel."""
+        async def ws_notify(data):
+            global _active_websocket
+            if _active_websocket:
+                try:
+                    await _active_websocket.send_json(data)
+                except Exception:
+                    pass
+
+        self.wa_handler = WhatsAppIncomingHandler(
+            channel=channel,
+            route_fn=self.handle_query,
+            get_response_fn=self.get_response,
+            ws_notify_fn=ws_notify,
+        )
+
     def shutdown(self):
         self.scheduler.stop()
         self.event_log.flush()
@@ -84,7 +112,9 @@ class HiveSession:
 @app.websocket
 async def websocket_handler(websocket, context):
     """Hive WebSocket handler with full agent orchestration."""
+    global _active_session, _active_websocket
     await websocket.accept()
+    _active_websocket = websocket
     session = None
 
     try:
@@ -96,6 +126,7 @@ async def websocket_handler(websocket, context):
                 user_id = data.get("user_id", "anonymous")
                 session = HiveSession(user_id)
                 await session.initialize()
+                _active_session = session
                 await websocket.send_json({
                     "type": "init_complete",
                     "config": session.config.to_dict(),
@@ -112,6 +143,44 @@ async def websocket_handler(websocket, context):
                 else:
                     await websocket.send_json({"type": "error", "message": "Agent timeout"})
 
+            elif msg_type == "add_channel" and session:
+                channel_data = data.get("channel", {})
+                channel_cfg = ChannelConfig.from_dict(channel_data)
+                result = await session.channel_manager.register_channel(channel_cfg)
+                session.config.channels.append(channel_cfg)
+                session.state.save_config(session.config.to_dict())
+                session.event_log.append("system", "channel_added", {"id": channel_cfg.id})
+
+                # If WhatsApp, set up handler and relay QR/status
+                if channel_cfg.provider == "whatsapp-baileys":
+                    wa_channel = session.channel_manager.get_whatsapp_channel(channel_cfg.id)
+                    if wa_channel:
+                        session.setup_wa_handler(wa_channel)
+                    if result.get("status") == "qr_needed":
+                        await websocket.send_json({
+                            "type": "wa_qr",
+                            "channel_id": channel_cfg.id,
+                            "qr": result.get("qr", ""),
+                        })
+                    elif result.get("status") == "connected":
+                        await websocket.send_json({
+                            "type": "wa_connected",
+                            "channel_id": channel_cfg.id,
+                            "phone": result.get("phone", ""),
+                        })
+
+                await websocket.send_json({
+                    "type": "channel_added",
+                    "channel": channel_data,
+                    "config": session.config.to_dict(),
+                })
+
+            elif msg_type == "wa_approve" and session and session.wa_handler:
+                approval_id = data.get("approval_id", "")
+                action = data.get("action", "reject")
+                edited = data.get("response", "")
+                await session.wa_handler.handle_approval(approval_id, action, edited)
+
             elif msg_type == "get_events" and session:
                 events = session.event_log.get_recent(data.get("count", 50))
                 await websocket.send_json({"type": "events", "events": events})
@@ -126,6 +195,7 @@ async def websocket_handler(websocket, context):
                 session.shutdown()
                 session.state.wipe()
                 session = None
+                _active_session = None
                 await websocket.send_json({"type": "wiped"})
 
     except Exception as e:
@@ -134,6 +204,60 @@ async def websocket_handler(websocket, context):
     finally:
         if session:
             session.shutdown()
+        _active_session = None
+        _active_websocket = None
+
+
+# Internal HTTP routes for sidecar communication
+async def handle_wa_message(request: Request):
+    """Receive incoming WhatsApp message from sidecar."""
+    global _active_session
+    if not _active_session or not _active_session.wa_handler:
+        return JSONResponse({"error": "No active session"}, status_code=503)
+    payload = await request.json()
+    asyncio.create_task(_active_session.wa_handler.handle_message(payload))
+    return JSONResponse({"ok": True})
+
+
+async def handle_wa_event(request: Request):
+    """Receive WhatsApp connection events from sidecar (qr, connected, disconnected)."""
+    global _active_session, _active_websocket
+    payload = await request.json()
+    event = payload.get("event")
+
+    if _active_websocket:
+        if event == "qr":
+            await _active_websocket.send_json({
+                "type": "wa_qr",
+                "channel_id": "whatsapp",
+                "qr": payload.get("qr", ""),
+            })
+        elif event == "connected":
+            await _active_websocket.send_json({
+                "type": "wa_connected",
+                "channel_id": "whatsapp",
+                "phone": payload.get("phone", ""),
+            })
+            # Persist auth state on successful connection
+            if _active_session:
+                for ch in _active_session.channel_manager.communication_channels.values():
+                    if hasattr(ch, "persist_auth_to_s3"):
+                        ch.persist_auth_to_s3()
+        elif event == "disconnected":
+            await _active_websocket.send_json({
+                "type": "wa_status",
+                "channel_id": "whatsapp",
+                "connected": False,
+            })
+
+    return JSONResponse({"ok": True})
+
+
+# Register internal routes with the app's underlying ASGI app
+app.routes.extend([
+    Route("/internal/wa-message", handle_wa_message, methods=["POST"]),
+    Route("/internal/wa-event", handle_wa_event, methods=["POST"]),
+])
 
 
 if __name__ == "__main__":
