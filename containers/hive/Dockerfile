@@ -12,6 +12,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Install sidecar Node.js dependencies
+COPY sidecar/package.json sidecar/package-lock.json* sidecar/
+RUN cd sidecar && npm install --production
+
 COPY . .
 
 EXPOSE 8080
