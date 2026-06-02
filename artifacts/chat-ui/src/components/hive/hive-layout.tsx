@@ -10,6 +10,7 @@ import {
     ExpandableSection,
     Grid,
 } from "@cloudscape-design/components";
+import { WaQrModal } from "./wa-qr-modal";
 import { AgentGraph } from "./agent-graph";
 import { ChatPanel } from "./chat-panel";
 import { ChannelConfigWizard } from "./channel-config";
@@ -41,6 +42,10 @@ export function HiveLayout() {
     const [activeTab, setActiveTab] = useState("chat");
     const [jobs, setJobs] = useState<CronJob[]>([]);
     const [graphExpanded, setGraphExpanded] = useState(true);
+    const [waQrVisible, setWaQrVisible] = useState(false);
+    const [waQrData, setWaQrData] = useState<string | null>(null);
+    const [waConnected, setWaConnected] = useState(false);
+    const [waPhone, setWaPhone] = useState("");
 
     // Connect to Hive on mount
     useEffect(() => {
@@ -101,6 +106,29 @@ export function HiveLayout() {
                 break;
             case "config":
                 setConfig(msg.config);
+                break;
+            case "wa_qr":
+                setWaQrData(msg.qr);
+                setWaQrVisible(true);
+                break;
+            case "wa_connected":
+                setWaConnected(true);
+                setWaPhone(msg.phone);
+                setTimeout(() => setWaQrVisible(false), 2000);
+                break;
+            case "wa_incoming":
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        role: "system" as const,
+                        content: `📱 WhatsApp from ${msg.from_name || msg.from}: ${msg.message}${msg.response ? `\n\n🤖 Reply: ${msg.response}` : ""}${msg.proposed_response ? `\n\n🤖 Proposed: ${msg.proposed_response}` : ""}`,
+                        timestamp: Date.now(),
+                    },
+                ]);
+                break;
+            case "wa_status":
+                setWaConnected(msg.connected);
                 break;
         }
     }, [activeAgent, config]);
@@ -278,6 +306,13 @@ export function HiveLayout() {
                     />
                 </div>
             </div>
+            <WaQrModal
+                visible={waQrVisible}
+                qrDataUrl={waQrData}
+                connected={waConnected}
+                phone={waPhone}
+                onDismiss={() => setWaQrVisible(false)}
+            />
         </SpaceBetween>
     );
 }
