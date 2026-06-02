@@ -150,7 +150,7 @@ deploy_runtime() {
         RUNTIME_ID=$(echo "$RUNTIME_ARN" | awk -F/ '{print $NF}')
         aws bedrock-agentcore-control create-agent-runtime-endpoint \
             --agent-runtime-id "$RUNTIME_ID" \
-            --name "${RUNTIME_NAME}-endpoint" \
+            --name "${RUNTIME_NAME}_endpoint" \
             --region "$REGION" > /dev/null
         echo "      Endpoint created" >&2
     else
