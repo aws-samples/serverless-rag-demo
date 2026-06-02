@@ -110,15 +110,18 @@ class WhatsAppChannel:
         return self.incoming_mode
 
     async def send(self, to: str, text: str):
-        """Send a message via WhatsApp."""
+        """Send a message via WhatsApp. Raises on failure."""
         message = f"{self.reply_prefix}{text}" if self.reply_prefix else text
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 f"{SIDECAR_URL}/send",
                 json={"to": to, "message": message},
+                timeout=aiohttp.ClientTimeout(total=10),
             ) as resp:
-                if resp.status != 200:
-                    logger.error(f"WhatsApp send failed: {await resp.text()}")
+                data = await resp.json()
+                if resp.status != 200 or not data.get("success"):
+                    error = data.get("error", f"HTTP {resp.status}")
+                    raise RuntimeError(f"WhatsApp send failed: {error}")
 
     async def get_status(self) -> dict:
         """Get sidecar connection status."""
