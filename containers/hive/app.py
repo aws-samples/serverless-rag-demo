@@ -62,10 +62,24 @@ class HiveSession:
             self.state.save_config(self.config.to_dict())
 
         self._register_default_agents()
+        await self._restore_channels()
         self.scheduler.load()
         self.scheduler.start()
         self.bus.subscribe("__user__", self._collect_response)
         logger.info(f"Session initialized for {self.user_id}")
+
+    async def _restore_channels(self):
+        """Re-register stored channels on session init."""
+        for ch_cfg in self.config.channels:
+            try:
+                result = await self.channel_manager.register_channel(ch_cfg)
+                if ch_cfg.provider == "whatsapp-baileys":
+                    wa_channel = self.channel_manager.get_whatsapp_channel(ch_cfg.id)
+                    if wa_channel:
+                        self.setup_wa_handler(wa_channel)
+                logger.info(f"Restored channel: {ch_cfg.id} ({result.get('status', 'ok')})")
+            except Exception as e:
+                logger.warning(f"Failed to restore channel {ch_cfg.id}: {e}")
 
     def _register_default_agents(self):
         PersonalAssistantAgent(bus=self.bus, event_log=self.event_log, executor=self.executor)
@@ -220,10 +234,17 @@ async def websocket_handler(websocket, context):
                 channel_id = data.get("channel_id", "")
                 ch = session.channel_manager.communication_channels.get(channel_id)
                 if ch and hasattr(ch, "get_status"):
-                    status = await ch.get_status()
-                    await websocket.send_json({"type": "channel_test", "channel_id": channel_id, **status})
+                    try:
+                        status = await ch.get_status()
+                        await websocket.send_json({"type": "channel_test", "channel_id": channel_id, **status})
+                    except Exception as e:
+                        await websocket.send_json({"type": "channel_test", "channel_id": channel_id, "connected": False, "message": f"Error: {e}"})
+                elif ch:
+                    await websocket.send_json({"type": "channel_test", "channel_id": channel_id, "connected": True, "message": "Channel active (no status endpoint)"})
                 else:
-                    await websocket.send_json({"type": "channel_test", "channel_id": channel_id, "connected": True, "message": "Channel registered"})
+                    # Channel in config but not in communication_channels
+                    cfg = next((c for c in session.config.channels if c.id == channel_id), None)
+                    await websocket.send_json({"type": "channel_test", "channel_id": channel_id, "connected": False, "message": f"Channel not initialized ({cfg.provider if cfg else 'unknown'})"})
 
             elif msg_type == "wa_approve" and session and session.wa_handler:
                 approval_id = data.get("approval_id", "")
