@@ -3,7 +3,7 @@ from hive_core.agents.base import HiveAgent
 from hive_core.bus import MessageBus
 from hive_core.event_log import EventLog
 from hive_core.executor import CodeExecutor
-from hive_core.tools.channel_send import send_channel_message
+from hive_core.tools.channel_send import send_channel_message, read_channel_messages, list_channel_contacts
 
 
 class PersonalAssistantAgent(HiveAgent):
@@ -22,7 +22,7 @@ class PersonalAssistantAgent(HiveAgent):
                 "(e.g. '61412345678@s.whatsapp.net'). Ask the user for the recipient if not specified."
             ),
             model_id="global.anthropic.claude-sonnet-4-6",
-            tools=[send_channel_message],
+            tools=[send_channel_message, read_channel_messages, list_channel_contacts],
             bus=bus,
             event_log=event_log,
         )

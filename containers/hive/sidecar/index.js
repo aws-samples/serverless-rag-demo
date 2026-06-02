@@ -13,6 +13,18 @@ const logger = pino({ level: "info" });
 
 let sock = null;
 let currentQR = null;
+
+// In-memory message store (per contact, capped at 50 messages each)
+const MAX_MESSAGES_PER_CONTACT = 50;
+const messageStore = {}; // { "jid": [{from, text, timestamp, fromMe}] }
+
+function storeMessage(jid, text, timestamp, fromMe, fromName = "") {
+    if (!messageStore[jid]) messageStore[jid] = [];
+    messageStore[jid].push({ from: fromMe ? "me" : fromName || jid, text, timestamp, fromMe });
+    if (messageStore[jid].length > MAX_MESSAGES_PER_CONTACT) {
+        messageStore[jid] = messageStore[jid].slice(-MAX_MESSAGES_PER_CONTACT);
+    }
+}
 let connected = false;
 let phoneNumber = "";
 let authStatePath = "/tmp/wa-auth";
@@ -73,7 +85,7 @@ async function startConnection() {
 
     sock.ev.on("messages.upsert", async ({ messages }) => {
         for (const msg of messages) {
-            if (msg.key.fromMe || !msg.message) continue;
+            if (!msg.message) continue;
             const text = msg.message.conversation
                 || msg.message.extendedTextMessage?.text
                 || "";
@@ -82,6 +94,12 @@ async function startConnection() {
             const from = msg.key.remoteJid;
             const fromName = msg.pushName || "";
             const isGroup = from.endsWith("@g.us");
+            const ts = Math.floor(Date.now() / 1000);
+
+            // Store all messages (incoming and outgoing)
+            storeMessage(from, text, ts, msg.key.fromMe, fromName);
+
+            if (msg.key.fromMe) continue; // Don't forward our own messages to Python
 
             fetch(`${PYTHON_APP_URL}/internal/wa-message`, {
                 method: "POST",
@@ -126,6 +144,7 @@ app.post("/send", async (req, res) => {
     }
     try {
         await sock.sendMessage(to, { text: message });
+        storeMessage(to, message, Math.floor(Date.now() / 1000), true);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -138,6 +157,32 @@ app.get("/status", (req, res) => {
 
 app.get("/qr", (req, res) => {
     res.json({ qr: currentQR });
+});
+
+app.get("/messages", (req, res) => {
+    const { jid, limit } = req.query;
+    if (!jid) {
+        return res.status(400).json({ error: "jid query param required" });
+    }
+    const msgs = messageStore[jid] || [];
+    const n = parseInt(limit) || 20;
+    res.json({ jid, messages: msgs.slice(-n) });
+});
+
+app.get("/contacts", (req, res) => {
+    const contacts = Object.keys(messageStore).map((jid) => {
+        const msgs = messageStore[jid];
+        const last = msgs[msgs.length - 1];
+        return {
+            jid,
+            name: msgs.find((m) => !m.fromMe && m.from !== "me")?.from || jid.split("@")[0],
+            last_message: last?.text?.slice(0, 50) || "",
+            last_timestamp: last?.timestamp || 0,
+            message_count: msgs.length,
+        };
+    });
+    contacts.sort((a, b) => b.last_timestamp - a.last_timestamp);
+    res.json({ contacts });
 });
 
 app.post("/shutdown", async (req, res) => {

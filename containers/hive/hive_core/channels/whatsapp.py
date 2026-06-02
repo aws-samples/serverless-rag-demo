@@ -123,6 +123,27 @@ class WhatsAppChannel:
                     error = data.get("error", f"HTTP {resp.status}")
                     raise RuntimeError(f"WhatsApp send failed: {error}")
 
+    async def get_messages(self, jid: str, limit: int = 20) -> list:
+        """Get recent messages for a contact from sidecar buffer."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{SIDECAR_URL}/messages",
+                params={"jid": jid, "limit": str(limit)},
+                timeout=aiohttp.ClientTimeout(total=5),
+            ) as resp:
+                data = await resp.json()
+                return data.get("messages", [])
+
+    async def get_contacts(self) -> list:
+        """Get list of contacts with recent message activity."""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(
+                f"{SIDECAR_URL}/contacts",
+                timeout=aiohttp.ClientTimeout(total=5),
+            ) as resp:
+                data = await resp.json()
+                return data.get("contacts", [])
+
     async def get_status(self) -> dict:
         """Get sidecar connection status."""
         try:
