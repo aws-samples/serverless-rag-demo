@@ -1,40 +1,74 @@
+import json
 import logging
-import re
+import os
 from hive_core.bus import MessageBus, Message
 from hive_core.registry import AgentRegistry
 from hive_core.event_log import EventLog
 
 logger = logging.getLogger(__name__)
 
-REMINDER_KEYWORDS = r"\b(remind|reminder|schedule|alarm|timer|every\s+(morning|evening|day|hour|week)|at\s+\d{1,2}(:\d{2})?\s*(am|pm)?)\b"
-MARKET_KEYWORDS = r"\b(stock|price|market|portfolio|crypto|bitcoin|eth|trading|ticker|aapl|msft|holdings|nasdaq|s&p)\b"
-SYSTEM_KEYWORDS = r"\b(connect|mcp|channel|configure|add agent|remove agent|wipe|reset)\b"
+ROUTER_PROMPT = """You are a message router. Given a user message, decide which agent should handle it.
+
+Available agents:
+- pa-agent: General assistant. Handles conversations, writing, code, sending messages NOW, reading messages, listing contacts, and anything that doesn't fit other agents.
+- reminder-agent: Handles scheduling, reminders, timers, delayed/future messages (e.g. "in 5 minutes", "tomorrow at 9am", "every Monday").
+- market-agent: Handles stock prices, market data, portfolio, crypto, trading queries.
+- __system__: Internal system commands (connect, configure channels, add/remove agents, wipe, reset).
+
+Rules:
+- If the user wants to send a message AT A FUTURE TIME or on a schedule, route to reminder-agent.
+- If the user wants to send a message RIGHT NOW, route to pa-agent.
+- Respond with ONLY the agent ID, nothing else.
+
+User message: {query}"""
 
 
 class HiveRouter:
-    """Routes user messages to the appropriate agent based on intent."""
+    """Routes user messages to the appropriate agent using an LLM."""
 
     def __init__(self, bus: MessageBus, registry: AgentRegistry, event_log: EventLog):
         self.bus = bus
         self.registry = registry
         self.event_log = event_log
         self._context_fn = None
+        self._bedrock = None
 
     def set_context_provider(self, fn):
         """Set a function that returns runtime context string for agents."""
         self._context_fn = fn
 
-    def classify(self, query: str) -> str:
-        q = query.lower()
-        if re.search(SYSTEM_KEYWORDS, q):
-            return "__system__"
-        if re.search(REMINDER_KEYWORDS, q):
-            return "reminder-agent"
-        if re.search(MARKET_KEYWORDS, q):
-            return "market-agent"
-        return "pa-agent"
+    def _get_bedrock(self):
+        if not self._bedrock:
+            import boto3
+            region = os.getenv("REGION", "us-east-1")
+            self._bedrock = boto3.client("bedrock-runtime", region_name=region)
+        return self._bedrock
 
-    async def route(self, user_id: str, query: str) -> str:
+    def classify(self, query: str) -> str:
+        """Use LLM to classify the query to the right agent."""
+        try:
+            client = self._get_bedrock()
+            response = client.converse(
+                modelId="us.anthropic.claude-haiku-4-5-20251001-v1:0",
+                messages=[{"role": "user", "content": [{"text": ROUTER_PROMPT.format(query=query)}]}],
+                inferenceConfig={"maxTokens": 20, "temperature": 0},
+            )
+            result = response["output"]["message"]["content"][0]["text"].strip().lower()
+            # Validate it's a known agent
+            valid = {"pa-agent", "reminder-agent", "market-agent", "__system__"}
+            if result in valid:
+                return result
+            # Try to extract from response if model was verbose
+            for agent_id in valid:
+                if agent_id in result:
+                    return agent_id
+            logger.warning(f"Router LLM returned unknown agent: {result}, defaulting to pa-agent")
+            return "pa-agent"
+        except Exception as e:
+            logger.error(f"Router LLM failed: {e}, defaulting to pa-agent")
+            return "pa-agent"
+
+    async def route(self, user_id: str, query: str, channel_id: str = "", contact_jid: str = "") -> str:
         target = self.classify(query)
         self.event_log.append("router", "classified", {"query": query, "target": target})
         if target == "__system__":
@@ -44,6 +78,12 @@ class HiveRouter:
             source="__user__",
             target=target,
             msg_type="task",
-            payload={"query": query, "user_id": user_id, "context": context},
+            payload={
+                "query": query,
+                "user_id": user_id,
+                "context": context,
+                "channel_id": channel_id,
+                "contact_jid": contact_jid,
+            },
         ))
         return target

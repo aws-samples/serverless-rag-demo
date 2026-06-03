@@ -1,6 +1,7 @@
 """Strands tools for agents to interact with configured channels."""
 import asyncio
 import logging
+from strands import tool
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def _run_async(coro):
         return asyncio.run(coro)
 
 
+@tool
 def send_channel_message(channel_id: str, to: str, message: str) -> dict:
     """Send a message through a configured channel (WhatsApp, Slack, etc).
 
@@ -69,6 +71,7 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
         return {"success": False, "error": str(e)}
 
 
+@tool
 def read_channel_messages(channel_id: str, contact: str, limit: int = 10) -> dict:
     """Read recent messages from a contact on a channel (WhatsApp).
 
@@ -103,6 +106,7 @@ def read_channel_messages(channel_id: str, contact: str, limit: int = 10) -> dic
         return {"success": False, "error": str(e)}
 
 
+@tool
 def list_channel_contacts(channel_id: str) -> dict:
     """List contacts with recent message activity on a channel (WhatsApp).
 

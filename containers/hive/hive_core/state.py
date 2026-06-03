@@ -74,6 +74,16 @@ class StateManager:
         data = self._get_json(f"{self.prefix}/cron/jobs.json", {"jobs": []})
         return data.get("jobs", [])
 
+    def load_persona(self) -> dict:
+        return self._get_json(f"{self.prefix}/persona.json", {
+            "persona": "",
+            "channel_overrides": {},
+            "contact_overrides": {},
+        })
+
+    def save_persona(self, persona: dict):
+        self._put_json(f"{self.prefix}/persona.json", persona)
+
     def wipe(self):
         """Delete all state for this user."""
         resp = self.s3.list_objects_v2(

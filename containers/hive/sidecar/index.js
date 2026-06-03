@@ -38,6 +38,7 @@ async function startConnection() {
         auth: state,
         logger: pino({ level: "silent" }),
         printQRInTerminal: false,
+        syncFullHistory: true,
     });
 
     sock.ev.on("creds.update", saveCreds);
@@ -74,13 +75,30 @@ async function startConnection() {
             connected = true;
             currentQR = null;
             phoneNumber = sock.user?.id?.split(":")[0] || "";
-            logger.info({ phoneNumber }, "Connected to WhatsApp");
+            console.log(`[SIDECAR] Connected to WhatsApp: ${phoneNumber}`);
             fetch(`${PYTHON_APP_URL}/internal/wa-event`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ event: "connected", phone: phoneNumber }),
             }).catch(() => {});
         }
+    });
+
+    // History sync: capture messages from initial sync
+    sock.ev.on("messaging-history.set", ({ messages: histMsgs, isLatest }) => {
+        console.log(`[SIDECAR] History sync: ${histMsgs.length} messages (isLatest=${isLatest})`);
+        for (const msg of histMsgs) {
+            if (!msg.message) continue;
+            const text = msg.message.conversation
+                || msg.message.extendedTextMessage?.text
+                || "";
+            if (!text) continue;
+            const from = msg.key.remoteJid;
+            const fromName = msg.pushName || "";
+            const ts = msg.messageTimestamp ? Number(msg.messageTimestamp) : Math.floor(Date.now() / 1000);
+            storeMessage(from, text, ts, msg.key.fromMe, fromName);
+        }
+        console.log(`[SIDECAR] Message store now has ${Object.keys(messageStore).length} contacts`);
     });
 
     sock.ev.on("messages.upsert", async ({ messages }) => {

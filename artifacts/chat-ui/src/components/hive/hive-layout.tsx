@@ -17,7 +17,8 @@ import { ChatPanel } from "./chat-panel";
 import { ChannelConfigWizard } from "./channel-config";
 import { AgentConfigPanel } from "./agent-config";
 import { JobViewer } from "./job-viewer";
-import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, CronJob } from "./types";
+import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, CronJob, PersonaData } from "./types";
+import { PersonaConfig } from "./persona-config";
 import { connectHive, sendHiveMessage, getHiveSocket } from "../../common/hive-ws";
 import { AuthHelper } from "../../common/helpers/auth-help";
 import "./hive.css";
@@ -48,6 +49,7 @@ export function HiveLayout() {
     const [waConnected, setWaConnected] = useState(false);
     const [waPhone, setWaPhone] = useState("");
     const [flashItems, setFlashItems] = useState<any[]>([]);
+    const [persona, setPersona] = useState<PersonaData | null>(null);
 
     // Connect to Hive on mount
     useEffect(() => {
@@ -152,6 +154,14 @@ export function HiveLayout() {
                 break;
             case "wa_status":
                 setWaConnected(msg.connected);
+                break;
+            case "persona":
+            case "persona_saved":
+                setPersona(msg.persona);
+                break;
+            case "jobs":
+            case "job_deleted":
+                setJobs(msg.jobs);
                 break;
         }
     }, [activeAgent, config]);
@@ -284,7 +294,17 @@ export function HiveLayout() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <Tabs
                         activeTabId={activeTab}
-                        onChange={({ detail }) => setActiveTab(detail.activeTabId)}
+                        onChange={({ detail }) => {
+                            setActiveTab(detail.activeTabId);
+                            if (detail.activeTabId === "jobs") {
+                                const ws = getHiveSocket();
+                                if (ws) sendHiveMessage(ws, { type: "get_jobs" });
+                            }
+                            if (detail.activeTabId === "persona" && !persona) {
+                                const ws = getHiveSocket();
+                                if (ws) sendHiveMessage(ws, { type: "get_persona" });
+                            }
+                        }}
                         tabs={[
                             {
                                 id: "chat",
@@ -295,6 +315,20 @@ export function HiveLayout() {
                                         onSend={handleSend}
                                         isLoading={isLoading}
                                         activeAgent={activeAgent}
+                                    />
+                                ),
+                            },
+                            {
+                                id: "persona",
+                                label: "Persona",
+                                content: (
+                                    <PersonaConfig
+                                        persona={persona}
+                                        channels={config?.channels || []}
+                                        onSave={(p) => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "save_persona", persona: p });
+                                        }}
                                     />
                                 ),
                             },
@@ -352,7 +386,10 @@ export function HiveLayout() {
                             {
                                 id: "jobs",
                                 label: "Jobs",
-                                content: <JobViewer jobs={jobs} onDelete={(id) => setJobs(jobs.filter((j) => j.id !== id))} />,
+                                content: <JobViewer jobs={jobs} onDelete={(id) => {
+                                    const ws = getHiveSocket();
+                                    if (ws) sendHiveMessage(ws, { type: "delete_job", job_id: id });
+                                }} />,
                             },
                         ]}
                     />

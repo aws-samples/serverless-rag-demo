@@ -13,7 +13,7 @@ class WhatsAppIncomingHandler:
     def __init__(
         self,
         channel: WhatsAppChannel,
-        route_fn: Callable[[str, str], Awaitable[str]],
+        route_fn: Callable[[str, str, str], Awaitable[str]],
         get_response_fn: Callable[[], Awaitable[dict | None]],
         ws_notify_fn: Callable[[dict], Awaitable[None]],
     ):
@@ -33,8 +33,8 @@ class WhatsAppIncomingHandler:
         logger.info(f"WA incoming from {from_name} ({sender}), mode={mode}")
 
         if mode in ("redirect-to-agent", "silent", "notify"):
-            # Route through Hive
-            target = await self._route("wa-user", message)
+            # Route through Hive with channel/contact context for persona
+            target = await self._route(message, self.channel.channel_id, sender)
             response = await self._get_response()
             result_text = ""
             if response:
@@ -58,7 +58,7 @@ class WhatsAppIncomingHandler:
 
         elif mode == "ask":
             # Route to get proposed response, but don't send yet
-            target = await self._route("wa-user", message)
+            target = await self._route(message, self.channel.channel_id, sender)
             response = await self._get_response()
             result_text = ""
             if response:

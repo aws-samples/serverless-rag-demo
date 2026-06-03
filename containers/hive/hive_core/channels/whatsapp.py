@@ -57,11 +57,12 @@ class WhatsAppChannel:
             return  # Already running
         sidecar_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "sidecar")
         sidecar_dir = os.path.abspath(sidecar_dir)
+        import sys
         self._process = subprocess.Popen(
             ["node", "index.js"],
             cwd=sidecar_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
         )
         logger.info(f"Sidecar started (PID {self._process.pid})")
 

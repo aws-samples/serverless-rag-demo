@@ -19,13 +19,13 @@ export function JobViewer({ jobs, onDelete }: JobViewerProps) {
             items={jobs}
             columnDefinitions={[
                 { id: "name", header: "Name", cell: (j) => j.name },
-                { id: "schedule", header: "Schedule", cell: (j) => <code>{j.schedule}</code> },
-                { id: "agent", header: "Agent", cell: (j) => <Badge>{j.agent_id}</Badge> },
-                { id: "action", header: "Action", cell: (j) => j.action },
-                { id: "channel", header: "Notify Via", cell: (j) => j.notify_channel || "—" },
+                { id: "schedule", header: "Schedule", cell: (j) => j.schedule ? <code>{j.schedule}</code> : <Badge color="blue">One-time</Badge> },
+                { id: "recipient", header: "To", cell: (j) => j.payload?.to?.replace("@s.whatsapp.net", "") || "—" },
+                { id: "message", header: "Message", cell: (j) => j.payload?.message?.slice(0, 40) || "—" },
+                { id: "channel", header: "Channel", cell: (j) => j.notify_channel || "—" },
                 {
                     id: "actions",
-                    header: "Actions",
+                    header: "",
                     cell: (j) => (
                         <Button variant="icon" iconName="remove" onClick={() => onDelete(j.id)} />
                     ),

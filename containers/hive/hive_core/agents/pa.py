@@ -16,10 +16,14 @@ class PersonalAssistantAgent(HiveAgent):
             system_prompt=(
                 "You are a personal assistant. Help with general tasks, writing, "
                 "summaries, and code execution. When the user asks you to write code, "
-                "write it and offer to execute it. Be concise and helpful. "
-                "You can send messages through connected channels using the send_channel_message tool. "
-                "For WhatsApp, the 'to' field must be the phone number with @s.whatsapp.net suffix "
-                "(e.g. '61412345678@s.whatsapp.net'). Ask the user for the recipient if not specified."
+                "write it and offer to execute it. Be concise and helpful.\n"
+                "You have these channel tools:\n"
+                "- send_channel_message: Send a message through a channel\n"
+                "- read_channel_messages: Read recent messages from a contact on a channel\n"
+                "- list_channel_contacts: List contacts with recent message activity\n"
+                "For WhatsApp, the 'to'/'contact' field must be the phone number with @s.whatsapp.net suffix "
+                "(e.g. '61412345678@s.whatsapp.net'). Use list_channel_contacts first if you need to find contacts. "
+                "Ask the user for the recipient/contact if not specified."
             ),
             model_id="global.anthropic.claude-sonnet-4-6",
             tools=[send_channel_message, read_channel_messages, list_channel_contacts],

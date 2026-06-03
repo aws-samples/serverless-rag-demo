@@ -41,6 +41,12 @@ export interface CronJob {
     notify_channel: string;
 }
 
+export interface PersonaData {
+    persona: string;
+    channel_overrides: Record<string, string>;
+    contact_overrides: Record<string, string>; // key format: "channelId::contactJid"
+}
+
 export type AgentStatus = "idle" | "thinking" | "acting" | "error";
 
 export type HiveMessage =
@@ -54,6 +60,10 @@ export type HiveMessage =
     | { type: "test_channel"; channel_id: string }
     | { type: "list_channels" }
     | { type: "wa_approve"; channel_id: string; approval_id: string; action: "send" | "edit" | "reject"; response?: string }
+    | { type: "get_jobs" }
+    | { type: "delete_job"; job_id: string }
+    | { type: "get_persona" }
+    | { type: "save_persona"; persona: PersonaData }
     | { type: "wipe" };
 
 export type HiveResponse =
@@ -71,5 +81,9 @@ export type HiveResponse =
     | { type: "wa_connected"; channel_id: string; phone: string }
     | { type: "wa_incoming"; channel_id: string; from: string; from_name: string; message: string; mode: string; proposed_response?: string; response?: string; approval_id?: string }
     | { type: "wa_status"; channel_id: string; connected: boolean }
+    | { type: "jobs"; jobs: CronJob[] }
+    | { type: "job_deleted"; job_id: string; jobs: CronJob[] }
+    | { type: "persona"; persona: PersonaData }
+    | { type: "persona_saved"; persona: PersonaData }
     | { type: "wiped" }
     | { type: "error"; message: string };

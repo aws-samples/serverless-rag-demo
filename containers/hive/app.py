@@ -64,6 +64,10 @@ class HiveSession:
             self.state.save_config(self.config.to_dict())
 
         self._register_default_agents()
+        # Load and apply persona to all agents
+        self.persona = self.state.load_persona()
+        for agent in self._agents:
+            agent.set_persona(self.persona)
         await self._restore_channels()
         _set_channel_manager_ref(self.channel_manager)
         _set_mcp_pool_ref(self.channel_manager.mcp_pool)
@@ -118,8 +122,8 @@ class HiveSession:
     async def _collect_response(self, message: Message):
         await self._response_queue.put(message)
 
-    async def handle_query(self, query: str):
-        target = await self.router.route(self.user_id, query)
+    async def handle_query(self, query: str, channel_id: str = "", contact_jid: str = ""):
+        target = await self.router.route(self.user_id, query, channel_id=channel_id, contact_jid=contact_jid)
         return target
 
     async def get_response(self, timeout: float = 60.0) -> dict | None:
@@ -140,9 +144,12 @@ class HiveSession:
                 except Exception:
                     pass
 
+        async def route_with_context(query: str, channel_id: str = "", contact_jid: str = ""):
+            return await self.handle_query(query, channel_id=channel_id, contact_jid=contact_jid)
+
         self.wa_handler = WhatsAppIncomingHandler(
             channel=channel,
-            route_fn=self.handle_query,
+            route_fn=route_with_context,
             get_response_fn=self.get_response,
             ws_notify_fn=ws_notify,
         )
@@ -297,11 +304,42 @@ async def websocket_handler(websocket, context):
                 events = session.event_log.get_recent(data.get("count", 50))
                 await websocket.send_json({"type": "events", "events": events})
 
+            elif msg_type == "get_jobs" and session:
+                jobs = [j.to_dict() for j in session.scheduler.list_jobs()]
+                await websocket.send_json({"type": "jobs", "jobs": jobs})
+
+            elif msg_type == "delete_job" and session:
+                job_id = data.get("job_id", "")
+                try:
+                    session.scheduler.remove_job(job_id)
+                    session.scheduler.persist()
+                    if session.scheduler._ap_scheduler:
+                        try:
+                            session.scheduler._ap_scheduler.remove_job(job_id)
+                        except Exception:
+                            pass
+                except KeyError:
+                    pass
+                jobs = [j.to_dict() for j in session.scheduler.list_jobs()]
+                await websocket.send_json({"type": "job_deleted", "job_id": job_id, "jobs": jobs})
+
             elif msg_type == "get_config" and session:
                 await websocket.send_json({
                     "type": "config",
                     "config": session.config.to_dict(),
                 })
+
+            elif msg_type == "get_persona" and session:
+                persona = session.state.load_persona()
+                await websocket.send_json({"type": "persona", "persona": persona})
+
+            elif msg_type == "save_persona" and session:
+                persona_data = data.get("persona", {})
+                session.state.save_persona(persona_data)
+                session.persona = persona_data
+                for agent in session._agents:
+                    agent.set_persona(persona_data)
+                await websocket.send_json({"type": "persona_saved", "persona": persona_data})
 
             elif msg_type == "wipe" and session:
                 session.shutdown()

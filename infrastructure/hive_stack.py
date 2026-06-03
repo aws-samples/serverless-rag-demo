@@ -103,7 +103,7 @@ class HiveStack(Stack):
                         resources=["*"],
                     ),
                     iam.PolicyStatement(
-                        actions=["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],
+                        actions=["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream", "bedrock:Converse"],
                         resources=[
                             f"arn:aws:bedrock:{region}:{account_id}:inference-profile/*",
                             f"arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
@@ -123,6 +123,10 @@ class HiveStack(Stack):
                     iam.PolicyStatement(
                         actions=["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem"],
                         resources=[user_table.table_arn],
+                    ),
+                    iam.PolicyStatement(
+                        actions=["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+                        resources=[f"arn:aws:logs:{region}:{account_id}:log-group:/aws/bedrock-agentcore/*"],
                     ),
                 ]),
             },

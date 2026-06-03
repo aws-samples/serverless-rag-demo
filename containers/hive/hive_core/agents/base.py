@@ -36,9 +36,29 @@ class HiveAgent:
         self.bus = bus
         self.event_log = event_log
         self._strands_agent: Any = None
+        self._persona: dict = {}
+        self._active_channel_id: str = ""
 
         # Register on bus
         self.bus.subscribe(agent_id, self._handle_message)
+
+    def set_persona(self, persona: dict):
+        """Set the user's persona config. Forces agent re-init on next process call."""
+        self._persona = persona
+        self._strands_agent = None
+
+    def _build_effective_persona(self, channel_id: str = "", contact_jid: str = "") -> str:
+        """Build the effective persona string from base + channel + contact overrides."""
+        if not self._persona or not self._persona.get("persona"):
+            return ""
+        parts = [self._persona["persona"]]
+        if channel_id and channel_id in self._persona.get("channel_overrides", {}):
+            parts.append(self._persona["channel_overrides"][channel_id])
+        if channel_id and contact_jid:
+            key = f"{channel_id}::{contact_jid}"
+            if key in self._persona.get("contact_overrides", {}):
+                parts.append(self._persona["contact_overrides"][key])
+        return "\n\n".join(parts)
 
     def _log(self, event: str, data: dict):
         self.event_log.append(self.agent_id, event, data)
@@ -63,16 +83,30 @@ class HiveAgent:
         """Process a task payload. Override in subclasses for custom behavior."""
         query = payload.get("query", "")
         context = payload.get("context", "")
+        channel_id = payload.get("channel_id", "")
+        contact_jid = payload.get("contact_jid", "")
+
         if context:
             query = f"{context}\n\nUser: {query}"
-        if not self._strands_agent:
-            self._init_strands_agent()
+
+        # Re-init agent if channel context changed (different system prompt needed)
+        if channel_id != self._active_channel_id or not self._strands_agent:
+            self._init_strands_agent(channel_id)
+            self._active_channel_id = channel_id
+
+        # Contact-level override injected as query prefix (avoids re-init per contact)
+        if channel_id and contact_jid:
+            key = f"{channel_id}::{contact_jid}"
+            contact_override = self._persona.get("contact_overrides", {}).get(key, "")
+            if contact_override:
+                query = f"[Context for this contact: {contact_override}]\n\n{query}"
+
         # Strands Agent.__call__ is synchronous — run in thread to avoid blocking event loop
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(None, self._strands_agent, query)
         return str(result)
 
-    def _init_strands_agent(self):
+    def _init_strands_agent(self, channel_id: str = ""):
         """Initialize the underlying Strands agent."""
         if StrandsAgent is None:
             raise ImportError(
@@ -82,6 +116,16 @@ class HiveAgent:
         import os
         region = os.getenv("REGION", "us-east-1")
         model = BedrockModel(model_id=self.model_id, region_name=region)
+
+        # Build effective system prompt with persona
+        base_persona = self._persona.get("persona", "") if self._persona else ""
+        channel_override = ""
+        if channel_id and self._persona:
+            channel_override = self._persona.get("channel_overrides", {}).get(channel_id, "")
+        persona_block = "\n\n".join(filter(None, [base_persona, channel_override]))
+        effective_prompt = self.system_prompt
+        if persona_block:
+            effective_prompt = f"<persona>\n{persona_block}\n</persona>\n\n{self.system_prompt}"
 
         # Merge static tools with any MCP tools mapped to this agent
         all_tools = list(self.tools)
@@ -95,7 +139,7 @@ class HiveAgent:
             logger.warning(f"Failed to load MCP tools for {self.agent_id}: {e}")
 
         self._strands_agent = StrandsAgent(
-            system_prompt=self.system_prompt,
+            system_prompt=effective_prompt,
             model=model,
             tools=all_tools,
         )

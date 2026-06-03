@@ -63,6 +63,7 @@ class HiveScheduler:
         job = self.jobs.get(job_id)
         if not job:
             return
+        logger.info(f"Executing job: {job.id} ({job.name})")
         await self.bus.publish(Message(
             source="scheduler",
             target=job.agent_id,
@@ -74,6 +75,35 @@ class HiveScheduler:
                 **job.payload,
             },
         ))
+        # Notify user via WebSocket
+        await self.bus.publish(Message(
+            source="scheduler",
+            target="__user__",
+            msg_type="response",
+            payload={"result": f"📤 Scheduled job '{job.name}' executed (channel: {job.notify_channel})"},
+        ))
+
+    def schedule_once(self, job: CronJob, delay_seconds: int):
+        """Schedule a one-time job to execute after delay_seconds."""
+        self.jobs[job.id] = job
+        self.persist()
+        if self._ap_scheduler:
+            from datetime import datetime, timedelta
+            from apscheduler.triggers.date import DateTrigger
+            run_time = datetime.now() + timedelta(seconds=delay_seconds)
+            self._ap_scheduler.add_job(
+                self._execute_and_remove, DateTrigger(run_date=run_time),
+                args=[job.id], id=job.id,
+            )
+            logger.info(f"One-time job '{job.id}' scheduled for {run_time}")
+
+    async def _execute_and_remove(self, job_id: str):
+        """Execute a one-time job and remove it from the schedule."""
+        await self.execute_job(job_id)
+        if job_id in self.jobs:
+            del self.jobs[job_id]
+            self.persist()
+            logger.info(f"One-time job '{job_id}' completed and removed")
 
     def start(self):
         try:
@@ -81,8 +111,9 @@ class HiveScheduler:
             from apscheduler.triggers.cron import CronTrigger
             self._ap_scheduler = AsyncIOScheduler()
             for job in self.jobs.values():
-                trigger = CronTrigger.from_crontab(job.schedule)
-                self._ap_scheduler.add_job(self.execute_job, trigger, args=[job.id], id=job.id)
+                if job.schedule:
+                    trigger = CronTrigger.from_crontab(job.schedule)
+                    self._ap_scheduler.add_job(self.execute_job, trigger, args=[job.id], id=job.id)
             self._ap_scheduler.start()
         except ImportError:
             logger.warning("APScheduler not installed, cron disabled")
