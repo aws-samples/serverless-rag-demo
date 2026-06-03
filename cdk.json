@@ -57,7 +57,7 @@
       "rag-llm-cognito": "rag-llm-auth-dev",
       "collection_name": "sample-vector-store-dev",
       "index_name": "sample-embeddings-dev",
-      "s3_data_bucket": "bedrockstore-dev",
+      "s3_data_bucket": "srd-store-dev",
       "opensearch_endpoint": "",
       "collection_group_name": "srd-group-dev",
       "knowledge_base_name": "srd-kb-dev",
