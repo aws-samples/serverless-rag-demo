@@ -67,6 +67,7 @@ class AgentCoreStack(Stack):
                         resources=[
                             f"arn:aws:bedrock:{region}:{account_id}:inference-profile/*",
                             f"arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
+                            f"arn:aws:bedrock:*::foundation-model/amazon.nova-*",
                         ],
                     ),
                     iam.PolicyStatement(
@@ -96,6 +97,7 @@ class AgentCoreStack(Stack):
                         resources=[
                             f"arn:aws:bedrock:{region}:{account_id}:inference-profile/*",
                             f"arn:aws:bedrock:*::foundation-model/anthropic.claude-*",
+                            f"arn:aws:bedrock:*::foundation-model/amazon.nova-*",
                         ],
                     ),
                     iam.PolicyStatement(

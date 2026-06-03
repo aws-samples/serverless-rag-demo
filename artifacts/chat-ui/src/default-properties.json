@@ -4,7 +4,7 @@
             "models": [
                 {
                     "label": "Claude Sonnet 4.6 (Global)",
-                    "value": "global.anthropic.claude-sonnet-4-6-v1:0",
+                    "value": "global.anthropic.claude-sonnet-4-6",
                     "iconName": "keyboard",
                     "description": "Latest Sonnet | Global routing | Up to 200k context",
                     "tags": ["Anthropic"],
@@ -12,7 +12,7 @@
                 },
                 {
                     "label": "Claude Sonnet 4.6 (US)",
-                    "value": "us.anthropic.claude-sonnet-4-6-v1:0",
+                    "value": "us.anthropic.claude-sonnet-4-6",
                     "iconName": "keyboard",
                     "description": "Latest Sonnet | US-only routing | Up to 200k context",
                     "tags": ["Anthropic"],
@@ -20,7 +20,7 @@
                 },
                 {
                     "label": "Claude Opus 4.6 (Global)",
-                    "value": "global.anthropic.claude-opus-4-6-v1:0",
+                    "value": "global.anthropic.claude-opus-4-6-v1",
                     "iconName": "keyboard",
                     "description": "Most capable | Global routing | Up to 200k context",
                     "tags": ["Anthropic"],
@@ -28,11 +28,19 @@
                 },
                 {
                     "label": "Claude Opus 4.6 (US)",
-                    "value": "us.anthropic.claude-opus-4-6-v1:0",
+                    "value": "us.anthropic.claude-opus-4-6-v1",
                     "iconName": "keyboard",
                     "description": "Most capable | US-only routing | Up to 200k context",
                     "tags": ["Anthropic"],
                     "labelTag": "US Region"
+                },
+                {
+                    "label": "Nova 2 Lite (Global)",
+                    "value": "global.amazon.nova-2-lite-v1:0",
+                    "iconName": "keyboard",
+                    "description": "Fast & cost-effective | Global routing | Up to 300k context",
+                    "tags": ["Amazon"],
+                    "labelTag": "Cost Optimized"
                 }
             ],
             "languages": [
