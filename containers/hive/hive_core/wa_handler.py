@@ -32,9 +32,8 @@ class WhatsAppIncomingHandler:
     def _is_allowed(self, sender: str, from_name: str = "", phone_jid: str = "") -> bool:
         """Check if sender is on the allowlist (if enabled).
 
-        Handles both phone JIDs (xxx@s.whatsapp.net) and LIDs (xxx@lid).
-        Allowlist entries can be phone numbers (+61...), JIDs, LIDs, or contact names.
-        Also checks phone_jid (resolved from sidecar's LID→phone mapping).
+        Matches against: contact name (case-insensitive), phone number, JID, or LID.
+        Name matching is the primary mechanism since WhatsApp uses opaque LIDs.
         """
         # Reload allowlist from channel config each time (supports hot-update)
         raw = getattr(self.channel, "_raw_config", {})
@@ -51,32 +50,31 @@ class WhatsAppIncomingHandler:
         if not allowlist:
             return True  # Empty allowlist with enabled flag = allow all
 
-        # Collect all identifiers to check against
-        identifiers_to_check = [sender]
+        # Collect all JID/phone identifiers to check
+        identifiers = [sender]
         if phone_jid and phone_jid != sender:
-            identifiers_to_check.append(phone_jid)
+            identifiers.append(phone_jid)
 
         for entry in allowlist:
             entry_clean = entry.strip()
             if not entry_clean:
                 continue
+
+            # 1. Name match (case-insensitive) — primary for LID senders
+            if from_name and entry_clean.lower() == from_name.lower():
+                return True
+
+            # 2. JID/number match
             entry_number = entry_clean.split("@")[0] if "@" in entry_clean else entry_clean
             entry_number_clean = entry_number.lstrip("+")
 
-            # Check each identifier (sender JID/LID + resolved phone JID)
-            for identifier in identifiers_to_check:
-                # Direct match
+            for identifier in identifiers:
                 if identifier == entry_clean:
                     return True
-                # Number match: strip @suffix and + prefix
                 id_number = identifier.split("@")[0] if "@" in identifier else identifier
                 id_number_clean = id_number.lstrip("+")
                 if id_number_clean == entry_number_clean:
                     return True
-
-            # Name match (case-insensitive) — fallback for unresolvable LIDs
-            if from_name and entry_clean.lower() == from_name.lower():
-                return True
 
         return False
 

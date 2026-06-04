@@ -135,7 +135,7 @@ export function ChannelConfigWizard({ agents, onSave, onCancel, initialChannel }
                         </FormField>
                         <FormField
                             label="Contact Allowlist"
-                            description="When enabled, Hive only responds to these numbers/groups. All others are ignored."
+                            description="When enabled, Hive only responds to contacts matching these names, numbers, or group IDs. Names are matched case-insensitively against the sender's WhatsApp display name."
                         >
                             <SpaceBetween size="s">
                                 <Toggle
@@ -150,7 +150,7 @@ export function ChannelConfigWizard({ agents, onSave, onCancel, initialChannel }
                                             <Input
                                                 value={newAllowlistEntry}
                                                 onChange={({ detail }) => setNewAllowlistEntry(detail.value)}
-                                                placeholder="Phone number or group ID (e.g. 61412345678)"
+                                                placeholder="Contact name, phone, or group ID (e.g. Fraser Sequeira)"
                                             />
                                             <Button
                                                 onClick={() => {
