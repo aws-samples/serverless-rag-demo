@@ -29,11 +29,12 @@ class WhatsAppIncomingHandler:
         self._queue: asyncio.Queue = asyncio.Queue()
         self._processing = False
 
-    def _is_allowed(self, sender: str, from_name: str = "") -> bool:
+    def _is_allowed(self, sender: str, from_name: str = "", phone_jid: str = "") -> bool:
         """Check if sender is on the allowlist (if enabled).
 
         Handles both phone JIDs (xxx@s.whatsapp.net) and LIDs (xxx@lid).
         Allowlist entries can be phone numbers (+61...), JIDs, LIDs, or contact names.
+        Also checks phone_jid (resolved from sidecar's LID→phone mapping).
         """
         # Reload allowlist from channel config each time (supports hot-update)
         raw = getattr(self.channel, "_raw_config", {})
@@ -50,23 +51,30 @@ class WhatsAppIncomingHandler:
         if not allowlist:
             return True  # Empty allowlist with enabled flag = allow all
 
-        # Normalize sender: strip @suffix and + prefix
-        sender_number = sender.split("@")[0] if "@" in sender else sender
-        sender_number_clean = sender_number.lstrip("+")
+        # Collect all identifiers to check against
+        identifiers_to_check = [sender]
+        if phone_jid and phone_jid != sender:
+            identifiers_to_check.append(phone_jid)
 
         for entry in allowlist:
             entry_clean = entry.strip()
             if not entry_clean:
                 continue
-            # Direct match (full JID or LID)
-            if sender == entry_clean:
-                return True
-            # Number match: strip @suffix and + prefix
             entry_number = entry_clean.split("@")[0] if "@" in entry_clean else entry_clean
             entry_number_clean = entry_number.lstrip("+")
-            if sender_number_clean == entry_number_clean:
-                return True
-            # Name match (case-insensitive) — useful for LID senders
+
+            # Check each identifier (sender JID/LID + resolved phone JID)
+            for identifier in identifiers_to_check:
+                # Direct match
+                if identifier == entry_clean:
+                    return True
+                # Number match: strip @suffix and + prefix
+                id_number = identifier.split("@")[0] if "@" in identifier else identifier
+                id_number_clean = id_number.lstrip("+")
+                if id_number_clean == entry_number_clean:
+                    return True
+
+            # Name match (case-insensitive) — fallback for unresolvable LIDs
             if from_name and entry_clean.lower() == from_name.lower():
                 return True
 
@@ -109,10 +117,11 @@ class WhatsAppIncomingHandler:
         sender = payload["from"]
         message = payload["message"]
         from_name = payload.get("from_name", "")
+        phone_jid = payload.get("phone_jid", "")  # Resolved phone from LID mapping
 
-        # Allowlist filtering: if enabled, ignore contacts not on the list
-        if not self._is_allowed(sender, from_name):
-            logger.info(f"WA incoming from {from_name} ({sender}) — not on allowlist, ignoring")
+        # Allowlist filtering: check sender, resolved phone, and name
+        if not self._is_allowed(sender, from_name, phone_jid):
+            logger.info(f"WA incoming from {from_name} ({sender}, phone={phone_jid}) — not on allowlist, ignoring")
             return
 
         mode = self.channel.get_mode_for_sender(sender)

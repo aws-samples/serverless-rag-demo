@@ -91,6 +91,13 @@ class HiveAgent:
         except Exception as e:
             self._log("error", {"error": str(e)})
             logger.error(f"Agent {self.agent_id} error: {e}")
+            # Always publish a response so callers don't hang on the queue
+            await self.bus.publish(Message(
+                source=self.agent_id,
+                target=message.source,
+                msg_type="response",
+                payload={"result": "", "error": str(e)},
+            ))
 
     async def process(self, payload: dict) -> Any:
         """Process a task payload. Override in subclasses for custom behavior."""

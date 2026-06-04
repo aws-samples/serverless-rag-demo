@@ -18,6 +18,9 @@ let currentQR = null;
 const MAX_MESSAGES_PER_CONTACT = 50;
 const messageStore = {}; // { "jid": [{from, text, timestamp, fromMe}] }
 
+// LID → phone JID mapping (populated from contacts events)
+const lidToPhone = {}; // { "12345@lid": "61412345678@s.whatsapp.net" }
+
 function storeMessage(jid, text, timestamp, fromMe, fromName = "") {
     if (!messageStore[jid]) messageStore[jid] = [];
     messageStore[jid].push({ from: fromMe ? "me" : fromName || jid, text, timestamp, fromMe });
@@ -103,9 +106,39 @@ async function startConnection() {
         }
     });
 
-    // History sync: capture messages from initial sync
-    sock.ev.on("messaging-history.set", ({ messages: histMsgs, isLatest }) => {
+    // Track contacts: map LID → phone JID for allowlist resolution
+    sock.ev.on("contacts.upsert", (contacts) => {
+        for (const contact of contacts) {
+            if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
+                lidToPhone[contact.lid] = contact.id;
+            }
+            // Also map id→lid reverse for lookups
+            if (contact.id && contact.lid) {
+                lidToPhone[contact.id] = contact.id; // phone→phone identity
+            }
+        }
+        console.log(`[SIDECAR] Contact store: ${Object.keys(lidToPhone).length} LID mappings`);
+    });
+
+    sock.ev.on("contacts.update", (contacts) => {
+        for (const contact of contacts) {
+            if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
+                lidToPhone[contact.lid] = contact.id;
+            }
+        }
+    });
+
+    // History sync: capture messages and contacts from initial sync
+    sock.ev.on("messaging-history.set", ({ messages: histMsgs, contacts: histContacts, isLatest }) => {
         console.log(`[SIDECAR] History sync: ${histMsgs.length} messages (isLatest=${isLatest})`);
+        // Extract LID→phone mappings from synced contacts
+        if (histContacts) {
+            for (const contact of histContacts) {
+                if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
+                    lidToPhone[contact.lid] = contact.id;
+                }
+            }
+        }
         for (const msg of histMsgs) {
             if (!msg.message) continue;
             const text = msg.message.conversation
@@ -117,7 +150,7 @@ async function startConnection() {
             const ts = msg.messageTimestamp ? Number(msg.messageTimestamp) : Math.floor(Date.now() / 1000);
             storeMessage(from, text, ts, msg.key.fromMe, fromName);
         }
-        console.log(`[SIDECAR] Message store now has ${Object.keys(messageStore).length} contacts`);
+        console.log(`[SIDECAR] Message store: ${Object.keys(messageStore).length} contacts, LID map: ${Object.keys(lidToPhone).length}`);
     });
 
     sock.ev.on("messages.upsert", async ({ messages }) => {
@@ -138,12 +171,12 @@ async function startConnection() {
 
             if (msg.key.fromMe) continue; // Don't forward our own messages to Python
 
-            // Resolve phone JID: participant (group) or remoteJid, fallback for LID
-            let phoneJid = msg.key.participant || from;
-            // If using LID format, try to get phone from sock's lid mapping
-            if (phoneJid.endsWith("@lid") && sock.authState?.creds?.me?.lid) {
-                // For 1:1 chats with LID, the actual phone is in remoteJid if it's @s.whatsapp.net
-                // Otherwise we pass the LID and let Python handle it
+            // Resolve phone JID from LID mapping
+            let resolvedPhone = "";
+            if (from.endsWith("@lid") && lidToPhone[from]) {
+                resolvedPhone = lidToPhone[from];
+            } else if (from.endsWith("@s.whatsapp.net")) {
+                resolvedPhone = from;
             }
 
             fetch(`${PYTHON_APP_URL}/internal/wa-message`, {
@@ -152,7 +185,7 @@ async function startConnection() {
                 body: JSON.stringify({
                     from,
                     from_name: fromName,
-                    phone_jid: phoneJid !== from ? phoneJid : undefined,
+                    phone_jid: resolvedPhone || undefined,
                     message: text,
                     timestamp: Math.floor(Date.now() / 1000),
                     is_group: isGroup,
@@ -198,7 +231,16 @@ app.post("/send", async (req, res) => {
 });
 
 app.get("/status", (req, res) => {
-    res.json({ connected, phone: phoneNumber });
+    res.json({ connected, phone: phoneNumber, lid_mappings: Object.keys(lidToPhone).length });
+});
+
+app.get("/resolve", (req, res) => {
+    const { lid } = req.query;
+    if (!lid) {
+        return res.status(400).json({ error: "lid query param required" });
+    }
+    const phone = lidToPhone[lid] || null;
+    res.json({ lid, phone });
 });
 
 app.get("/qr", (req, res) => {
