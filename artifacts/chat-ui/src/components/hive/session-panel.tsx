@@ -1,4 +1,5 @@
-import { Container, Header, SpaceBetween, Button, StatusIndicator, Box, Table, ButtonDropdown } from "@cloudscape-design/components";
+import { useState } from "react";
+import { Container, Header, SpaceBetween, Button, StatusIndicator, Box, Table, ButtonDropdown, Textarea, Modal } from "@cloudscape-design/components";
 import { AgentStatusInfo } from "./types";
 
 interface SessionPanelProps {
@@ -9,6 +10,7 @@ interface SessionPanelProps {
     onRestartAll: () => void;
     onRestart: () => void;
     onWipe: () => void;
+    onUpdatePrompt: (agentId: string, prompt: string) => void;
 }
 
 function formatUptime(startedAt: number): string {
@@ -28,7 +30,10 @@ function formatLastActivity(ts: number): string {
     return `${Math.floor(secs / 3600)}h ago`;
 }
 
-export function SessionPanel({ agents, onStopAgent, onStartAgent, onRestartAgent, onRestartAll, onRestart, onWipe }: SessionPanelProps) {
+export function SessionPanel({ agents, onStopAgent, onStartAgent, onRestartAgent, onRestartAll, onRestart, onWipe, onUpdatePrompt }: SessionPanelProps) {
+    const [editingAgent, setEditingAgent] = useState<AgentStatusInfo | null>(null);
+    const [editPrompt, setEditPrompt] = useState("");
+
     return (
         <SpaceBetween size="l">
             <Container
@@ -97,15 +102,21 @@ export function SessionPanel({ agents, onStopAgent, onStartAgent, onRestartAgent
                                 width: 140,
                                 cell: (item) => (
                                     <ButtonDropdown
+                                        expandToViewport
                                         items={[
                                             ...(item.status === "running"
                                                 ? [{ id: "stop", text: "Stop" }, { id: "restart", text: "Restart" }]
                                                 : [{ id: "start", text: "Start" }]),
+                                            { id: "edit_prompt", text: "Edit Prompt" },
                                         ]}
                                         onItemClick={({ detail }) => {
                                             if (detail.id === "stop") onStopAgent(item.id);
                                             if (detail.id === "start") onStartAgent(item.id);
                                             if (detail.id === "restart") onRestartAgent(item.id);
+                                            if (detail.id === "edit_prompt") {
+                                                setEditingAgent(item);
+                                                setEditPrompt(item.system_prompt);
+                                            }
                                         }}
                                     >
                                         Actions
@@ -136,6 +147,31 @@ export function SessionPanel({ agents, onStopAgent, onStartAgent, onRestartAgent
                     </SpaceBetween>
                 </SpaceBetween>
             </Container>
+
+            {editingAgent && (
+                <Modal
+                    visible={true}
+                    onDismiss={() => setEditingAgent(null)}
+                    header={`System Prompt — ${editingAgent.name}`}
+                    footer={
+                        <Box float="right">
+                            <SpaceBetween direction="horizontal" size="xs">
+                                <Button variant="link" onClick={() => setEditingAgent(null)}>Cancel</Button>
+                                <Button variant="primary" onClick={() => {
+                                    onUpdatePrompt(editingAgent.id, editPrompt);
+                                    setEditingAgent(null);
+                                }}>Save</Button>
+                            </SpaceBetween>
+                        </Box>
+                    }
+                >
+                    <Textarea
+                        value={editPrompt}
+                        onChange={({ detail }) => setEditPrompt(detail.value)}
+                        rows={15}
+                    />
+                </Modal>
+            )}
         </SpaceBetween>
     );
 }

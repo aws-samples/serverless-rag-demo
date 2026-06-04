@@ -84,6 +84,11 @@ export function HiveLayout() {
         switch (msg.type) {
             case "init_complete":
                 setConfig(msg.config);
+                // Auto-fetch agent statuses on init
+                {
+                    const ws2 = getHiveSocket();
+                    if (ws2) sendHiveMessage(ws2, { type: "get_agents" });
+                }
                 break;
             case "routed":
                 setActiveAgent(msg.target);
@@ -522,6 +527,10 @@ export function HiveLayout() {
                                             if (ws) sendHiveMessage(ws, { type: "restart" });
                                         }}
                                         onWipe={() => setShowWipeModal(true)}
+                                        onUpdatePrompt={(id, prompt) => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "update_agent_prompt", agent_id: id, system_prompt: prompt });
+                                        }}
                                     />
                                 ),
                             },

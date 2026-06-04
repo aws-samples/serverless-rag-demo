@@ -68,6 +68,7 @@ class HiveAgent:
             "last_activity": self.last_activity,
             "message_count": self.message_count,
             "has_strands": self._strands_agent is not None,
+            "system_prompt": self.system_prompt,
         }
 
     def stop(self):

@@ -84,6 +84,7 @@ export interface AgentStatusInfo {
     last_activity: number;
     message_count: number;
     has_strands: boolean;
+    system_prompt: string;
 }
 
 export type HiveMessage =
@@ -108,6 +109,7 @@ export type HiveMessage =
     | { type: "start_agent"; agent_id: string }
     | { type: "restart_agent"; agent_id: string }
     | { type: "restart_all_agents" }
+    | { type: "update_agent_prompt"; agent_id: string; system_prompt: string }
     | { type: "wipe" };
 
 export type HiveResponse =

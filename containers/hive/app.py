@@ -106,6 +106,9 @@ class HiveSession:
             ReminderAgent(bus=self.bus, event_log=self.event_log, scheduler=self.scheduler),
             MarketAgent(bus=self.bus, event_log=self.event_log),
         ]
+        # Register all default agents with the registry for lifecycle management
+        for agent in self._agents:
+            self.registry.register_instance(agent)
         # Restore custom agents from config
         for agent_cfg in self.config.agents:
             if agent_cfg.type == "custom":
@@ -119,6 +122,7 @@ class HiveSession:
                     event_log=self.event_log,
                 )
                 self._agents.append(custom_agent)
+                self.registry.register_instance(custom_agent)
                 logger.info(f"Restored custom agent: {agent_cfg.id}")
 
     def _start_keepalive(self):
@@ -423,6 +427,7 @@ async def websocket_handler(websocket, context):
                 custom_agent.set_persona(session.persona)
                 custom_agent.set_guardrails(session.guardrails)
                 session._agents.append(custom_agent)
+                session.registry.register_instance(custom_agent)
                 session._sync_router_custom_agents()
                 session.event_log.append("system", "agent_added", {"id": agent_cfg.id})
                 await websocket.send_json({
@@ -443,6 +448,8 @@ async def websocket_handler(websocket, context):
                     if agent_instance:
                         agent_instance.shutdown()
                         session._agents.remove(agent_instance)
+                    if agent_id in session.registry.agents:
+                        del session.registry.agents[agent_id]
                     session.event_log.append("system", "agent_removed", {"id": agent_id})
                     session._sync_router_custom_agents()
                 await websocket.send_json({
@@ -512,6 +519,18 @@ async def websocket_handler(websocket, context):
             elif msg_type == "restart_all_agents" and session:
                 session.registry.restart_all()
                 await websocket.send_json({"type": "agents_status", "agents": session.registry.list_agents_info()})
+
+            elif msg_type == "update_agent_prompt" and session:
+                agent_id = data.get("agent_id", "")
+                new_prompt = data.get("system_prompt", "")
+                if agent_id in session.registry.agents and new_prompt:
+                    agent = session.registry.agents[agent_id]
+                    agent.system_prompt = new_prompt
+                    # Force re-init of Strands agent with new prompt on next message
+                    agent._strands_agent = None
+                    await websocket.send_json({"type": "agents_status", "agents": session.registry.list_agents_info()})
+                else:
+                    await websocket.send_json({"type": "error", "message": f"Agent '{agent_id}' not found or empty prompt"})
 
             elif msg_type == "wipe" and session:
                 session.shutdown()

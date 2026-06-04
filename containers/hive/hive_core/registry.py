@@ -32,6 +32,13 @@ class AgentRegistry:
         logger.info(f"Registered agent: {config.id} ({config.name})")
         return agent
 
+    def register_instance(self, agent: HiveAgent):
+        """Register a pre-built agent instance."""
+        if agent.agent_id in self.agents:
+            raise ValueError(f"Agent '{agent.agent_id}' already registered")
+        self.agents[agent.agent_id] = agent
+        logger.info(f"Registered agent instance: {agent.agent_id} ({agent.name})")
+
     def unregister(self, agent_id: str):
         if agent_id not in self.agents:
             raise KeyError(f"Agent '{agent_id}' not found")
