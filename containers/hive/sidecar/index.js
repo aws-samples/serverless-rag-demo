@@ -18,14 +18,25 @@ let currentQR = null;
 const MAX_MESSAGES_PER_CONTACT = 50;
 const messageStore = {}; // { "jid": [{from, text, timestamp, fromMe}] }
 
-// LID → phone JID mapping (populated from contacts events)
+// Bidirectional LID <-> phone JID mapping (populated from contacts events)
 const lidToPhone = {}; // { "12345@lid": "61412345678@s.whatsapp.net" }
+const phoneToLid = {}; // { "61412345678@s.whatsapp.net": "12345@lid" }
 
 function storeMessage(jid, text, timestamp, fromMe, fromName = "") {
     if (!messageStore[jid]) messageStore[jid] = [];
-    messageStore[jid].push({ from: fromMe ? "me" : fromName || jid, text, timestamp, fromMe });
+    const entry = { from: fromMe ? "me" : fromName || jid, text, timestamp, fromMe };
+    messageStore[jid].push(entry);
     if (messageStore[jid].length > MAX_MESSAGES_PER_CONTACT) {
         messageStore[jid] = messageStore[jid].slice(-MAX_MESSAGES_PER_CONTACT);
+    }
+    // Also store under alternate JID so both LID and phone queries work
+    const altJid = lidToPhone[jid] || phoneToLid[jid];
+    if (altJid && altJid !== jid) {
+        if (!messageStore[altJid]) messageStore[altJid] = [];
+        messageStore[altJid].push(entry);
+        if (messageStore[altJid].length > MAX_MESSAGES_PER_CONTACT) {
+            messageStore[altJid] = messageStore[altJid].slice(-MAX_MESSAGES_PER_CONTACT);
+        }
     }
 }
 let connected = false;
@@ -106,15 +117,12 @@ async function startConnection() {
         }
     });
 
-    // Track contacts: map LID → phone JID for allowlist resolution
+    // Track contacts: bidirectional LID <-> phone JID mapping
     sock.ev.on("contacts.upsert", (contacts) => {
         for (const contact of contacts) {
             if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
                 lidToPhone[contact.lid] = contact.id;
-            }
-            // Also map id→lid reverse for lookups
-            if (contact.id && contact.lid) {
-                lidToPhone[contact.id] = contact.id; // phone→phone identity
+                phoneToLid[contact.id] = contact.lid;
             }
         }
         console.log(`[SIDECAR] Contact store: ${Object.keys(lidToPhone).length} LID mappings`);
@@ -124,6 +132,7 @@ async function startConnection() {
         for (const contact of contacts) {
             if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
                 lidToPhone[contact.lid] = contact.id;
+                phoneToLid[contact.id] = contact.lid;
             }
         }
     });
@@ -131,11 +140,12 @@ async function startConnection() {
     // History sync: capture messages and contacts from initial sync
     sock.ev.on("messaging-history.set", ({ messages: histMsgs, contacts: histContacts, isLatest }) => {
         console.log(`[SIDECAR] History sync: ${histMsgs.length} messages (isLatest=${isLatest})`);
-        // Extract LID→phone mappings from synced contacts
+        // Extract bidirectional LID<->phone mappings from synced contacts
         if (histContacts) {
             for (const contact of histContacts) {
                 if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
                     lidToPhone[contact.lid] = contact.id;
+                    phoneToLid[contact.id] = contact.lid;
                 }
             }
         }
@@ -252,18 +262,33 @@ app.get("/messages", (req, res) => {
     if (!jid) {
         return res.status(400).json({ error: "jid query param required" });
     }
-    const msgs = messageStore[jid] || [];
+    // Try exact match first, then alternate JID format (LID<->phone)
+    let msgs = messageStore[jid];
+    let resolvedJid = jid;
+    if (!msgs || msgs.length === 0) {
+        // Try LID → phone mapping
+        const altJid = lidToPhone[jid] || phoneToLid[jid];
+        if (altJid && messageStore[altJid]) {
+            msgs = messageStore[altJid];
+            resolvedJid = altJid;
+        }
+    }
     const n = parseInt(limit) || 20;
-    res.json({ jid, messages: msgs.slice(-n) });
+    res.json({ jid: resolvedJid, messages: (msgs || []).slice(-n) });
 });
 
 app.get("/contacts", (req, res) => {
     const contacts = Object.keys(messageStore).map((jid) => {
         const msgs = messageStore[jid];
         const last = msgs[msgs.length - 1];
+        // Resolve alternate JID (LID→phone or phone→LID)
+        const phoneJid = lidToPhone[jid] || (jid.endsWith("@s.whatsapp.net") ? jid : null);
+        // Get name from message history (pushName)
+        const nameFromMsgs = msgs.find((m) => !m.fromMe && m.from !== "me" && m.from !== jid)?.from;
         return {
             jid,
-            name: msgs.find((m) => !m.fromMe && m.from !== "me")?.from || jid.split("@")[0],
+            phone_jid: phoneJid || null,
+            name: nameFromMsgs || (phoneJid ? phoneJid.split("@")[0] : jid.split("@")[0]),
             last_message: last?.text?.slice(0, 50) || "",
             last_timestamp: last?.timestamp || 0,
             message_count: msgs.length,
