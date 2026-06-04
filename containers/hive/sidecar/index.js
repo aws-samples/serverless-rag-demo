@@ -30,6 +30,12 @@ let phoneNumber = "";
 let authStatePath = "/tmp/wa-auth";
 
 async function startConnection() {
+    // Close previous socket to prevent duplicate connections
+    if (sock) {
+        try { sock.end(); } catch (e) {}
+        sock = null;
+    }
+
     const { state, saveCreds } = await useMultiFileAuthState(authStatePath);
     const { version } = await fetchLatestBaileysVersion();
 
@@ -69,6 +75,9 @@ async function startConnection() {
                 fs.mkdirSync(authStatePath, { recursive: true });
                 logger.info("Auth state cleared, reconnecting for fresh QR");
                 setTimeout(startConnection, 1000);
+            } else if (statusCode === 440) {
+                // Session replaced by another connection — do NOT reconnect (would loop)
+                logger.info("Session replaced (440), stopping reconnection");
             } else {
                 // Transient error — retry
                 setTimeout(startConnection, 3000);
