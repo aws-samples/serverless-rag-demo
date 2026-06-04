@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass, asdict
+from datetime import datetime, timedelta
 from typing import Any
 from hive_core.bus import MessageBus, Message
 
@@ -15,12 +16,16 @@ class CronJob:
     payload: dict[str, Any]
     agent_id: str
     notify_channel: str
+    run_at: str = ""  # ISO timestamp for one-time jobs
 
     def to_dict(self) -> dict:
         return asdict(self)
 
     @classmethod
     def from_dict(cls, d: dict) -> "CronJob":
+        # Handle old jobs that don't have run_at
+        if "run_at" not in d:
+            d["run_at"] = ""
         return cls(**d)
 
 
@@ -85,12 +90,12 @@ class HiveScheduler:
 
     def schedule_once(self, job: CronJob, delay_seconds: int):
         """Schedule a one-time job to execute after delay_seconds."""
+        from apscheduler.triggers.date import DateTrigger
+        run_time = datetime.now() + timedelta(seconds=delay_seconds)
+        job.run_at = run_time.isoformat()
         self.jobs[job.id] = job
         self.persist()
         if self._ap_scheduler:
-            from datetime import datetime, timedelta
-            from apscheduler.triggers.date import DateTrigger
-            run_time = datetime.now() + timedelta(seconds=delay_seconds)
             self._ap_scheduler.add_job(
                 self._execute_and_remove, DateTrigger(run_date=run_time),
                 args=[job.id], id=job.id,
@@ -109,12 +114,33 @@ class HiveScheduler:
         try:
             from apscheduler.schedulers.asyncio import AsyncIOScheduler
             from apscheduler.triggers.cron import CronTrigger
+            from apscheduler.triggers.date import DateTrigger
             self._ap_scheduler = AsyncIOScheduler()
+            expired_jobs = []
             for job in self.jobs.values():
                 if job.schedule:
                     trigger = CronTrigger.from_crontab(job.schedule)
                     self._ap_scheduler.add_job(self.execute_job, trigger, args=[job.id], id=job.id)
+                elif job.run_at:
+                    # Re-schedule one-time jobs that haven't fired yet
+                    run_time = datetime.fromisoformat(job.run_at)
+                    if run_time > datetime.now():
+                        self._ap_scheduler.add_job(
+                            self._execute_and_remove, DateTrigger(run_date=run_time),
+                            args=[job.id], id=job.id,
+                        )
+                        logger.info(f"Recovered one-time job '{job.id}' for {run_time}")
+                    else:
+                        # Job missed its window — execute immediately then remove
+                        expired_jobs.append(job.id)
             self._ap_scheduler.start()
+            # Fire expired one-time jobs immediately
+            for job_id in expired_jobs:
+                logger.info(f"Firing missed one-time job '{job_id}' immediately")
+                self._ap_scheduler.add_job(
+                    self._execute_and_remove, DateTrigger(run_date=datetime.now()),
+                    args=[job_id], id=job_id,
+                )
         except ImportError:
             logger.warning("APScheduler not installed, cron disabled")
 

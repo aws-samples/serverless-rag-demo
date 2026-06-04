@@ -75,7 +75,7 @@ class ReminderAgent(HiveAgent):
 
         # Handle cron job execution: directly send the message
         if payload.get("action") == "send_message":
-            return self._execute_send(payload)
+            return await self._execute_send(payload)
 
         query = payload.get("query", "").lower()
         if "list" in query and ("reminder" in query or "schedule" in query or "job" in query):
@@ -83,8 +83,14 @@ class ReminderAgent(HiveAgent):
             return {"jobs": [j.to_dict() for j in jobs]}
         return await super().process(payload)
 
-    def _execute_send(self, payload: dict) -> dict:
-        """Execute a scheduled send_message action directly."""
+    async def _execute_send(self, payload: dict) -> dict:
+        """Execute a scheduled send_message action directly (async-safe).
+
+        Uses the channel manager directly instead of the sync Strands tool
+        to avoid deadlocking the event loop when called from the scheduler.
+        """
+        from hive_core.tools.channel_send import _channel_manager
+
         channel_id = payload.get("notify_channel", "")
         to = payload.get("to", payload.get("recipient", ""))
         message = payload.get("message", "")
@@ -96,9 +102,23 @@ class ReminderAgent(HiveAgent):
         if "@" not in to:
             to = f"{to}@s.whatsapp.net"
 
-        result = send_channel_message(channel_id=channel_id, to=to, message=message)
-        self._log("job_delivered", {"channel": channel_id, "to": to, "result": result})
-        return result
+        if not _channel_manager:
+            return {"success": False, "error": "No channel manager available"}
+
+        ch = _channel_manager.communication_channels.get(channel_id)
+        if not ch:
+            available = list(_channel_manager.communication_channels.keys())
+            return {"success": False, "error": f"Channel '{channel_id}' not found. Available: {available}"}
+
+        try:
+            await ch.send(to, message)
+            result = {"success": True, "channel_id": channel_id, "to": to}
+            self._log("job_delivered", {"channel": channel_id, "to": to, "result": result})
+            return result
+        except Exception as e:
+            result = {"success": False, "error": str(e)}
+            self._log("job_delivery_failed", {"channel": channel_id, "to": to, "error": str(e)})
+            return result
 
     def _create_reminder(self, payload: dict) -> dict:
         job = CronJob(
