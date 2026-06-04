@@ -86,7 +86,12 @@ class StateManager:
         self._put_json(f"{self.prefix}/persona.json", persona)
 
     def load_guardrails(self) -> dict:
-        return self._get_json(f"{self.prefix}/guardrails.json", DEFAULT_GUARDRAILS.copy())
+        data = self._get_json(f"{self.prefix}/guardrails.json", DEFAULT_GUARDRAILS.copy())
+        # Normalize "stranger" → "unknown" (UI may use either name)
+        policies = data.get("policies", {})
+        if "stranger" in policies and "unknown" not in policies:
+            policies["unknown"] = policies.pop("stranger")
+        return data
 
     def save_guardrails(self, guardrails: dict):
         self._put_json(f"{self.prefix}/guardrails.json", guardrails)

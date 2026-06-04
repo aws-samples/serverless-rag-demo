@@ -156,6 +156,7 @@ class HiveSession:
             route_fn=route_with_context,
             get_response_fn=self.get_response,
             ws_notify_fn=ws_notify,
+            guardrails=self.guardrails,
         )
 
     def shutdown(self):

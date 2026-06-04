@@ -17,15 +17,51 @@ class WhatsAppIncomingHandler:
         route_fn: Callable[[str, str, str], Awaitable[str]],
         get_response_fn: Callable[[], Awaitable[dict | None]],
         ws_notify_fn: Callable[[dict], Awaitable[None]],
+        guardrails: dict | None = None,
     ):
         self.channel = channel
         self._route = route_fn
         self._get_response = get_response_fn
         self._ws_notify = ws_notify_fn
+        self._guardrails = guardrails or {}
         self._pending_approvals: dict[str, dict] = {}
+        self._queue: asyncio.Queue = asyncio.Queue()
+        self._processing = False
 
     async def handle_message(self, payload: dict):
-        """Process an incoming WhatsApp message based on mode."""
+        """Queue incoming message for sequential processing."""
+        await self._queue.put(payload)
+        if not self._processing:
+            asyncio.ensure_future(self._process_queue())
+
+    async def _process_queue(self):
+        """Process queued messages one at a time (Strands doesn't support concurrency)."""
+        if self._processing:
+            return
+        self._processing = True
+        try:
+            while not self._queue.empty():
+                payload = await self._queue.get()
+                try:
+                    await self._handle_single_message(payload)
+                except Exception as e:
+                    logger.error(f"Error processing WA message: {e}")
+                    # Send refusal on unhandled errors
+                    sender = payload.get("from", "")
+                    if sender:
+                        refusal = self._guardrails.get(
+                            "refusal_message",
+                            "Sorry, I'm unable to process that right now.",
+                        )
+                        try:
+                            await self.channel.send(sender, refusal)
+                        except Exception:
+                            pass
+        finally:
+            self._processing = False
+
+    async def _handle_single_message(self, payload: dict):
+        """Process a single incoming WhatsApp message based on mode."""
         sender = payload["from"]
         message = payload["message"]
         from_name = payload.get("from_name", "")
@@ -41,9 +77,15 @@ class WhatsAppIncomingHandler:
             if response:
                 result_text = response.get("result", str(response))
 
+            # If agent produced no response (timeout), send refusal message
+            if not result_text:
+                result_text = self._guardrails.get(
+                    "refusal_message",
+                    "Sorry, I'm unable to process that right now.",
+                )
+
             # Send reply via WhatsApp
-            if result_text:
-                await self.channel.send(sender, result_text)
+            await self.channel.send(sender, result_text)
 
             # Notify UI if mode requires it
             if mode == "notify":
@@ -64,6 +106,12 @@ class WhatsAppIncomingHandler:
             result_text = ""
             if response:
                 result_text = response.get("result", str(response))
+
+            if not result_text:
+                result_text = self._guardrails.get(
+                    "refusal_message",
+                    "Sorry, I'm unable to process that right now.",
+                )
 
             # Store pending approval
             approval_id = f"{sender}:{payload.get('timestamp', '')}"
