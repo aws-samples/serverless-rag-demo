@@ -262,6 +262,7 @@ if [[ "$HIVE_ENABLED" == "true" ]]; then
             --role-arn "$HIVE_ROLE_ARN" \
             --network-configuration '{"networkMode":"PUBLIC"}' \
             --protocol-configuration '{"serverProtocol":"HTTP"}' \
+            --lifecycle-configuration '{"idleRuntimeSessionTimeout":14400,"maxLifetime":28800}' \
             --environment-variables "$HIVE_ENV_VARS" \
             --region "$REGION" \
             --query 'agentRuntimeArn' --output text)
@@ -278,6 +279,7 @@ if [[ "$HIVE_ENABLED" == "true" ]]; then
             --agent-runtime-artifact "{\"containerConfiguration\":{\"containerUri\":\"$HIVE_IMAGE\"}}" \
             --role-arn "$HIVE_ROLE_ARN" \
             --network-configuration '{"networkMode":"PUBLIC"}' \
+            --lifecycle-configuration '{"idleRuntimeSessionTimeout":14400,"maxLifetime":28800}' \
             --environment-variables "$HIVE_ENV_VARS" \
             --region "$REGION" > /dev/null 2>&1 || true
         echo "      Hive runtime updated: $HIVE_RUNTIME_ARN"
