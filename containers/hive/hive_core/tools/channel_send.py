@@ -44,8 +44,8 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
     """Send a message through a configured channel (WhatsApp, Slack, etc).
 
     Args:
-        channel_id: The channel ID to send through (e.g. "test-wh", "slack-t")
-        to: The recipient. For WhatsApp: phone@s.whatsapp.net (e.g. "61412345678@s.whatsapp.net"). For Slack: channel name.
+        channel_id: The channel ID to send through (e.g. "wassup-ind", "slack-t")
+        to: The recipient. For WhatsApp: use the contact's JID from list_channel_contacts (e.g. "140939989393655@lid" or "61412345678@s.whatsapp.net"), or a contact name to auto-resolve. For Slack: channel name.
         message: The message text to send.
 
     Returns:
@@ -64,6 +64,22 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
     if not ch:
         available = list(_channel_manager.communication_channels.keys())
         return {"success": False, "error": f"Channel '{channel_id}' not found. Available: {available}"}
+
+    # If 'to' doesn't look like a JID, try to resolve it as a contact name
+    if "@" not in to and hasattr(ch, "get_contacts"):
+        try:
+            contacts = _run_async(ch.get_contacts())
+            to_lower = to.lower()
+            for contact in contacts:
+                name = contact.get("name", "").lower()
+                if name and (name == to_lower or name.startswith(to_lower) or to_lower in name):
+                    to = contact["jid"]
+                    logger.info(f"Resolved contact name '{to_lower}' to JID: {to}")
+                    break
+            else:
+                return {"success": False, "error": f"Could not resolve contact name '{to}'. Use list_channel_contacts to find valid JIDs."}
+        except Exception as e:
+            return {"success": False, "error": f"Failed to resolve contact name: {e}"}
 
     # For WhatsApp, check actual sidecar status (don't rely on cached _connected)
     if hasattr(ch, "get_status"):
@@ -108,8 +124,8 @@ def read_channel_messages(channel_id: str, contact: str, limit: int = 10) -> dic
     """Read recent messages from a contact on a channel (WhatsApp).
 
     Args:
-        channel_id: The channel ID (e.g. "test-wh")
-        contact: The contact JID. For WhatsApp: phone@s.whatsapp.net (e.g. "61412345678@s.whatsapp.net"). You can also use just the phone number and @s.whatsapp.net will be appended.
+        channel_id: The channel ID (e.g. "wassup-ind")
+        contact: The contact JID from list_channel_contacts (e.g. "140939989393655@lid"), or a contact name to auto-resolve.
         limit: Number of recent messages to fetch (default 10, max 50).
 
     Returns:
@@ -132,8 +148,27 @@ def read_channel_messages(channel_id: str, contact: str, limit: int = 10) -> dic
     if not hasattr(ch, "get_messages"):
         return {"success": False, "error": f"Channel '{channel_id}' does not support reading messages"}
 
-    # Normalize contact JID
-    jid = contact if "@" in contact else f"{contact}@s.whatsapp.net"
+    # Resolve contact: if not a JID, try name lookup
+    if "@" in contact:
+        jid = contact
+    else:
+        # Try to resolve name via contacts list
+        if hasattr(ch, "get_contacts"):
+            try:
+                contacts = _run_async(ch.get_contacts())
+                contact_lower = contact.lower()
+                jid = None
+                for c in contacts:
+                    name = c.get("name", "").lower()
+                    if name and (name == contact_lower or contact_lower in name):
+                        jid = c["jid"]
+                        break
+                if not jid:
+                    jid = f"{contact}@s.whatsapp.net"
+            except Exception:
+                jid = f"{contact}@s.whatsapp.net"
+        else:
+            jid = f"{contact}@s.whatsapp.net"
 
     try:
         messages = _run_async(ch.get_messages(jid, min(limit, 50)))
