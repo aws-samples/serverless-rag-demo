@@ -107,6 +107,11 @@ class ExecutionContext:
 
 _exec_ctx: ContextVar[ExecutionContext | None] = ContextVar("exec_ctx", default=None)
 
+# Thread-safe fallback: since ContextVar doesn't propagate to run_in_executor threads,
+# we also store the context in a module-level variable. This is safe because Hive
+# processes one message at a time per session (single agent execution).
+_global_exec_ctx: ExecutionContext | None = None
+
 # ---------------------------------------------------------------------------
 # Tool-to-action mapping
 # ---------------------------------------------------------------------------
@@ -184,15 +189,24 @@ def guardrails_gate(tool_name: str, tool_args: dict) -> str | None:
 
     Returns refusal message string if blocked, None if allowed.
     """
+    import logging
+    _logger = logging.getLogger(__name__)
+
     ctx = _exec_ctx.get()
     if ctx is None:
+        ctx = _global_exec_ctx  # fallback for executor threads
+    if ctx is None:
+        _logger.warning(f"guardrails_gate: NO CONTEXT for tool={tool_name} — enforcement skipped")
         return None  # no context = no enforcement
 
     if ctx.sender_tier == "owner":
+        _logger.info(f"guardrails_gate: owner tier, tool={tool_name} ALLOWED")
         return None  # owner always allowed
 
     action = resolve_action(tool_name, tool_args, ctx)
-    if not ctx.policies.get(action, False):
+    allowed = ctx.policies.get(action, False)
+    _logger.info(f"guardrails_gate: tier={ctx.sender_tier}, tool={tool_name}, action={action}, allowed={allowed}, sender={ctx.sender_jid}")
+    if not allowed:
         return f"BLOCKED by guardrails: {ctx.refusal_message}"
     return None
 
@@ -281,9 +295,15 @@ def check_guardrails(tool_name: str, **kwargs) -> str | None:
 
 def set_execution_context(ctx: ExecutionContext) -> None:
     """Set the execution context for the current task/thread."""
+    global _global_exec_ctx
+    import logging
+    logging.getLogger(__name__).info(f"set_execution_context: tier={ctx.sender_tier}, sender={ctx.sender_jid}, channel={ctx.channel_id}")
     _exec_ctx.set(ctx)
+    _global_exec_ctx = ctx
 
 
 def clear_execution_context() -> None:
     """Clear the execution context for the current task/thread."""
+    global _global_exec_ctx
     _exec_ctx.set(None)
+    _global_exec_ctx = None
