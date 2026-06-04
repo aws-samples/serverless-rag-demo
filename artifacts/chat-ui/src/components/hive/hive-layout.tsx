@@ -425,13 +425,27 @@ export function HiveLayout() {
                                 label: "Session",
                                 content: (
                                     <Container header={<Header variant="h3">Session Management</Header>}>
-                                        <SpaceBetween size="m">
-                                            <Box>
-                                                <strong>Wipe Session</strong> — Deletes all state (config, channels, persona, guardrails, auth, event logs) and resets to defaults. This is irreversible.
-                                            </Box>
-                                            <Button variant="normal" onClick={() => setShowWipeModal(true)}>
-                                                Wipe Session
-                                            </Button>
+                                        <SpaceBetween size="l">
+                                            <SpaceBetween size="s">
+                                                <Box>
+                                                    <strong>Restart Container</strong> — Picks up the latest deployed code. Your session reconnects automatically in a few seconds. All state (channels, config, persona) is preserved.
+                                                </Box>
+                                                <Button variant="normal" onClick={() => {
+                                                    const ws = getHiveSocket();
+                                                    if (ws) sendHiveMessage(ws, { type: "restart" });
+                                                }}>
+                                                    Restart
+                                                </Button>
+                                            </SpaceBetween>
+                                            <hr style={{ border: "none", borderTop: "1px solid #eee" }} />
+                                            <SpaceBetween size="s">
+                                                <Box>
+                                                    <strong>Wipe Session</strong> — Deletes all state (config, channels, persona, guardrails, auth, event logs) and resets to defaults. This is irreversible.
+                                                </Box>
+                                                <Button variant="normal" onClick={() => setShowWipeModal(true)}>
+                                                    Wipe Session
+                                                </Button>
+                                            </SpaceBetween>
                                         </SpaceBetween>
                                     </Container>
                                 ),

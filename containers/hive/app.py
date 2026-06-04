@@ -80,6 +80,7 @@ class HiveSession:
         self._sync_router_custom_agents()
         self.scheduler.load()
         self.scheduler.start()
+        self._start_keepalive()
         self.bus.subscribe("__user__", self._collect_response)
         logger.info(f"Session initialized for {self.user_id}")
 
@@ -117,6 +118,22 @@ class HiveSession:
                 )
                 self._agents.append(custom_agent)
                 logger.info(f"Restored custom agent: {agent_cfg.id}")
+
+    def _start_keepalive(self):
+        """Schedule a keep-alive ping every 10 minutes to prevent container idle timeout."""
+        if self.scheduler._ap_scheduler:
+            from apscheduler.triggers.interval import IntervalTrigger
+            self.scheduler._ap_scheduler.add_job(
+                self._keepalive_ping,
+                IntervalTrigger(minutes=10),
+                id="__keepalive__",
+                replace_existing=True,
+            )
+            logger.info("Keep-alive scheduled (every 10 min)")
+
+    async def _keepalive_ping(self):
+        """No-op ping to keep the container alive."""
+        logger.debug("Keep-alive ping")
 
     def _sync_router_custom_agents(self):
         """Update the router with current custom agent list."""
@@ -444,6 +461,12 @@ async def websocket_handler(websocket, context):
                 session = None
                 _active_session = None
                 await websocket.send_json({"type": "wiped"})
+
+            elif msg_type == "restart":
+                import sys
+                await websocket.send_json({"type": "restarting"})
+                logger.info("Restart requested — exiting process for fresh container")
+                sys.exit(0)
 
     except Exception as e:
         if "disconnect" not in str(e).lower():
