@@ -224,6 +224,95 @@ export function GuardrailsConfig({ guardrails, onSave }: GuardrailsConfigProps) 
                 </SpaceBetween>
             </Container>
 
+            {/* Help Panel */}
+            <ExpandableSection headerText="How Guardrails Work" defaultExpanded={false}>
+                <SpaceBetween size="m">
+                    <Box variant="p">
+                        Guardrails protect you from prompt injection attacks. When someone messages your AI (e.g., via WhatsApp),
+                        the guardrails determine what actions that person can trigger — regardless of what they ask.
+                        Enforcement happens at the <strong>tool level</strong>: even if the AI is tricked into attempting a blocked action,
+                        the tool will physically refuse to execute it.
+                    </Box>
+
+                    <Box variant="h4">Trust Tiers</Box>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                        <tbody>
+                            <tr style={{ borderBottom: "1px solid #e9ebed" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600, width: 100 }}>Owner</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    You, interacting via the Hive UI. Full unrestricted access to all capabilities.
+                                    This cannot be changed.
+                                </td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #e9ebed" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>Trusted</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    Contacts you explicitly add to the trusted list. By default they can only receive replies
+                                    to their own messages — they cannot instruct your AI to message other people, read your chats,
+                                    or access your contacts. You can grant additional permissions if needed.
+                                </td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #e9ebed" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>Known</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    Anyone who appears in your message history (existing contacts). Same restrictions as Trusted
+                                    by default. They can receive a reply but cannot trigger any other actions.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>Stranger</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    Unknown numbers not in your contacts. By default your AI will not respond at all.
+                                    No actions are permitted.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <Box variant="h4">Key Actions Explained</Box>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                        <tbody>
+                            <tr style={{ borderBottom: "1px solid #e9ebed" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600, width: 180 }}>Reply to sender</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    The AI can reply <strong>only back to the person who messaged</strong>. If Bob messages you,
+                                    the AI can respond to Bob. It does NOT mean Bob can ask the AI to reply to Alice —
+                                    that requires "Send to third parties".
+                                </td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #e9ebed" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>Send to third parties</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    The AI can send messages to contacts <strong>other than the person who asked</strong>.
+                                    This is dangerous: someone could say "tell Belita I love her" and the AI would send that
+                                    message from your WhatsApp. Only enable this for contacts you fully trust.
+                                </td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #e9ebed" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>Read message history</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    The AI can read your conversations with other contacts. Without this, the AI cannot
+                                    see or reference any chats besides the current one.
+                                </td>
+                            </tr>
+                            <tr style={{ borderBottom: "1px solid #e9ebed" }}>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>Speak as owner</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    The AI speaks in first person as you. Without this, it identifies as your assistant.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style={{ padding: "8px 12px", fontWeight: 600 }}>Use unmapped tools</td>
+                                <td style={{ padding: "8px 12px" }}>
+                                    Catch-all for any new tools (including MCP tools) that haven't been explicitly mapped
+                                    to an action. Denied by default means new tools are safe until you configure them.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </SpaceBetween>
+            </ExpandableSection>
+
             {/* Pending Enable Warning */}
             {pendingEnable && (
                 <Alert
