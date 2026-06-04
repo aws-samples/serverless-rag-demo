@@ -10,6 +10,7 @@ class SlackChannel:
 
     def __init__(self, config: ChannelConfig):
         self.channel_id = config.id
+        self.provider = "slack"
         self.webhook_url = config.config.get("webhook_url", "")
         self.default_channel = config.config.get("default_channel", "#general")
         self.agents = config.agents

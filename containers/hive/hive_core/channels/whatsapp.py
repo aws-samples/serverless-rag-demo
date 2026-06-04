@@ -26,6 +26,7 @@ class WhatsAppChannel:
 
     def __init__(self, config: ChannelConfig, bucket: str, user_id: str):
         self.channel_id = config.id
+        self.provider = "whatsapp"
         self.phone_number = config.config.get("phone_number", "")
         self.incoming_mode = config.config.get("incoming_mode", "notify")
         self.reply_prefix = config.config.get("reply_prefix", "")

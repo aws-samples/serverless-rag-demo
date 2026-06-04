@@ -148,20 +148,56 @@ export function HiveLayout() {
                 setWaPhone(msg.phone);
                 setTimeout(() => setWaQrVisible(false), 2000);
                 break;
+            case "channel_incoming":
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        role: "system" as const,
+                        content: `[${msg.provider}] ${msg.contact_name}: ${msg.message}${msg.reply ? `\n\n→ ${msg.reply}` : ""}`,
+                        timestamp: Date.now(),
+                    },
+                ]);
+                setChannelMessages((prev) => [...prev, {
+                    id: crypto.randomUUID(),
+                    direction: "in" as const,
+                    provider: msg.provider,
+                    contact_name: msg.contact_name || msg.contact,
+                    contact_jid: msg.contact,
+                    channel_id: msg.channel_id,
+                    message: msg.message,
+                    reply: msg.reply,
+                    timestamp: msg.timestamp || Math.floor(Date.now() / 1000),
+                    metadata: msg.metadata,
+                }].slice(-50));
+                break;
+            case "channel_outgoing":
+                setChannelMessages((prev) => [...prev, {
+                    id: crypto.randomUUID(),
+                    direction: "out" as const,
+                    provider: msg.provider,
+                    contact_name: msg.contact_name || msg.contact,
+                    contact_jid: msg.contact,
+                    channel_id: msg.channel_id,
+                    message: msg.message,
+                    timestamp: msg.timestamp || Math.floor(Date.now() / 1000),
+                    metadata: msg.metadata,
+                }].slice(-50));
+                break;
             case "wa_incoming":
                 setMessages((prev) => [
                     ...prev,
                     {
                         id: crypto.randomUUID(),
                         role: "system" as const,
-                        content: `📱 WhatsApp from ${msg.from_name || msg.from}: ${msg.message}${msg.response ? `\n\n🤖 Reply: ${msg.response}` : ""}${msg.proposed_response ? `\n\n🤖 Proposed: ${msg.proposed_response}` : ""}`,
+                        content: `[whatsapp] ${msg.from_name || msg.from}: ${msg.message}${msg.response ? `\n\n→ ${msg.response}` : ""}${msg.proposed_response ? `\n\n🤖 Proposed: ${msg.proposed_response}` : ""}`,
                         timestamp: Date.now(),
                     },
                 ]);
-                // Also add to channel messages feed
                 setChannelMessages((prev) => [...prev, {
                     id: crypto.randomUUID(),
                     direction: "in" as const,
+                    provider: "whatsapp",
                     contact_name: msg.from_name || msg.from,
                     contact_jid: msg.from,
                     channel_id: msg.channel_id,
@@ -174,6 +210,7 @@ export function HiveLayout() {
                 setChannelMessages((prev) => [...prev, {
                     id: crypto.randomUUID(),
                     direction: "out" as const,
+                    provider: "whatsapp",
                     contact_name: msg.to_name || msg.to,
                     contact_jid: msg.to,
                     channel_id: msg.channel_id,

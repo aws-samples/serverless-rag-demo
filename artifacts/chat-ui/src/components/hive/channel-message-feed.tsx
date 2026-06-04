@@ -11,6 +11,36 @@ function formatTime(ts: number): string {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
+const PROVIDER_COLORS: Record<string, string> = {
+    whatsapp: "#25D366",
+    slack: "#4A154B",
+    mcp: "#FF9900",
+};
+
+const PROVIDER_LABELS: Record<string, string> = {
+    whatsapp: "WA",
+    slack: "Slack",
+    mcp: "MCP",
+};
+
+function ProviderBadge({ provider }: { provider: string }) {
+    const color = PROVIDER_COLORS[provider] || "#666";
+    const label = PROVIDER_LABELS[provider] || provider;
+    return (
+        <span style={{
+            fontSize: 10,
+            fontWeight: 600,
+            padding: "1px 5px",
+            borderRadius: 3,
+            background: color,
+            color: "#fff",
+            textTransform: "uppercase",
+        }}>
+            {label}
+        </span>
+    );
+}
+
 export function ChannelMessageFeed({ messages }: ChannelMessageFeedProps) {
     const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +52,7 @@ export function ChannelMessageFeed({ messages }: ChannelMessageFeedProps) {
         return (
             <Container header={<Header variant="h3">Messages</Header>}>
                 <Box textAlign="center" color="text-status-inactive" padding="l">
-                    No messages yet. Incoming and outgoing WhatsApp messages will appear here in real-time.
+                    No messages yet. Channel messages (WhatsApp, Slack, MCP) will appear here in real-time.
                 </Box>
             </Container>
         );
@@ -47,6 +77,7 @@ export function ChannelMessageFeed({ messages }: ChannelMessageFeedProps) {
                                     <Badge color={msg.direction === "in" ? "blue" : "green"}>
                                         {msg.direction === "in" ? "IN" : "OUT"}
                                     </Badge>
+                                    <ProviderBadge provider={msg.provider} />
                                     <strong>{msg.contact_name}</strong>
                                     <span style={{ fontSize: 11, color: "#666" }}>{msg.channel_id}</span>
                                 </div>

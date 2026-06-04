@@ -63,12 +63,14 @@ export interface GuardrailsPolicy {
 export interface ChannelMessage {
     id: string;
     direction: "in" | "out";
+    provider: string;
     contact_name: string;
     contact_jid: string;
     channel_id: string;
     message: string;
     reply?: string;
     timestamp: number;
+    metadata?: Record<string, any>;
 }
 
 export type AgentStatus = "idle" | "thinking" | "acting" | "error";
@@ -105,6 +107,8 @@ export type HiveResponse =
     | { type: "channels"; channels: any[] }
     | { type: "wa_qr"; channel_id: string; qr: string }
     | { type: "wa_connected"; channel_id: string; phone: string }
+    | { type: "channel_incoming"; channel_id: string; provider: string; contact: string; contact_name: string; message: string; timestamp: number; reply?: string; metadata?: Record<string, any> }
+    | { type: "channel_outgoing"; channel_id: string; provider: string; contact: string; contact_name: string; message: string; timestamp: number; metadata?: Record<string, any> }
     | { type: "wa_incoming"; channel_id: string; from: string; from_name: string; message: string; mode: string; proposed_response?: string; response?: string; approval_id?: string }
     | { type: "wa_outgoing"; channel_id: string; to: string; to_name: string; message: string; timestamp: number }
     | { type: "wa_status"; channel_id: string; connected: boolean }

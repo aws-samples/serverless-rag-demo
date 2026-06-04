@@ -145,23 +145,25 @@ class WhatsAppIncomingHandler:
             # Send reply via WhatsApp
             await self.channel.send(sender, result_text)
 
-            # Always notify UI with incoming message (for channel message feed)
+            # Notify UI with generic channel events
             await self._ws_notify({
-                "type": "wa_incoming",
+                "type": "channel_incoming",
                 "channel_id": self.channel.channel_id,
-                "from": sender,
-                "from_name": from_name,
+                "provider": "whatsapp",
+                "contact": sender,
+                "contact_name": from_name or sender,
                 "message": message,
-                "mode": mode,
-                "response": result_text,
+                "timestamp": int(time.time()),
+                "reply": result_text,
+                "metadata": {"mode": mode},
             })
 
-            # Notify outgoing reply for the feed
             await self._ws_notify({
-                "type": "wa_outgoing",
+                "type": "channel_outgoing",
                 "channel_id": self.channel.channel_id,
-                "to": sender,
-                "to_name": from_name,
+                "provider": "whatsapp",
+                "contact": sender,
+                "contact_name": from_name or sender,
                 "message": result_text,
                 "timestamp": int(time.time()),
             })
@@ -187,7 +189,7 @@ class WhatsAppIncomingHandler:
                 "response": result_text,
             }
 
-            # Push to UI for approval
+            # Push to UI for approval (uses wa_incoming for approval flow)
             await self._ws_notify({
                 "type": "wa_incoming",
                 "channel_id": self.channel.channel_id,

@@ -81,13 +81,15 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
         _run_async(ch.send(to, message))
         # Notify UI about outgoing message
         if _ws_notify_fn and _event_loop:
+            provider = getattr(ch, "provider", "unknown")
             try:
                 asyncio.run_coroutine_threadsafe(
                     _ws_notify_fn({
-                        "type": "wa_outgoing",
+                        "type": "channel_outgoing",
                         "channel_id": channel_id,
-                        "to": to,
-                        "to_name": to,
+                        "provider": provider,
+                        "contact": to,
+                        "contact_name": to,
                         "message": message,
                         "timestamp": int(time.time()),
                     }),
