@@ -10,6 +10,9 @@ import {
     ExpandableSection,
     Flashbar,
     Grid,
+    Box,
+    Modal,
+    Alert,
 } from "@cloudscape-design/components";
 import { WaQrModal } from "./wa-qr-modal";
 import { AgentGraph } from "./agent-graph";
@@ -183,6 +186,7 @@ export function HiveLayout() {
     };
 
     const [editingChannel, setEditingChannel] = useState<ChannelConfig | null>(null);
+    const [showWipeModal, setShowWipeModal] = useState(false);
 
     const handleAddChannel = (channelConfig: ChannelConfig) => {
         const ws = getHiveSocket();
@@ -416,6 +420,22 @@ export function HiveLayout() {
                                     if (ws) sendHiveMessage(ws, { type: "delete_job", job_id: id });
                                 }} />,
                             },
+                            {
+                                id: "danger",
+                                label: "Session",
+                                content: (
+                                    <Container header={<Header variant="h3">Session Management</Header>}>
+                                        <SpaceBetween size="m">
+                                            <Box>
+                                                <strong>Wipe Session</strong> — Deletes all state (config, channels, persona, guardrails, auth, event logs) and resets to defaults. This is irreversible.
+                                            </Box>
+                                            <Button variant="normal" onClick={() => setShowWipeModal(true)}>
+                                                Wipe Session
+                                            </Button>
+                                        </SpaceBetween>
+                                    </Container>
+                                ),
+                            },
                         ]}
                     />
                 </div>
@@ -427,6 +447,34 @@ export function HiveLayout() {
                 phone={waPhone}
                 onDismiss={() => setWaQrVisible(false)}
             />
+            <Modal
+                visible={showWipeModal}
+                onDismiss={() => setShowWipeModal(false)}
+                header="Wipe Session"
+                footer={
+                    <SpaceBetween size="s" direction="horizontal">
+                        <Button onClick={() => setShowWipeModal(false)}>Cancel</Button>
+                        <Button variant="primary" onClick={() => {
+                            const ws = getHiveSocket();
+                            if (ws) sendHiveMessage(ws, { type: "wipe" });
+                            setShowWipeModal(false);
+                            setConfig(null);
+                            setMessages([]);
+                            setJobs([]);
+                            setPersona(null);
+                            setGuardrails(null);
+                            setWaConnected(false);
+                            window.location.reload();
+                        }}>
+                            Wipe Everything
+                        </Button>
+                    </SpaceBetween>
+                }
+            >
+                <Alert type="warning">
+                    This will permanently delete all your Hive data: channels, agents, persona, guardrails, scheduled jobs, WhatsApp auth, and event logs. You will need to reconfigure everything from scratch.
+                </Alert>
+            </Modal>
         </SpaceBetween>
     );
 }
