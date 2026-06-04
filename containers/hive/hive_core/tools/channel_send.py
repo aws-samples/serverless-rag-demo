@@ -1,6 +1,7 @@
 """Strands tools for agents to interact with configured channels."""
 import asyncio
 import logging
+import time
 from strands import tool
 from hive_core.guardrails import check_guardrails
 
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 # Global references set by app.py when session initializes
 _channel_manager = None
 _event_loop = None
+_ws_notify_fn = None  # async fn to push events to UI
 
 
 def set_channel_manager(cm):
@@ -19,6 +21,12 @@ def set_channel_manager(cm):
         _event_loop = asyncio.get_running_loop()
     except RuntimeError:
         _event_loop = None
+
+
+def set_ws_notify(fn):
+    """Set the WebSocket notify function for pushing events to UI."""
+    global _ws_notify_fn
+    _ws_notify_fn = fn
 
 
 def _run_async(coro):
@@ -71,6 +79,22 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
 
     try:
         _run_async(ch.send(to, message))
+        # Notify UI about outgoing message
+        if _ws_notify_fn and _event_loop:
+            try:
+                asyncio.run_coroutine_threadsafe(
+                    _ws_notify_fn({
+                        "type": "wa_outgoing",
+                        "channel_id": channel_id,
+                        "to": to,
+                        "to_name": to,
+                        "message": message,
+                        "timestamp": int(time.time()),
+                    }),
+                    _event_loop,
+                )
+            except Exception:
+                pass  # Don't fail send if notification fails
         return {"success": True, "channel_id": channel_id, "to": to, "message_sent": message[:100]}
     except Exception as e:
         logger.error(f"send_channel_message failed: {e}")

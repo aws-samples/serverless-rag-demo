@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from typing import Any, Callable, Awaitable
 
 from hive_core.channels.whatsapp import WhatsAppChannel
@@ -144,17 +145,26 @@ class WhatsAppIncomingHandler:
             # Send reply via WhatsApp
             await self.channel.send(sender, result_text)
 
-            # Notify UI if mode requires it
-            if mode == "notify":
-                await self._ws_notify({
-                    "type": "wa_incoming",
-                    "channel_id": self.channel.channel_id,
-                    "from": sender,
-                    "from_name": from_name,
-                    "message": message,
-                    "mode": mode,
-                    "response": result_text,
-                })
+            # Always notify UI with incoming message (for channel message feed)
+            await self._ws_notify({
+                "type": "wa_incoming",
+                "channel_id": self.channel.channel_id,
+                "from": sender,
+                "from_name": from_name,
+                "message": message,
+                "mode": mode,
+                "response": result_text,
+            })
+
+            # Notify outgoing reply for the feed
+            await self._ws_notify({
+                "type": "wa_outgoing",
+                "channel_id": self.channel.channel_id,
+                "to": sender,
+                "to_name": from_name,
+                "message": result_text,
+                "timestamp": int(time.time()),
+            })
 
         elif mode == "ask":
             # Route to get proposed response, but don't send yet

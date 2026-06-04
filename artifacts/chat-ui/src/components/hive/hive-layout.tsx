@@ -20,7 +20,8 @@ import { ChatPanel } from "./chat-panel";
 import { ChannelConfigWizard } from "./channel-config";
 import { AgentConfigPanel } from "./agent-config";
 import { JobViewer } from "./job-viewer";
-import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, CronJob, PersonaData, GuardrailsPolicy } from "./types";
+import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, ChannelMessage, CronJob, PersonaData, GuardrailsPolicy } from "./types";
+import { ChannelMessageFeed } from "./channel-message-feed";
 import { PersonaConfig } from "./persona-config";
 import { GuardrailsConfig } from "./guardrails-config";
 import { connectHive, sendHiveMessage, getHiveSocket } from "../../common/hive-ws";
@@ -55,6 +56,7 @@ export function HiveLayout() {
     const [flashItems, setFlashItems] = useState<any[]>([]);
     const [persona, setPersona] = useState<PersonaData | null>(null);
     const [guardrails, setGuardrails] = useState<GuardrailsPolicy | null>(null);
+    const [channelMessages, setChannelMessages] = useState<ChannelMessage[]>([]);
 
     // Connect to Hive on mount
     useEffect(() => {
@@ -156,6 +158,28 @@ export function HiveLayout() {
                         timestamp: Date.now(),
                     },
                 ]);
+                // Also add to channel messages feed
+                setChannelMessages((prev) => [...prev, {
+                    id: crypto.randomUUID(),
+                    direction: "in" as const,
+                    contact_name: msg.from_name || msg.from,
+                    contact_jid: msg.from,
+                    channel_id: msg.channel_id,
+                    message: msg.message,
+                    reply: msg.response,
+                    timestamp: Math.floor(Date.now() / 1000),
+                }].slice(-50));
+                break;
+            case "wa_outgoing":
+                setChannelMessages((prev) => [...prev, {
+                    id: crypto.randomUUID(),
+                    direction: "out" as const,
+                    contact_name: msg.to_name || msg.to,
+                    contact_jid: msg.to,
+                    channel_id: msg.channel_id,
+                    message: msg.message,
+                    timestamp: msg.timestamp,
+                }].slice(-50));
                 break;
             case "wa_status":
                 setWaConnected(msg.connected);
@@ -333,6 +357,11 @@ export function HiveLayout() {
                                         activeAgent={activeAgent}
                                     />
                                 ),
+                            },
+                            {
+                                id: "messages",
+                                label: "Messages",
+                                content: <ChannelMessageFeed messages={channelMessages} />,
                             },
                             {
                                 id: "persona",

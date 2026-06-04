@@ -20,7 +20,7 @@ from hive_core.agents.pa import PersonalAssistantAgent
 from hive_core.agents.reminder import ReminderAgent
 from hive_core.agents.market import MarketAgent
 from hive_core.channels.manager import ChannelManager
-from hive_core.tools.channel_send import set_channel_manager as _set_channel_manager_ref
+from hive_core.tools.channel_send import set_channel_manager as _set_channel_manager_ref, set_ws_notify as _set_ws_notify_ref
 from hive_core.tools.mcp_bridge import set_mcp_pool as _set_mcp_pool_ref
 from hive_core.wa_handler import WhatsAppIncomingHandler
 
@@ -76,6 +76,7 @@ class HiveSession:
         await self._restore_channels()
         _set_channel_manager_ref(self.channel_manager)
         _set_mcp_pool_ref(self.channel_manager.mcp_pool)
+        _set_ws_notify_ref(self._ws_notify_from_tool)
         self.router.set_context_provider(self._build_context)
         self._sync_router_custom_agents()
         self.scheduler.load()
@@ -164,6 +165,15 @@ class HiveSession:
         if agents_str:
             parts.append(f"Available agents: {agents_str}")
         return "\n".join(parts) if parts else ""
+
+    async def _ws_notify_from_tool(self, data: dict):
+        """Push WebSocket notification from tool context."""
+        global _active_websocket
+        if _active_websocket:
+            try:
+                await _active_websocket.send_json(data)
+            except Exception:
+                pass
 
     async def _collect_response(self, message: Message):
         await self._response_queue.put(message)

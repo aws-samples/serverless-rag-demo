@@ -60,6 +60,17 @@ export interface GuardrailsPolicy {
     refusal_message: string;
 }
 
+export interface ChannelMessage {
+    id: string;
+    direction: "in" | "out";
+    contact_name: string;
+    contact_jid: string;
+    channel_id: string;
+    message: string;
+    reply?: string;
+    timestamp: number;
+}
+
 export type AgentStatus = "idle" | "thinking" | "acting" | "error";
 
 export type HiveMessage =
@@ -95,6 +106,7 @@ export type HiveResponse =
     | { type: "wa_qr"; channel_id: string; qr: string }
     | { type: "wa_connected"; channel_id: string; phone: string }
     | { type: "wa_incoming"; channel_id: string; from: string; from_name: string; message: string; mode: string; proposed_response?: string; response?: string; approval_id?: string }
+    | { type: "wa_outgoing"; channel_id: string; to: string; to_name: string; message: string; timestamp: number }
     | { type: "wa_status"; channel_id: string; connected: boolean }
     | { type: "jobs"; jobs: CronJob[] }
     | { type: "job_deleted"; job_id: string; jobs: CronJob[] }
