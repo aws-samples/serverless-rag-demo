@@ -17,8 +17,9 @@ import { ChatPanel } from "./chat-panel";
 import { ChannelConfigWizard } from "./channel-config";
 import { AgentConfigPanel } from "./agent-config";
 import { JobViewer } from "./job-viewer";
-import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, CronJob, PersonaData } from "./types";
+import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, CronJob, PersonaData, GuardrailsPolicy } from "./types";
 import { PersonaConfig } from "./persona-config";
+import { GuardrailsConfig } from "./guardrails-config";
 import { connectHive, sendHiveMessage, getHiveSocket } from "../../common/hive-ws";
 import { AuthHelper } from "../../common/helpers/auth-help";
 import "./hive.css";
@@ -50,6 +51,7 @@ export function HiveLayout() {
     const [waPhone, setWaPhone] = useState("");
     const [flashItems, setFlashItems] = useState<any[]>([]);
     const [persona, setPersona] = useState<PersonaData | null>(null);
+    const [guardrails, setGuardrails] = useState<GuardrailsPolicy | null>(null);
 
     // Connect to Hive on mount
     useEffect(() => {
@@ -158,6 +160,10 @@ export function HiveLayout() {
             case "persona":
             case "persona_saved":
                 setPersona(msg.persona);
+                break;
+            case "guardrails":
+            case "guardrails_saved":
+                setGuardrails(msg.guardrails);
                 break;
             case "jobs":
             case "job_deleted":
@@ -304,6 +310,10 @@ export function HiveLayout() {
                                 const ws = getHiveSocket();
                                 if (ws) sendHiveMessage(ws, { type: "get_persona" });
                             }
+                            if (detail.activeTabId === "guardrails") {
+                                const ws = getHiveSocket();
+                                if (ws) sendHiveMessage(ws, { type: "get_guardrails" });
+                            }
                         }}
                         tabs={[
                             {
@@ -328,6 +338,19 @@ export function HiveLayout() {
                                         onSave={(p) => {
                                             const ws = getHiveSocket();
                                             if (ws) sendHiveMessage(ws, { type: "save_persona", persona: p });
+                                        }}
+                                    />
+                                ),
+                            },
+                            {
+                                id: "guardrails",
+                                label: "Guardrails",
+                                content: (
+                                    <GuardrailsConfig
+                                        guardrails={guardrails}
+                                        onSave={(g) => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "save_guardrails", guardrails: g });
                                         }}
                                     />
                                 ),

@@ -59,15 +59,25 @@ async function startConnection() {
         if (connection === "close") {
             connected = false;
             const statusCode = lastDisconnect?.error?.output?.statusCode;
-            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-            logger.info({ statusCode, shouldReconnect }, "Connection closed");
-            if (shouldReconnect) {
+            const loggedOut = statusCode === DisconnectReason.loggedOut;
+            logger.info({ statusCode, loggedOut }, "Connection closed");
+
+            if (loggedOut) {
+                // Auth expired/revoked — clear state and reconnect for fresh QR
+                const fs = require("fs");
+                fs.rmSync(authStatePath, { recursive: true, force: true });
+                fs.mkdirSync(authStatePath, { recursive: true });
+                logger.info("Auth state cleared, reconnecting for fresh QR");
+                setTimeout(startConnection, 1000);
+            } else {
+                // Transient error — retry
                 setTimeout(startConnection, 3000);
             }
+
             fetch(`${PYTHON_APP_URL}/internal/wa-event`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ event: "disconnected", logged_out: !shouldReconnect }),
+                body: JSON.stringify({ event: "disconnected", logged_out: loggedOut }),
             }).catch(() => {});
         }
 

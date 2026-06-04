@@ -3,6 +3,7 @@ import logging
 from typing import Any, Callable, Awaitable
 
 from hive_core.channels.whatsapp import WhatsAppChannel
+from hive_core.guardrails import resolve_tier
 
 logger = logging.getLogger(__name__)
 

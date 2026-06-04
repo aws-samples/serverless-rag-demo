@@ -2,6 +2,7 @@ import json
 import logging
 import boto3
 from botocore.exceptions import ClientError
+from hive_core.guardrails import DEFAULT_GUARDRAILS
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,12 @@ class StateManager:
 
     def save_persona(self, persona: dict):
         self._put_json(f"{self.prefix}/persona.json", persona)
+
+    def load_guardrails(self) -> dict:
+        return self._get_json(f"{self.prefix}/guardrails.json", DEFAULT_GUARDRAILS.copy())
+
+    def save_guardrails(self, guardrails: dict):
+        self._put_json(f"{self.prefix}/guardrails.json", guardrails)
 
     def wipe(self):
         """Delete all state for this user."""

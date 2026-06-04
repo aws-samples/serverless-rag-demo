@@ -47,6 +47,19 @@ export interface PersonaData {
     contact_overrides: Record<string, string>; // key format: "channelId::contactJid"
 }
 
+export interface TierConfig {
+    description: string;
+    contacts: string[];
+}
+
+export interface GuardrailsPolicy {
+    version: number;
+    enabled: boolean;
+    tiers: Record<string, TierConfig>;
+    policies: Record<string, Record<string, boolean>>;
+    refusal_message: string;
+}
+
 export type AgentStatus = "idle" | "thinking" | "acting" | "error";
 
 export type HiveMessage =
@@ -64,6 +77,8 @@ export type HiveMessage =
     | { type: "delete_job"; job_id: string }
     | { type: "get_persona" }
     | { type: "save_persona"; persona: PersonaData }
+    | { type: "get_guardrails" }
+    | { type: "save_guardrails"; guardrails: GuardrailsPolicy }
     | { type: "wipe" };
 
 export type HiveResponse =
@@ -85,5 +100,7 @@ export type HiveResponse =
     | { type: "job_deleted"; job_id: string; jobs: CronJob[] }
     | { type: "persona"; persona: PersonaData }
     | { type: "persona_saved"; persona: PersonaData }
+    | { type: "guardrails"; guardrails: GuardrailsPolicy }
+    | { type: "guardrails_saved"; guardrails: GuardrailsPolicy }
     | { type: "wiped" }
     | { type: "error"; message: string };

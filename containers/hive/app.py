@@ -68,6 +68,10 @@ class HiveSession:
         self.persona = self.state.load_persona()
         for agent in self._agents:
             agent.set_persona(self.persona)
+        # Load and apply guardrails to all agents
+        self.guardrails = self.state.load_guardrails()
+        for agent in self._agents:
+            agent.set_guardrails(self.guardrails)
         await self._restore_channels()
         _set_channel_manager_ref(self.channel_manager)
         _set_mcp_pool_ref(self.channel_manager.mcp_pool)
@@ -340,6 +344,18 @@ async def websocket_handler(websocket, context):
                 for agent in session._agents:
                     agent.set_persona(persona_data)
                 await websocket.send_json({"type": "persona_saved", "persona": persona_data})
+
+            elif msg_type == "get_guardrails" and session:
+                guardrails = session.state.load_guardrails()
+                await websocket.send_json({"type": "guardrails", "guardrails": guardrails})
+
+            elif msg_type == "save_guardrails" and session:
+                guardrails_data = data.get("guardrails", {})
+                session.state.save_guardrails(guardrails_data)
+                session.guardrails = guardrails_data
+                for agent in session._agents:
+                    agent.set_guardrails(guardrails_data)
+                await websocket.send_json({"type": "guardrails_saved", "guardrails": guardrails_data})
 
             elif msg_type == "wipe" and session:
                 session.shutdown()

@@ -3,6 +3,14 @@ import logging
 from typing import Any
 from hive_core.bus import MessageBus, Message
 from hive_core.event_log import EventLog
+from hive_core.guardrails import (
+    ExecutionContext,
+    build_guardrails_prompt,
+    clear_execution_context,
+    resolve_tier,
+    set_execution_context,
+    wrap_tool_with_guardrails,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +45,7 @@ class HiveAgent:
         self.event_log = event_log
         self._strands_agent: Any = None
         self._persona: dict = {}
+        self._guardrails: dict = {}
         self._active_channel_id: str = ""
 
         # Register on bus
@@ -45,6 +54,11 @@ class HiveAgent:
     def set_persona(self, persona: dict):
         """Set the user's persona config. Forces agent re-init on next process call."""
         self._persona = persona
+        self._strands_agent = None
+
+    def set_guardrails(self, guardrails: dict):
+        """Set the user's guardrails config. Forces agent re-init on next process call."""
+        self._guardrails = guardrails
         self._strands_agent = None
 
     def _build_effective_persona(self, channel_id: str = "", contact_jid: str = "") -> str:
@@ -91,7 +105,7 @@ class HiveAgent:
 
         # Re-init agent if channel context changed (different system prompt needed)
         if channel_id != self._active_channel_id or not self._strands_agent:
-            self._init_strands_agent(channel_id)
+            self._init_strands_agent(channel_id, contact_jid)
             self._active_channel_id = channel_id
 
         # Contact-level override injected as query prefix (avoids re-init per contact)
@@ -101,12 +115,28 @@ class HiveAgent:
             if contact_override:
                 query = f"[Context for this contact: {contact_override}]\n\n{query}"
 
-        # Strands Agent.__call__ is synchronous — run in thread to avoid blocking event loop
-        loop = asyncio.get_event_loop()
-        result = await loop.run_in_executor(None, self._strands_agent, query)
-        return str(result)
+        # Set guardrails execution context
+        tier = resolve_tier(contact_jid, self._guardrails)
+        policies = self._guardrails.get("policies", {}).get(tier, {})
+        refusal = self._guardrails.get("refusal_message", "")
+        exec_ctx = ExecutionContext(
+            sender_jid=contact_jid,
+            sender_tier=tier,
+            channel_id=channel_id,
+            policies=policies,
+            refusal_message=refusal,
+        )
+        set_execution_context(exec_ctx)
 
-    def _init_strands_agent(self, channel_id: str = ""):
+        try:
+            # Strands Agent.__call__ is synchronous — run in thread to avoid blocking event loop
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(None, self._strands_agent, query)
+            return str(result)
+        finally:
+            clear_execution_context()
+
+    def _init_strands_agent(self, channel_id: str = "", contact_jid: str = ""):
         """Initialize the underlying Strands agent."""
         if StrandsAgent is None:
             raise ImportError(
@@ -127,6 +157,22 @@ class HiveAgent:
         if persona_block:
             effective_prompt = f"<persona>\n{persona_block}\n</persona>\n\n{self.system_prompt}"
 
+        # Inject guardrails prompt between persona and role prompt
+        if self._guardrails and self._guardrails.get("enabled", False):
+            tier = resolve_tier(contact_jid, self._guardrails)
+            policies = self._guardrails.get("policies", {}).get(tier, {})
+            refusal = self._guardrails.get("refusal_message", "")
+            guardrails_block = build_guardrails_prompt(tier, contact_jid, policies, refusal)
+            # Insert guardrails after persona block (before role instructions)
+            if persona_block:
+                effective_prompt = (
+                    f"<persona>\n{persona_block}\n</persona>\n\n"
+                    f"{guardrails_block}\n\n"
+                    f"{self.system_prompt}"
+                )
+            else:
+                effective_prompt = f"{guardrails_block}\n\n{self.system_prompt}"
+
         # Merge static tools with any MCP tools mapped to this agent
         all_tools = list(self.tools)
         try:
@@ -137,6 +183,10 @@ class HiveAgent:
                 logger.info(f"Agent {self.agent_id}: {len(mcp_tools)} MCP tools loaded")
         except Exception as e:
             logger.warning(f"Failed to load MCP tools for {self.agent_id}: {e}")
+
+        # Wrap all tools with guardrails enforcement
+        if self._guardrails and self._guardrails.get("enabled", False):
+            all_tools = [wrap_tool_with_guardrails(t) for t in all_tools]
 
         self._strands_agent = StrandsAgent(
             system_prompt=effective_prompt,
