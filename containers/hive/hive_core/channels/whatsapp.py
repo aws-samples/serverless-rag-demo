@@ -17,6 +17,9 @@ logger = logging.getLogger(__name__)
 SIDECAR_URL = "http://127.0.0.1:3001"
 AUTH_STATE_PATH = "/tmp/wa-auth"
 
+# Module-level sidecar process tracking — ensures only one sidecar runs at a time
+_active_sidecar: Optional[subprocess.Popen] = None
+
 
 class WhatsAppChannel:
     """WhatsApp via Baileys Node.js sidecar with S3-persisted auth."""
@@ -52,9 +55,23 @@ class WhatsAppChannel:
                 return data
 
     def _start_sidecar(self):
-        """Start the Node.js sidecar process."""
+        """Start the Node.js sidecar process, killing any existing one first."""
+        global _active_sidecar
+
+        # If this instance already owns a running sidecar, keep it
         if self._process and self._process.poll() is None:
-            return  # Already running
+            return
+
+        # Kill any orphaned sidecar from a previous channel instance
+        if _active_sidecar and _active_sidecar.poll() is None:
+            logger.info(f"Killing existing sidecar (PID {_active_sidecar.pid}) before starting new one")
+            _active_sidecar.terminate()
+            try:
+                _active_sidecar.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                _active_sidecar.kill()
+                _active_sidecar.wait(timeout=3)
+
         sidecar_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "sidecar")
         sidecar_dir = os.path.abspath(sidecar_dir)
         import sys
@@ -64,6 +81,7 @@ class WhatsAppChannel:
             stdout=sys.stdout,
             stderr=sys.stderr,
         )
+        _active_sidecar = self._process
         logger.info(f"Sidecar started (PID {self._process.pid})")
 
     def _restore_auth_from_s3(self):
@@ -156,8 +174,10 @@ class WhatsAppChannel:
 
     async def shutdown(self):
         """Stop sidecar and persist auth state."""
+        global _active_sidecar
         self.persist_auth_to_s3()
         if self._process and self._process.poll() is None:
             self._process.terminate()
             self._process.wait(timeout=5)
+            _active_sidecar = None
             logger.info("Sidecar stopped")
