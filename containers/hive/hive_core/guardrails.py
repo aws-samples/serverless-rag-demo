@@ -251,23 +251,27 @@ def build_guardrails_prompt(
 
 
 def wrap_tool_with_guardrails(tool_fn):
-    """Wrap a tool function with guardrails enforcement.
+    """Return the tool as-is — enforcement is done inline via check_guardrails().
 
-    Preserves __name__, __doc__, and any tool_spec attribute.
+    Previously this wrapped tools with a proxy function, but that breaks
+    Strands' @tool decorator metadata. Instead, tools call check_guardrails()
+    directly at the start of their body.
     """
+    return tool_fn
 
-    @functools.wraps(tool_fn)
-    def guarded(**kwargs):
-        result = guardrails_gate(tool_fn.__name__, kwargs)
-        if result:
-            return result
-        return tool_fn(**kwargs)
 
-    # Preserve strands tool metadata
-    if hasattr(tool_fn, "tool_spec"):
-        guarded.tool_spec = tool_fn.tool_spec
+def check_guardrails(tool_name: str, **kwargs) -> str | None:
+    """Call this at the start of a tool to enforce guardrails.
 
-    return guarded
+    Returns a refusal message string if blocked, None if allowed.
+    Tools should return the string immediately if non-None.
+
+    Usage:
+        blocked = check_guardrails("send_channel_message", to=to, message=message)
+        if blocked:
+            return {"success": False, "error": blocked}
+    """
+    return guardrails_gate(tool_name, kwargs)
 
 
 # ---------------------------------------------------------------------------

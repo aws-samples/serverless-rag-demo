@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from strands import tool
+from hive_core.guardrails import check_guardrails
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,11 @@ def send_channel_message(channel_id: str, to: str, message: str) -> dict:
     Returns:
         dict with success status and details.
     """
+    # Guardrails enforcement
+    blocked = check_guardrails("send_channel_message", channel_id=channel_id, to=to, message=message)
+    if blocked:
+        return {"success": False, "error": blocked}
+
     global _channel_manager
     if not _channel_manager:
         return {"success": False, "error": "No channel manager available"}
@@ -83,6 +89,11 @@ def read_channel_messages(channel_id: str, contact: str, limit: int = 10) -> dic
     Returns:
         dict with messages list, each having: from, text, timestamp, fromMe
     """
+    # Guardrails enforcement
+    blocked = check_guardrails("read_channel_messages", channel_id=channel_id, contact=contact, limit=limit)
+    if blocked:
+        return {"success": False, "error": blocked}
+
     global _channel_manager
     if not _channel_manager:
         return {"success": False, "error": "No channel manager available"}
@@ -116,6 +127,11 @@ def list_channel_contacts(channel_id: str) -> dict:
     Returns:
         dict with contacts list, each having: jid, name, last_message, last_timestamp, message_count
     """
+    # Guardrails enforcement
+    blocked = check_guardrails("list_channel_contacts", channel_id=channel_id)
+    if blocked:
+        return {"success": False, "error": blocked}
+
     global _channel_manager
     if not _channel_manager:
         return {"success": False, "error": "No channel manager available"}

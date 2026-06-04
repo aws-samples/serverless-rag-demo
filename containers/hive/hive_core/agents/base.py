@@ -9,7 +9,6 @@ from hive_core.guardrails import (
     clear_execution_context,
     resolve_tier,
     set_execution_context,
-    wrap_tool_with_guardrails,
 )
 
 logger = logging.getLogger(__name__)
@@ -183,10 +182,6 @@ class HiveAgent:
                 logger.info(f"Agent {self.agent_id}: {len(mcp_tools)} MCP tools loaded")
         except Exception as e:
             logger.warning(f"Failed to load MCP tools for {self.agent_id}: {e}")
-
-        # Wrap all tools with guardrails enforcement
-        if self._guardrails and self._guardrails.get("enabled", False):
-            all_tools = [wrap_tool_with_guardrails(t) for t in all_tools]
 
         self._strands_agent = StrandsAgent(
             system_prompt=effective_prompt,
