@@ -204,9 +204,16 @@ async def websocket_handler(websocket, context):
 
             if msg_type == "init":
                 user_id = data.get("user_id", "anonymous")
-                session = HiveSession(user_id)
-                await session.initialize()
-                _active_session = session
+                # Reuse existing session if same user reconnects
+                if _active_session and _active_session.user_id == user_id:
+                    session = _active_session
+                    logger.info(f"Reconnected to existing session for {user_id}")
+                else:
+                    if _active_session:
+                        _active_session.shutdown()
+                    session = HiveSession(user_id)
+                    await session.initialize()
+                    _active_session = session
                 await websocket.send_json({
                     "type": "init_complete",
                     "config": session.config.to_dict(),
@@ -442,10 +449,11 @@ async def websocket_handler(websocket, context):
         if "disconnect" not in str(e).lower():
             logger.error(f"WebSocket error: {e}")
     finally:
-        if session:
-            session.shutdown()
-        _active_session = None
+        # Only clear the WebSocket ref — keep session alive for background WA/scheduler
         _active_websocket = None
+        if session:
+            session.event_log.flush()
+        logger.info("WebSocket closed, session remains active in background")
 
 
 # Internal HTTP routes for sidecar communication
