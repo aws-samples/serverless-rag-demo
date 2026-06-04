@@ -173,12 +173,28 @@ class WhatsAppChannel:
         except Exception:
             return {"connected": False, "phone": ""}
 
-    async def shutdown(self):
-        """Stop sidecar and persist auth state."""
+    async def shutdown(self, clear_auth: bool = False):
+        """Stop sidecar and optionally clear auth state."""
         global _active_sidecar
-        self.persist_auth_to_s3()
+        if clear_auth:
+            self._clear_auth()
+        else:
+            self.persist_auth_to_s3()
         if self._process and self._process.poll() is None:
             self._process.terminate()
             self._process.wait(timeout=5)
             _active_sidecar = None
             logger.info("Sidecar stopped")
+
+    def _clear_auth(self):
+        """Remove auth state locally and from S3 (for channel re-pairing)."""
+        import shutil
+        if os.path.isdir(AUTH_STATE_PATH):
+            shutil.rmtree(AUTH_STATE_PATH, ignore_errors=True)
+            logger.info("Cleared local auth state")
+        s3_key = f"users/{self.user_id}/wa-auth/state.tar.gz"
+        try:
+            self._s3.delete_object(Bucket=self.bucket, Key=s3_key)
+            logger.info("Cleared S3 auth state")
+        except Exception as e:
+            logger.warning(f"Failed to clear S3 auth state: {e}")

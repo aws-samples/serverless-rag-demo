@@ -42,7 +42,7 @@ class ChannelManager:
         if channel_id in self.communication_channels:
             channel = self.communication_channels[channel_id]
             if isinstance(channel, WhatsAppChannel):
-                await channel.shutdown()
+                await channel.shutdown(clear_auth=True)
             del self.communication_channels[channel_id]
         elif channel_id in self.mcp_pool.connections:
             self.mcp_pool.disconnect(channel_id)
