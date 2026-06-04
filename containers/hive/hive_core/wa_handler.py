@@ -56,14 +56,26 @@ class WhatsAppIncomingHandler:
         if phone_jid and phone_jid != sender:
             identifiers.append(phone_jid)
 
+        from_name_lower = from_name.lower() if from_name else ""
+
         for entry in allowlist:
             entry_clean = entry.strip()
             if not entry_clean:
                 continue
+            entry_lower = entry_clean.lower()
 
-            # 1. Name match (case-insensitive) — primary for LID senders
-            if from_name and entry_clean.lower() == from_name.lower():
-                return True
+            # 1. Name match (case-insensitive)
+            # - Exact match
+            # - Entry is prefix of name (e.g. "Fraser" matches "Fraser Sequeira")
+            # - Single-word entry matches first name
+            if from_name_lower:
+                if entry_lower == from_name_lower:
+                    return True
+                if from_name_lower.startswith(entry_lower + " "):
+                    return True
+                # Single-word allowlist entry matches first word of pushName
+                if " " not in entry_lower and from_name_lower.split()[0] == entry_lower:
+                    return True
 
             # 2. JID/number match
             entry_number = entry_clean.split("@")[0] if "@" in entry_clean else entry_clean
@@ -120,7 +132,9 @@ class WhatsAppIncomingHandler:
 
         # Allowlist filtering: check sender, resolved phone, and name
         if not self._is_allowed(sender, from_name, phone_jid):
-            logger.info(f"WA incoming from {from_name} ({sender}, phone={phone_jid}) — not on allowlist, ignoring")
+            raw = getattr(self.channel, "_raw_config", {})
+            al = raw.get("allowlist", "[]")
+            logger.info(f"WA incoming from {from_name} ({sender}, phone={phone_jid}) — not on allowlist {al}, ignoring")
             return
 
         mode = self.channel.get_mode_for_sender(sender)
