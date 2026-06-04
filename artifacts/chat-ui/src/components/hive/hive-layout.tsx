@@ -20,10 +20,11 @@ import { ChatPanel } from "./chat-panel";
 import { ChannelConfigWizard } from "./channel-config";
 import { AgentConfigPanel } from "./agent-config";
 import { JobViewer } from "./job-viewer";
-import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, ChannelMessage, CronJob, PersonaData, GuardrailsPolicy } from "./types";
+import { HiveConfig, HiveEvent, HiveResponse, AgentConfig, ChannelConfig, ChannelMessage, CronJob, PersonaData, GuardrailsPolicy, AgentStatusInfo } from "./types";
 import { ChannelMessageFeed } from "./channel-message-feed";
 import { PersonaConfig } from "./persona-config";
 import { GuardrailsConfig } from "./guardrails-config";
+import { SessionPanel } from "./session-panel";
 import { connectHive, sendHiveMessage, getHiveSocket } from "../../common/hive-ws";
 import { AuthHelper } from "../../common/helpers/auth-help";
 import "./hive.css";
@@ -57,6 +58,7 @@ export function HiveLayout() {
     const [persona, setPersona] = useState<PersonaData | null>(null);
     const [guardrails, setGuardrails] = useState<GuardrailsPolicy | null>(null);
     const [channelMessages, setChannelMessages] = useState<ChannelMessage[]>([]);
+    const [agentStatuses, setAgentStatuses] = useState<AgentStatusInfo[]>([]);
 
     // Connect to Hive on mount
     useEffect(() => {
@@ -233,6 +235,9 @@ export function HiveLayout() {
             case "job_deleted":
                 setJobs(msg.jobs);
                 break;
+            case "agents_status":
+                setAgentStatuses(msg.agents);
+                break;
         }
     }, [activeAgent, config]);
 
@@ -381,6 +386,10 @@ export function HiveLayout() {
                                 const ws = getHiveSocket();
                                 if (ws) sendHiveMessage(ws, { type: "get_guardrails" });
                             }
+                            if (detail.activeTabId === "session") {
+                                const ws = getHiveSocket();
+                                if (ws) sendHiveMessage(ws, { type: "get_agents" });
+                            }
                         }}
                         tabs={[
                             {
@@ -487,33 +496,33 @@ export function HiveLayout() {
                                 }} />,
                             },
                             {
-                                id: "danger",
+                                id: "session",
                                 label: "Session",
                                 content: (
-                                    <Container header={<Header variant="h3">Session Management</Header>}>
-                                        <SpaceBetween size="l">
-                                            <SpaceBetween size="s">
-                                                <Box>
-                                                    <strong>Restart Container</strong> — Picks up the latest deployed code. Your session reconnects automatically in a few seconds. All state (channels, config, persona) is preserved.
-                                                </Box>
-                                                <Button variant="normal" onClick={() => {
-                                                    const ws = getHiveSocket();
-                                                    if (ws) sendHiveMessage(ws, { type: "restart" });
-                                                }}>
-                                                    Restart
-                                                </Button>
-                                            </SpaceBetween>
-                                            <hr style={{ border: "none", borderTop: "1px solid #eee" }} />
-                                            <SpaceBetween size="s">
-                                                <Box>
-                                                    <strong>Wipe Session</strong> — Deletes all state (config, channels, persona, guardrails, auth, event logs) and resets to defaults. This is irreversible.
-                                                </Box>
-                                                <Button variant="normal" onClick={() => setShowWipeModal(true)}>
-                                                    Wipe Session
-                                                </Button>
-                                            </SpaceBetween>
-                                        </SpaceBetween>
-                                    </Container>
+                                    <SessionPanel
+                                        agents={agentStatuses}
+                                        onStopAgent={(id) => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "stop_agent", agent_id: id });
+                                        }}
+                                        onStartAgent={(id) => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "start_agent", agent_id: id });
+                                        }}
+                                        onRestartAgent={(id) => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "restart_agent", agent_id: id });
+                                        }}
+                                        onRestartAll={() => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "restart_all_agents" });
+                                        }}
+                                        onRestart={() => {
+                                            const ws = getHiveSocket();
+                                            if (ws) sendHiveMessage(ws, { type: "restart" });
+                                        }}
+                                        onWipe={() => setShowWipeModal(true)}
+                                    />
                                 ),
                             },
                         ]}

@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from typing import Any
 from hive_core.bus import MessageBus, Message
 from hive_core.event_log import EventLog
@@ -47,8 +48,52 @@ class HiveAgent:
         self._guardrails: dict = {}
         self._active_channel_id: str = ""
 
+        # Lifecycle state
+        self.status: str = "running"  # running | stopped
+        self.started_at: float = time.time()
+        self.last_activity: float = 0.0
+        self.message_count: int = 0
+
         # Register on bus
         self.bus.subscribe(agent_id, self._handle_message)
+
+    def get_info(self) -> dict:
+        """Return agent status info for the UI."""
+        return {
+            "id": self.agent_id,
+            "name": self.name,
+            "status": self.status,
+            "model": self.model_id,
+            "started_at": self.started_at,
+            "last_activity": self.last_activity,
+            "message_count": self.message_count,
+            "has_strands": self._strands_agent is not None,
+        }
+
+    def stop(self):
+        """Stop the agent — unsubscribe from bus, release Strands memory."""
+        if self.status == "stopped":
+            return
+        self.bus.unsubscribe(self.agent_id)
+        self._strands_agent = None
+        self.status = "stopped"
+        self._log("stopped", {})
+        logger.info(f"Agent {self.agent_id} stopped")
+
+    def start(self):
+        """Start the agent — re-subscribe to bus."""
+        if self.status == "running":
+            return
+        self.bus.subscribe(self.agent_id, self._handle_message)
+        self.status = "running"
+        self.started_at = time.time()
+        self._log("started", {})
+        logger.info(f"Agent {self.agent_id} started")
+
+    def restart(self):
+        """Restart the agent — stop and start, clearing Strands state."""
+        self.stop()
+        self.start()
 
     def set_persona(self, persona: dict):
         """Set the user's persona config. Forces agent re-init on next process call."""
@@ -78,6 +123,8 @@ class HiveAgent:
 
     async def _handle_message(self, message: Message):
         """Handle incoming message from the bus."""
+        self.last_activity = time.time()
+        self.message_count += 1
         self._log("received", {"from": message.source, "type": message.msg_type})
         try:
             response = await self.process(message.payload)
@@ -211,5 +258,5 @@ class HiveAgent:
         ))
 
     def shutdown(self):
-        """Unsubscribe from the bus."""
-        self.bus.unsubscribe(self.agent_id)
+        """Unsubscribe from the bus and release resources."""
+        self.stop()

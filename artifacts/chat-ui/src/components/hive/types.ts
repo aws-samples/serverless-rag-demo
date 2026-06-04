@@ -75,6 +75,17 @@ export interface ChannelMessage {
 
 export type AgentStatus = "idle" | "thinking" | "acting" | "error";
 
+export interface AgentStatusInfo {
+    id: string;
+    name: string;
+    status: "running" | "stopped";
+    model: string;
+    started_at: number;
+    last_activity: number;
+    message_count: number;
+    has_strands: boolean;
+}
+
 export type HiveMessage =
     | { type: "init"; user_id: string }
     | { type: "chat"; query: string }
@@ -92,6 +103,11 @@ export type HiveMessage =
     | { type: "save_persona"; persona: PersonaData }
     | { type: "get_guardrails" }
     | { type: "save_guardrails"; guardrails: GuardrailsPolicy }
+    | { type: "get_agents" }
+    | { type: "stop_agent"; agent_id: string }
+    | { type: "start_agent"; agent_id: string }
+    | { type: "restart_agent"; agent_id: string }
+    | { type: "restart_all_agents" }
     | { type: "wipe" };
 
 export type HiveResponse =
@@ -118,5 +134,6 @@ export type HiveResponse =
     | { type: "persona_saved"; persona: PersonaData }
     | { type: "guardrails"; guardrails: GuardrailsPolicy }
     | { type: "guardrails_saved"; guardrails: GuardrailsPolicy }
+    | { type: "agents_status"; agents: AgentStatusInfo[] }
     | { type: "wiped" }
     | { type: "error"; message: string };

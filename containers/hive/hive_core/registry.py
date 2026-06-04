@@ -45,6 +45,30 @@ class AgentRegistry:
     def list_agents(self) -> list[HiveAgent]:
         return list(self.agents.values())
 
+    def list_agents_info(self) -> list[dict]:
+        """Return status info for all agents."""
+        return [agent.get_info() for agent in self.agents.values()]
+
+    def stop_agent(self, agent_id: str):
+        if agent_id not in self.agents:
+            raise KeyError(f"Agent '{agent_id}' not found")
+        self.agents[agent_id].stop()
+
+    def start_agent(self, agent_id: str):
+        if agent_id not in self.agents:
+            raise KeyError(f"Agent '{agent_id}' not found")
+        self.agents[agent_id].start()
+
+    def restart_agent(self, agent_id: str):
+        if agent_id not in self.agents:
+            raise KeyError(f"Agent '{agent_id}' not found")
+        self.agents[agent_id].restart()
+
+    def restart_all(self):
+        """Restart all agents (channels survive)."""
+        for agent in self.agents.values():
+            agent.restart()
+
     def shutdown_all(self):
         for agent_id in list(self.agents.keys()):
             self.unregister(agent_id)

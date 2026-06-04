@@ -481,6 +481,38 @@ async def websocket_handler(websocket, context):
                     agent.set_guardrails(guardrails_data)
                 await websocket.send_json({"type": "guardrails_saved", "guardrails": guardrails_data})
 
+            elif msg_type == "get_agents" and session:
+                agents_info = session.registry.list_agents_info()
+                await websocket.send_json({"type": "agents_status", "agents": agents_info})
+
+            elif msg_type == "stop_agent" and session:
+                agent_id = data.get("agent_id", "")
+                try:
+                    session.registry.stop_agent(agent_id)
+                    await websocket.send_json({"type": "agents_status", "agents": session.registry.list_agents_info()})
+                except KeyError as e:
+                    await websocket.send_json({"type": "error", "message": str(e)})
+
+            elif msg_type == "start_agent" and session:
+                agent_id = data.get("agent_id", "")
+                try:
+                    session.registry.start_agent(agent_id)
+                    await websocket.send_json({"type": "agents_status", "agents": session.registry.list_agents_info()})
+                except KeyError as e:
+                    await websocket.send_json({"type": "error", "message": str(e)})
+
+            elif msg_type == "restart_agent" and session:
+                agent_id = data.get("agent_id", "")
+                try:
+                    session.registry.restart_agent(agent_id)
+                    await websocket.send_json({"type": "agents_status", "agents": session.registry.list_agents_info()})
+                except KeyError as e:
+                    await websocket.send_json({"type": "error", "message": str(e)})
+
+            elif msg_type == "restart_all_agents" and session:
+                session.registry.restart_all()
+                await websocket.send_json({"type": "agents_status", "agents": session.registry.list_agents_info()})
+
             elif msg_type == "wipe" and session:
                 session.shutdown()
                 session.state.wipe()
