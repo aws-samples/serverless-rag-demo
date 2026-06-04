@@ -128,18 +128,25 @@ class WhatsAppIncomingHandler:
         sender = payload["from"]
         message = payload["message"]
         from_name = payload.get("from_name", "")
+        saved_name = payload.get("saved_name", "")  # YOUR address book name for them
         phone_jid = payload.get("phone_jid", "")  # Resolved phone from LID mapping
 
-        # Allowlist filtering: check sender, resolved phone, and name
-        if not self._is_allowed(sender, from_name, phone_jid):
+        # Use saved_name (your contacts) for display, fall back to pushName
+        display_name = saved_name or from_name
+
+        # Allowlist filtering: try saved_name first, then pushName — either can match
+        allowed = self._is_allowed(sender, saved_name, phone_jid) if saved_name else False
+        if not allowed:
+            allowed = self._is_allowed(sender, from_name, phone_jid)
+        if not allowed:
             raw = getattr(self.channel, "_raw_config", {})
             al = raw.get("allowlist", "[]")
-            logger.info(f"WA incoming from {from_name} ({sender}, phone={phone_jid}) — not on allowlist {al}, ignoring")
+            logger.info(f"WA incoming from saved={saved_name} push={from_name} ({sender}, phone={phone_jid}) — not on allowlist {al}, ignoring")
             return
 
         mode = self.channel.get_mode_for_sender(sender)
 
-        logger.info(f"WA incoming from {from_name} ({sender}), mode={mode}")
+        logger.info(f"WA incoming from {display_name} ({sender}), mode={mode}")
 
         if mode in ("redirect-to-agent", "silent", "notify"):
             # Route through Hive with channel/contact context for persona
@@ -165,7 +172,7 @@ class WhatsAppIncomingHandler:
                 "channel_id": self.channel.channel_id,
                 "provider": "whatsapp",
                 "contact": sender,
-                "contact_name": from_name or sender,
+                "contact_name": display_name or sender,
                 "message": message,
                 "timestamp": int(time.time()),
                 "reply": result_text,
@@ -177,7 +184,7 @@ class WhatsAppIncomingHandler:
                 "channel_id": self.channel.channel_id,
                 "provider": "whatsapp",
                 "contact": sender,
-                "contact_name": from_name or sender,
+                "contact_name": display_name or sender,
                 "message": result_text,
                 "timestamp": int(time.time()),
             })
@@ -208,7 +215,7 @@ class WhatsAppIncomingHandler:
                 "type": "wa_incoming",
                 "channel_id": self.channel.channel_id,
                 "from": sender,
-                "from_name": from_name,
+                "from_name": display_name,
                 "message": message,
                 "mode": "ask",
                 "proposed_response": result_text,

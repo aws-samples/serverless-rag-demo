@@ -22,6 +22,9 @@ const messageStore = {}; // { "jid": [{from, text, timestamp, fromMe}] }
 const lidToPhone = {}; // { "12345@lid": "61412345678@s.whatsapp.net" }
 const phoneToLid = {}; // { "61412345678@s.whatsapp.net": "12345@lid" }
 
+// Contact name store: YOUR saved name for each contact (address book name)
+const contactNames = {}; // { "jid_or_lid": "Fraser Aus" }
+
 function storeMessage(jid, text, timestamp, fromMe, fromName = "") {
     if (!messageStore[jid]) messageStore[jid] = [];
     const entry = { from: fromMe ? "me" : fromName || jid, text, timestamp, fromMe };
@@ -117,15 +120,21 @@ async function startConnection() {
         }
     });
 
-    // Track contacts: bidirectional LID <-> phone JID mapping
+    // Track contacts: bidirectional LID <-> phone JID mapping + saved names
     sock.ev.on("contacts.upsert", (contacts) => {
         for (const contact of contacts) {
             if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
                 lidToPhone[contact.lid] = contact.id;
                 phoneToLid[contact.id] = contact.lid;
             }
+            // Store YOUR saved contact name (address book name)
+            const savedName = contact.name || contact.notify || "";
+            if (savedName) {
+                if (contact.id) contactNames[contact.id] = savedName;
+                if (contact.lid) contactNames[contact.lid] = savedName;
+            }
         }
-        console.log(`[SIDECAR] Contact store: ${Object.keys(lidToPhone).length} LID mappings`);
+        console.log(`[SIDECAR] Contact store: ${Object.keys(lidToPhone).length} LID mappings, ${Object.keys(contactNames).length} names`);
     });
 
     sock.ev.on("contacts.update", (contacts) => {
@@ -133,6 +142,11 @@ async function startConnection() {
             if (contact.lid && contact.id && contact.id.endsWith("@s.whatsapp.net")) {
                 lidToPhone[contact.lid] = contact.id;
                 phoneToLid[contact.id] = contact.lid;
+            }
+            const savedName = contact.name || contact.notify || "";
+            if (savedName) {
+                if (contact.id) contactNames[contact.id] = savedName;
+                if (contact.lid) contactNames[contact.lid] = savedName;
             }
         }
     });
@@ -189,12 +203,16 @@ async function startConnection() {
                 resolvedPhone = from;
             }
 
+            // Resolve saved contact name (your address book name for them)
+            const savedName = contactNames[from] || contactNames[resolvedPhone] || "";
+
             fetch(`${PYTHON_APP_URL}/internal/wa-message`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     from,
                     from_name: fromName,
+                    saved_name: savedName || undefined,
                     phone_jid: resolvedPhone || undefined,
                     message: text,
                     timestamp: Math.floor(Date.now() / 1000),
