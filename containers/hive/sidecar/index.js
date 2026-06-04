@@ -138,12 +138,21 @@ async function startConnection() {
 
             if (msg.key.fromMe) continue; // Don't forward our own messages to Python
 
+            // Resolve phone JID: participant (group) or remoteJid, fallback for LID
+            let phoneJid = msg.key.participant || from;
+            // If using LID format, try to get phone from sock's lid mapping
+            if (phoneJid.endsWith("@lid") && sock.authState?.creds?.me?.lid) {
+                // For 1:1 chats with LID, the actual phone is in remoteJid if it's @s.whatsapp.net
+                // Otherwise we pass the LID and let Python handle it
+            }
+
             fetch(`${PYTHON_APP_URL}/internal/wa-message`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     from,
                     from_name: fromName,
+                    phone_jid: phoneJid !== from ? phoneJid : undefined,
                     message: text,
                     timestamp: Math.floor(Date.now() / 1000),
                     is_group: isGroup,

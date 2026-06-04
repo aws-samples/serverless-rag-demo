@@ -303,25 +303,40 @@ async def websocket_handler(websocket, context):
             elif msg_type == "update_channel" and session:
                 channel_data = data.get("channel", {})
                 channel_id = channel_data.get("id", "")
-                # Remove old, re-register new
-                await session.channel_manager.unregister_channel(channel_id)
-                session.config.channels = [c for c in session.config.channels if c.id != channel_id]
                 channel_cfg = ChannelConfig.from_dict(channel_data)
-                result = await session.channel_manager.register_channel(channel_cfg)
+
+                # For WhatsApp, update config in-place without killing sidecar
+                existing_wa = session.channel_manager.get_whatsapp_channel(channel_id)
+                if existing_wa and channel_cfg.provider == "whatsapp-baileys":
+                    # Hot-update config fields without restarting connection
+                    existing_wa.incoming_mode = channel_cfg.config.get("incoming_mode", "notify")
+                    existing_wa.reply_prefix = channel_cfg.config.get("reply_prefix", "")
+                    existing_wa.contact_overrides = channel_cfg.config.get("contact_overrides", {})
+                    existing_wa.agents = channel_cfg.agents
+                    existing_wa._raw_config = channel_cfg.config
+                    # Update wa_handler with new guardrails/allowlist
+                    if session.wa_handler:
+                        session.wa_handler._guardrails = session.guardrails or {}
+                else:
+                    # Non-WhatsApp or new channel: full teardown + re-register
+                    await session.channel_manager.unregister_channel(channel_id)
+                    result = await session.channel_manager.register_channel(channel_cfg)
+                    if channel_cfg.provider == "whatsapp-baileys":
+                        wa_channel = session.channel_manager.get_whatsapp_channel(channel_cfg.id)
+                        if wa_channel:
+                            session.setup_wa_handler(wa_channel)
+                        if result.get("status") == "qr_needed":
+                            await websocket.send_json({
+                                "type": "wa_qr",
+                                "channel_id": channel_cfg.id,
+                                "qr": result.get("qr", ""),
+                            })
+
+                # Update persisted config
+                session.config.channels = [c for c in session.config.channels if c.id != channel_id]
                 session.config.channels.append(channel_cfg)
                 session.state.save_config(session.config.to_dict())
                 session.event_log.append("system", "channel_updated", {"id": channel_id})
-
-                if channel_cfg.provider == "whatsapp-baileys":
-                    wa_channel = session.channel_manager.get_whatsapp_channel(channel_cfg.id)
-                    if wa_channel:
-                        session.setup_wa_handler(wa_channel)
-                    if result.get("status") == "qr_needed":
-                        await websocket.send_json({
-                            "type": "wa_qr",
-                            "channel_id": channel_cfg.id,
-                            "qr": result.get("qr", ""),
-                        })
 
                 await websocket.send_json({
                     "type": "channel_updated",
@@ -496,34 +511,45 @@ async def handle_wa_event(request: Request):
     payload = await request.json()
     event = payload.get("event")
 
+    # Resolve the actual WhatsApp channel ID from active communication channels
+    from hive_core.channels.whatsapp import WhatsAppChannel as _WAChannel
+    wa_channel_id = None
+    wa_channel_obj = None
+    if _active_session:
+        for ch_id, ch in _active_session.channel_manager.communication_channels.items():
+            if isinstance(ch, _WAChannel):
+                wa_channel_id = ch_id
+                wa_channel_obj = ch
+                break
+    if not wa_channel_id:
+        logger.warning(f"wa-event received but no active WhatsApp channel found (event={event})")
+        return JSONResponse({"ok": False, "error": "no active whatsapp channel"})
+
+    # Update channel state regardless of websocket
+    if event == "connected" and wa_channel_obj:
+        wa_channel_obj._connected = True
+        wa_channel_obj.persist_auth_to_s3()
+    elif event == "disconnected" and wa_channel_obj:
+        wa_channel_obj._connected = False
+
+    # Forward event to UI if websocket is open
     if _active_websocket:
         if event == "qr":
             await _active_websocket.send_json({
                 "type": "wa_qr",
-                "channel_id": "whatsapp",
+                "channel_id": wa_channel_id,
                 "qr": payload.get("qr", ""),
             })
         elif event == "connected":
             await _active_websocket.send_json({
                 "type": "wa_connected",
-                "channel_id": "whatsapp",
+                "channel_id": wa_channel_id,
                 "phone": payload.get("phone", ""),
             })
-            # Update channel state and persist auth
-            if _active_session:
-                for ch in _active_session.channel_manager.communication_channels.values():
-                    if hasattr(ch, "_connected"):
-                        ch._connected = True
-                    if hasattr(ch, "persist_auth_to_s3"):
-                        ch.persist_auth_to_s3()
         elif event == "disconnected":
-            if _active_session:
-                for ch in _active_session.channel_manager.communication_channels.values():
-                    if hasattr(ch, "_connected"):
-                        ch._connected = False
             await _active_websocket.send_json({
                 "type": "wa_status",
-                "channel_id": "whatsapp",
+                "channel_id": wa_channel_id,
                 "connected": False,
             })
 
