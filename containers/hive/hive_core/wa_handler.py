@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from typing import Any, Callable, Awaitable
 
@@ -27,6 +28,33 @@ class WhatsAppIncomingHandler:
         self._pending_approvals: dict[str, dict] = {}
         self._queue: asyncio.Queue = asyncio.Queue()
         self._processing = False
+
+    def _is_allowed(self, sender: str) -> bool:
+        """Check if sender is on the allowlist (if enabled)."""
+        cfg = self.channel.__dict__
+        # allowlist_enabled is stored in the channel's config
+        allowlist_enabled = getattr(self.channel, "_allowlist_enabled", None)
+        if allowlist_enabled is None:
+            # Read from channel config on first check
+            raw = getattr(self.channel, "_raw_config", {})
+            allowlist_enabled = raw.get("allowlist_enabled") == "true"
+            self.channel._allowlist_enabled = allowlist_enabled
+            try:
+                self.channel._allowlist = json.loads(raw.get("allowlist", "[]"))
+            except (json.JSONDecodeError, TypeError):
+                self.channel._allowlist = []
+
+        if not allowlist_enabled:
+            return True  # No filtering, allow all
+
+        allowlist = getattr(self.channel, "_allowlist", [])
+        # Match against full JID or just the number part
+        sender_number = sender.split("@")[0] if "@" in sender else sender
+        for entry in allowlist:
+            entry_number = entry.split("@")[0] if "@" in entry else entry
+            if sender == entry or sender_number == entry_number:
+                return True
+        return False
 
     async def handle_message(self, payload: dict):
         """Queue incoming message for sequential processing."""
@@ -65,6 +93,12 @@ class WhatsAppIncomingHandler:
         sender = payload["from"]
         message = payload["message"]
         from_name = payload.get("from_name", "")
+
+        # Allowlist filtering: if enabled, ignore contacts not on the list
+        if not self._is_allowed(sender):
+            logger.info(f"WA incoming from {from_name} ({sender}) — not on allowlist, ignoring")
+            return
+
         mode = self.channel.get_mode_for_sender(sender)
 
         logger.info(f"WA incoming from {from_name} ({sender}), mode={mode}")

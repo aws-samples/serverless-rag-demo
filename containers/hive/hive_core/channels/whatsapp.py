@@ -31,6 +31,7 @@ class WhatsAppChannel:
         self.reply_prefix = config.config.get("reply_prefix", "")
         self.contact_overrides = config.config.get("contact_overrides", {})
         self.agents = config.agents
+        self._raw_config = config.config  # Preserved for allowlist access
         self.bucket = bucket
         self.user_id = user_id
         self._process: Optional[subprocess.Popen] = None

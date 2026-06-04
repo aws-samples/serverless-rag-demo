@@ -10,6 +10,9 @@ import {
     SpaceBetween,
     Alert,
     Toggle,
+    Button,
+    Box,
+    TokenGroup,
 } from "@cloudscape-design/components";
 import { ChannelConfig, AgentConfig } from "./types";
 
@@ -39,6 +42,15 @@ export function ChannelConfigWizard({ agents, onSave, onCancel, initialChannel }
     const [config, setConfig] = useState<Record<string, string>>(initialChannel?.config as Record<string, string> || {});
     const [selectedAgents, setSelectedAgents] = useState<string[]>(initialChannel?.agents || []);
     const [permissions, setPermissions] = useState<string[]>(initialChannel?.permissions || ["read"]);
+    const [allowlistEnabled, setAllowlistEnabled] = useState<boolean>(
+        (initialChannel?.config as any)?.allowlist_enabled === "true" || false
+    );
+    const [allowlist, setAllowlist] = useState<string[]>(
+        (initialChannel?.config as any)?.allowlist
+            ? JSON.parse((initialChannel?.config as any)?.allowlist || "[]")
+            : []
+    );
+    const [newAllowlistEntry, setNewAllowlistEntry] = useState("");
 
     const handleSubmit = () => {
         const channelType = provider.startsWith("mcp") ? "data" : "communication";
@@ -52,6 +64,10 @@ export function ChannelConfigWizard({ agents, onSave, onCancel, initialChannel }
                 ...config,
                 ...(provider === "mcp-sse" ? { transport: "sse" } : {}),
                 ...(provider === "mcp-stdio" ? { transport: "stdio" } : {}),
+                ...(provider === "whatsapp-baileys" ? {
+                    allowlist_enabled: allowlistEnabled ? "true" : "false",
+                    allowlist: JSON.stringify(allowlist),
+                } : {}),
             },
             permissions,
             agents: selectedAgents,
@@ -116,6 +132,50 @@ export function ChannelConfigWizard({ agents, onSave, onCancel, initialChannel }
                                 onChange={({ detail }) => setConfig({ ...config, reply_prefix: detail.value })}
                                 placeholder="[AI] "
                             />
+                        </FormField>
+                        <FormField
+                            label="Contact Allowlist"
+                            description="When enabled, Hive only responds to these numbers/groups. All others are ignored."
+                        >
+                            <SpaceBetween size="s">
+                                <Toggle
+                                    checked={allowlistEnabled}
+                                    onChange={({ detail }) => setAllowlistEnabled(detail.checked)}
+                                >
+                                    {allowlistEnabled ? "Allowlist active (only listed contacts)" : "Respond to everyone"}
+                                </Toggle>
+                                {allowlistEnabled && (
+                                    <SpaceBetween size="s">
+                                        <SpaceBetween size="xs" direction="horizontal">
+                                            <Input
+                                                value={newAllowlistEntry}
+                                                onChange={({ detail }) => setNewAllowlistEntry(detail.value)}
+                                                placeholder="Phone number or group ID (e.g. 61412345678)"
+                                            />
+                                            <Button
+                                                onClick={() => {
+                                                    if (newAllowlistEntry.trim()) {
+                                                        setAllowlist([...allowlist, newAllowlistEntry.trim()]);
+                                                        setNewAllowlistEntry("");
+                                                    }
+                                                }}
+                                            >
+                                                Add
+                                            </Button>
+                                        </SpaceBetween>
+                                        {allowlist.length > 0 ? (
+                                            <TokenGroup
+                                                items={allowlist.map((entry) => ({ label: entry }))}
+                                                onDismiss={({ detail }) => {
+                                                    setAllowlist(allowlist.filter((_, i) => i !== detail.itemIndex));
+                                                }}
+                                            />
+                                        ) : (
+                                            <Box color="text-status-inactive">No contacts added yet</Box>
+                                        )}
+                                    </SpaceBetween>
+                                )}
+                            </SpaceBetween>
                         </FormField>
                         <Alert type="info">
                             After saving, you'll need to scan a QR code with your WhatsApp to link the device.
