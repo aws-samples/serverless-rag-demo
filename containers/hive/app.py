@@ -10,7 +10,8 @@ from starlette.routing import Route
 from hive_core.state import StateManager
 from hive_core.bus import MessageBus, Message
 from hive_core.event_log import EventLog
-from hive_core.config import HiveConfig, ChannelConfig, default_config
+from hive_core.config import HiveConfig, ChannelConfig, AgentConfig, default_config
+from hive_core.agents.base import HiveAgent
 from hive_core.registry import AgentRegistry
 from hive_core.router import HiveRouter
 from hive_core.executor import CodeExecutor
@@ -76,6 +77,7 @@ class HiveSession:
         _set_channel_manager_ref(self.channel_manager)
         _set_mcp_pool_ref(self.channel_manager.mcp_pool)
         self.router.set_context_provider(self._build_context)
+        self._sync_router_custom_agents()
         self.scheduler.load()
         self.scheduler.start()
         self.bus.subscribe("__user__", self._collect_response)
@@ -95,11 +97,34 @@ class HiveSession:
                 logger.warning(f"Failed to restore channel {ch_cfg.id}: {e}")
 
     def _register_default_agents(self):
+        from hive_core.tools.channel_send import send_channel_message, read_channel_messages, list_channel_contacts
         self._agents = [
             PersonalAssistantAgent(bus=self.bus, event_log=self.event_log, executor=self.executor),
             ReminderAgent(bus=self.bus, event_log=self.event_log, scheduler=self.scheduler),
             MarketAgent(bus=self.bus, event_log=self.event_log),
         ]
+        # Restore custom agents from config
+        for agent_cfg in self.config.agents:
+            if agent_cfg.type == "custom":
+                custom_agent = HiveAgent(
+                    agent_id=agent_cfg.id,
+                    name=agent_cfg.name,
+                    system_prompt=agent_cfg.system_prompt,
+                    model_id=agent_cfg.model,
+                    tools=[send_channel_message, read_channel_messages, list_channel_contacts],
+                    bus=self.bus,
+                    event_log=self.event_log,
+                )
+                self._agents.append(custom_agent)
+                logger.info(f"Restored custom agent: {agent_cfg.id}")
+
+    def _sync_router_custom_agents(self):
+        """Update the router with current custom agent list."""
+        custom = [
+            {"id": a.id, "description": a.system_prompt[:100]}
+            for a in self.config.agents if a.type == "custom"
+        ]
+        self.router.set_custom_agents(custom)
 
     def _reload_agent_tools(self):
         """Force all agents to re-initialize with updated MCP tools."""
@@ -327,6 +352,54 @@ async def websocket_handler(websocket, context):
                     pass
                 jobs = [j.to_dict() for j in session.scheduler.list_jobs()]
                 await websocket.send_json({"type": "job_deleted", "job_id": job_id, "jobs": jobs})
+
+            elif msg_type == "add_agent" and session:
+                agent_data = data.get("agent", {})
+                agent_cfg = AgentConfig.from_dict(agent_data)
+                # Add to config and persist
+                session.config.agents.append(agent_cfg)
+                session.state.save_config(session.config.to_dict())
+                # Instantiate the agent
+                from hive_core.tools.channel_send import send_channel_message, read_channel_messages, list_channel_contacts
+                custom_agent = HiveAgent(
+                    agent_id=agent_cfg.id,
+                    name=agent_cfg.name,
+                    system_prompt=agent_cfg.system_prompt,
+                    model_id=agent_cfg.model,
+                    tools=[send_channel_message, read_channel_messages, list_channel_contacts],
+                    bus=session.bus,
+                    event_log=session.event_log,
+                )
+                custom_agent.set_persona(session.persona)
+                custom_agent.set_guardrails(session.guardrails)
+                session._agents.append(custom_agent)
+                session._sync_router_custom_agents()
+                session.event_log.append("system", "agent_added", {"id": agent_cfg.id})
+                await websocket.send_json({
+                    "type": "agent_added",
+                    "agent": agent_data,
+                    "config": session.config.to_dict(),
+                })
+
+            elif msg_type == "remove_agent" and session:
+                agent_id = data.get("agent_id", "")
+                # Don't allow removing default agents
+                agent_cfg = next((a for a in session.config.agents if a.id == agent_id), None)
+                if agent_cfg and agent_cfg.type == "custom":
+                    session.config.agents = [a for a in session.config.agents if a.id != agent_id]
+                    session.state.save_config(session.config.to_dict())
+                    # Shutdown and remove the agent instance
+                    agent_instance = next((a for a in session._agents if a.agent_id == agent_id), None)
+                    if agent_instance:
+                        agent_instance.shutdown()
+                        session._agents.remove(agent_instance)
+                    session.event_log.append("system", "agent_removed", {"id": agent_id})
+                    session._sync_router_custom_agents()
+                await websocket.send_json({
+                    "type": "agent_removed",
+                    "agent_id": agent_id,
+                    "config": session.config.to_dict(),
+                })
 
             elif msg_type == "get_config" and session:
                 await websocket.send_json({

@@ -211,13 +211,15 @@ export function HiveLayout() {
     };
 
     const handleAddAgent = (agent: AgentConfig) => {
-        if (config) {
+        if (config && ws) {
+            sendHiveMessage(ws, { type: "add_agent", agent });
             setConfig({ ...config, agents: [...config.agents, agent] });
         }
     };
 
     const handleRemoveAgent = (agentId: string) => {
-        if (config) {
+        if (config && ws) {
+            sendHiveMessage(ws, { type: "remove_agent", agent_id: agentId });
             setConfig({ ...config, agents: config.agents.filter((a) => a.id !== agentId) });
         }
     };
