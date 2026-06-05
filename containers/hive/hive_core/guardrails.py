@@ -122,6 +122,10 @@ TOOL_ACTION_MAP: dict[str, str] = {
     "list_channel_contacts": "disclose_contacts",
     "schedule_reminder": "schedule_jobs",
     "execute_code": "execute_code",
+    "run_code": "execute_code",
+    "spawn_dynamic_agent": "execute_code",
+    "add_mcp_channel": "modify_config",
+    "remove_channel": "modify_config",
 }
 
 # ---------------------------------------------------------------------------
