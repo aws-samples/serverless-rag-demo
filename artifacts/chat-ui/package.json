@@ -60,7 +60,7 @@
     "react-virtual": {
       "react": "^18.0.0"
     },
-    "tar": "^7.5.16",
+    "tar": "^7.5.22",
     "brace-expansion": "^2.0.2",
     "js-cookie": "^3.0.8",
     "uuid": "^11.1.0",
