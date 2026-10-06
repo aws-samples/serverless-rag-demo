@@ -106,6 +106,7 @@ class CloudFrontHostingStack(Stack):
             "cognitoRegion": region,
             "ragWebSocketUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
             "multiAgentWebSocketUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
+            "documentApiUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
         }
 
         s3_deploy.BucketDeployment(

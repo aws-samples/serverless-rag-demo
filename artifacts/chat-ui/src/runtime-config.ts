@@ -7,8 +7,8 @@ export interface RuntimeConfig {
     multiAgentRuntimeArn: string;
     dataBucketName: string;
     knowledgeBaseId: string;
-    dataSourceId: string;
     evalRoleArn: string;
+    documentApiUrl: string;
 }
 
 let cachedConfig: RuntimeConfig | null = null;

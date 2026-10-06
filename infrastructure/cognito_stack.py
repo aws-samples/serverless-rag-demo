@@ -18,7 +18,6 @@ class CognitoStack(Stack):
         self, scope: Construct, construct_id: str, *,
         data_bucket_name: str,
         knowledge_base_id: str,
-        data_source_id: str,
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -125,25 +124,12 @@ class CognitoStack(Stack):
                         ],
                     ),
                 ]),
-                "S3DocumentAccess": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        sid="ListDocs",
-                        actions=["s3:ListBucket"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}"],
-                        conditions={"StringLike": {"s3:prefix": ["documents/*"]}},
-                    ),
-                    iam.PolicyStatement(
-                        sid="ReadWriteDocs",
-                        actions=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}/documents/*"],
-                    ),
-                ]),
-                "KBSync": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        actions=["bedrock:StartIngestionJob", "bedrock:ListIngestionJobs"],
-                        resources=[f"arn:aws:bedrock:{region}:{account_id}:knowledge-base/{knowledge_base_id}"],
-                    ),
-                ]),
+                # Deliberately absent: S3 access to documents/* and Knowledge Base
+                # ingestion. Documents are keyed documents/{userEmail}/..., and IAM
+                # has no policy variable for the email claim, so a role handed to the
+                # browser cannot be scoped to its own user's documents. Both now live
+                # behind DocumentApiStack, which authorises each request against the
+                # email claim API Gateway verified.
                 "BedrockEval": iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
                         actions=[

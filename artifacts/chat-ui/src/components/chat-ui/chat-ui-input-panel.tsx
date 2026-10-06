@@ -103,7 +103,9 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     chatHistory.push({ role: "user", content: query });
 
     const sendQuery = () => {
-      const searchScope = props.check_vector_db ? "user" : "all";
+      // "my_docs" is the value the backend scopes on; it previously received
+      // "user", which matched nothing and silently searched every user's documents.
+      const searchScope = props.check_vector_db ? "my_docs" : "all";
       const searchType = props.is_hybrid_search ? "HYBRID" : "SEMANTIC";
       ws!.send(JSON.stringify({
         query,
@@ -111,6 +113,9 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
         search_scope: searchScope,
         search_type: searchType,
         chat_history: chatHistory.slice(-10),
+        // The backend derives the caller's identity from this token rather than
+        // trusting a plain email field.
+        id_token: appData.userinfo?.tokens?.idToken?.toString() || "",
       }));
     };
 

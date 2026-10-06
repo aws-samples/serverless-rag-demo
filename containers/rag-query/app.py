@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from bedrock_agentcore import BedrockAgentCoreApp
+from auth import AuthError, verified_email
 from query import rag_query_stream
 
 logging.basicConfig(level=logging.INFO)
@@ -20,13 +21,23 @@ async def websocket_handler(websocket, context):
             data = await websocket.receive_json()
             query = data.get("query", "")
             model_id = data.get("model_id")
-            user_email = data.get("user_email")
-            search_scope = data.get("search_scope", "all")
+            search_scope = data.get("search_scope", "my_docs")
             search_type = data.get("search_type", "HYBRID")
             chat_history = data.get("chat_history", [])
 
             if not query:
                 await websocket.send_json({"type": "error", "message": "No query provided"})
+                continue
+
+            # The caller's identity comes from a verified ID token, never from a
+            # user_email field in the message: the WebSocket is signed with the
+            # shared authenticated role, so the transport cannot tell us who this
+            # is. Any user_email in `data` is ignored.
+            try:
+                user_email = verified_email(data.get("id_token", ""))
+            except AuthError as e:
+                logger.warning(f"Rejected query: {e}")
+                await websocket.send_json({"type": "error", "message": "Authentication required"})
                 continue
 
             # Stream response tokens back
