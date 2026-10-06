@@ -18,7 +18,6 @@ class CognitoStack(Stack):
         self, scope: Construct, construct_id: str, *,
         data_bucket_name: str,
         knowledge_base_id: str,
-        data_source_id: str,
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -125,53 +124,16 @@ class CognitoStack(Stack):
                         ],
                     ),
                 ]),
-                "S3DocumentAccess": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        sid="ListDocs",
-                        actions=["s3:ListBucket"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}"],
-                        conditions={"StringLike": {"s3:prefix": ["documents/*"]}},
-                    ),
-                    iam.PolicyStatement(
-                        sid="ReadWriteDocs",
-                        actions=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}/documents/*"],
-                    ),
-                ]),
-                "KBSync": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        actions=["bedrock:StartIngestionJob", "bedrock:ListIngestionJobs"],
-                        resources=[f"arn:aws:bedrock:{region}:{account_id}:knowledge-base/{knowledge_base_id}"],
-                    ),
-                ]),
-                "BedrockEval": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        actions=[
-                            "bedrock:CreateEvaluationJob",
-                            "bedrock:GetEvaluationJob",
-                            "bedrock:ListEvaluationJobs",
-                        ],
-                        resources=["*"],
-                    ),
-                    iam.PolicyStatement(
-                        sid="PassEvalRole",
-                        actions=["iam:PassRole"],
-                        resources=[eval_service_role.role_arn],
-                        conditions={"StringEquals": {"iam:PassedToService": "bedrock.amazonaws.com"}},
-                    ),
-                ]),
-                "S3EvalAndFeedback": iam.PolicyDocument(statements=[
-                    iam.PolicyStatement(
-                        sid="EvalReadWrite",
-                        actions=["s3:GetObject", "s3:PutObject"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}/evaluations/*"],
-                    ),
-                    iam.PolicyStatement(
-                        sid="FeedbackWrite",
-                        actions=["s3:GetObject", "s3:PutObject"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}/feedback/*"],
-                    ),
-                ]),
+                # Invoking an AgentCore runtime is all this role can do, and that is
+                # deliberate. Everything else the UI needs is per-user: documents are
+                # keyed documents/{userEmail}/..., evaluation output by user, and IAM
+                # has no policy variable for the email claim — so any grant here is a
+                # grant for every user's data. Worse, bedrock:CreateEvaluationJob and
+                # ListEvaluationJobs accept no resource at all, so on a browser role
+                # they would let any signed-in user read every evaluation job in the
+                # account and start unbounded paid jobs. All of it now sits behind
+                # AppApiStack, which authorises each request against the email claim
+                # API Gateway has verified.
             },
         )
 

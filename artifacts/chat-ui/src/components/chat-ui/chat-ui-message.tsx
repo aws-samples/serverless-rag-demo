@@ -33,12 +33,10 @@ function FeedbackButtons({ message }: { message: ChatMessage }) {
     if (!newRating) return;
 
     const idToken = appData.userinfo?.tokens?.idToken?.toString() || "";
-    const userEmail = appData.userinfo?.signInDetails?.loginId || appData.userinfo?.username || "";
 
     try {
+      // The API stamps the timestamp and the submitter's email itself.
       await submitFeedback({
-        timestamp: new Date().toISOString(),
-        userEmail,
         question: message.question || "",
         answer: message.content,
         sources: message.sources?.map(s => s.uri) || [],

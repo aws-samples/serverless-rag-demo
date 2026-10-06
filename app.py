@@ -6,6 +6,7 @@ from infrastructure.opensearch_nextgen_stack import OpensearchNextgenStack
 from infrastructure.knowledge_base_stack import KnowledgeBaseStack
 from infrastructure.agentcore_stack import AgentCoreStack
 from infrastructure.cognito_stack import CognitoStack
+from infrastructure.app_api_stack import AppApiStack
 from infrastructure.cloudfront_hosting_stack import CloudFrontHostingStack
 
 app = cdk.App()
@@ -50,13 +51,26 @@ cognito_stack = CognitoStack(
     app, f"SRD-Auth-{env_name}",
     data_bucket_name=kb_stack.data_bucket_name,
     knowledge_base_id=kb_stack.knowledge_base_id,
-    data_source_id=kb_stack.data_source_id,
     env=env,
 )
 cognito_stack.add_dependency(kb_stack)
 Tags.of(cognito_stack).add("project", "serverless-rag-demo-v2")
 
-# Stack 5: CloudFront Hosting (depends on Cognito for runtime-config)
+# Stack 5: App API — documents, evaluations and feedback, authorised server-side
+app_api_stack = AppApiStack(
+    app, f"SRD-AppApi-{env_name}",
+    user_pool_id=cognito_stack.user_pool_id,
+    user_pool_client_id=cognito_stack.client_id,
+    data_bucket_name=kb_stack.data_bucket_name,
+    knowledge_base_id=kb_stack.knowledge_base_id,
+    data_source_id=kb_stack.data_source_id,
+    eval_role_arn=cognito_stack.eval_role_arn,
+    env=env,
+)
+app_api_stack.add_dependency(cognito_stack)
+Tags.of(app_api_stack).add("project", "serverless-rag-demo-v2")
+
+# Stack 6: CloudFront Hosting (depends on Cognito for runtime-config)
 cf_stack = CloudFrontHostingStack(
     app, f"SRD-CloudFront-{env_name}",
     cognito_user_pool_id=cognito_stack.user_pool_id,

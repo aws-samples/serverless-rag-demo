@@ -1,12 +1,16 @@
-import {
-    BedrockClient,
-    CreateEvaluationJobCommand,
-    GetEvaluationJobCommand,
-    ListEvaluationJobsCommand,
-} from "@aws-sdk/client-bedrock";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getRuntimeConfig } from "../runtime-config";
-import { getAwsCredentials } from "./agentcore-ws";
+/**
+ * RAG evaluation client.
+ *
+ * The dataset upload, job creation and result read all run server-side now. The
+ * browser used to call Bedrock and S3 directly, which meant its Cognito role
+ * carried bedrock:CreateEvaluationJob and ListEvaluationJobs — actions IAM
+ * cannot scope to a resource, so every signed-in user could list every
+ * evaluation job in the account and start paid jobs of their own. The API keys
+ * jobs and output to the caller's verified token instead, so none of these
+ * calls names a user or a bucket.
+ */
+
+import { apiRequest } from "./api-client";
 
 export interface EvalQuestion {
     question: string;
@@ -37,6 +41,11 @@ export interface EvalResults {
     perQuestion: EvalQuestionResult[];
 }
 
+export interface EvalJob extends EvalJobSummary {
+    jobArn: string;
+}
+
+// Kept in step with ALLOWED_METRICS in the API, which rejects anything else.
 export const ALL_METRICS = [
     "Builtin.Correctness",
     "Builtin.Completeness",
@@ -49,214 +58,71 @@ export const ALL_METRICS = [
 
 export const DEFAULT_METRICS = ["Builtin.Faithfulness", "Builtin.Correctness", "Builtin.Completeness"];
 
-function getBedrockClient(credentials: any): BedrockClient {
-    const config = getRuntimeConfig();
-    return new BedrockClient({
-        region: config.cognitoRegion,
-        credentials: {
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-            sessionToken: credentials.sessionToken,
-        },
-    });
+interface JobResponse {
+    jobId: string;
+    jobArn: string;
+    jobName: string;
+    status?: string;
+    createdAt?: string;
 }
 
-function getS3Client(credentials: any): S3Client {
-    const config = getRuntimeConfig();
-    return new S3Client({
-        region: config.cognitoRegion,
-        credentials: {
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-            sessionToken: credentials.sessionToken,
-        },
-    });
-}
-
-/**
- * Convert user questions to Bedrock JSONL format and upload to S3.
- */
-export async function uploadEvalDataset(
-    questions: EvalQuestion[],
-    jobId: string,
-    userEmail: string,
-    idToken: string,
-): Promise<string> {
-    const config = getRuntimeConfig();
-    const credentials = await getAwsCredentials(idToken);
-    const s3 = getS3Client(credentials);
-
-    const jsonl = questions.map(q => {
-        const turn: any = {
-            prompt: { content: [{ text: q.question }] },
-        };
-        if (q.expected_answer) {
-            turn.referenceResponses = [
-                { content: [{ text: q.expected_answer }] },
-            ];
-        }
-        const entry = { conversationTurns: [turn] };
-        return JSON.stringify(entry);
-    }).join("\n");
-
-    // Sanitize email for S3 path — Bedrock URI regex only allows [-!_*'().a-z0-9A-Z]
-    const safeEmail = userEmail.replace(/[^-!_*'().a-z0-9A-Z]/g, "_");
-    const key = `evaluations/${safeEmail}/${jobId}/input.jsonl`;
-    await s3.send(new PutObjectCommand({
-        Bucket: config.dataBucketName,
-        Key: key,
-        Body: jsonl,
-        ContentType: "application/jsonl",
-    }));
-
-    return `s3://${config.dataBucketName}/${key}`;
-}
-
-/**
- * Create a Bedrock evaluation job for our Knowledge Base.
- */
-export async function createEvalJob(
-    jobName: string,
-    datasetS3Uri: string,
-    outputPrefix: string,
-    metrics: string[],
-    idToken: string,
-): Promise<string> {
-    const config = getRuntimeConfig();
-    const credentials = await getAwsCredentials(idToken);
-    const bedrock = getBedrockClient(credentials);
-
-    const response = await bedrock.send(new CreateEvaluationJobCommand({
-        jobName,
-        roleArn: config.evalRoleArn,
-        applicationType: "RagEvaluation",
-        evaluationConfig: {
-            automated: {
-                datasetMetricConfigs: [
-                    {
-                        taskType: "General",
-                        dataset: { name: jobName, datasetLocation: { s3Uri: datasetS3Uri } },
-                        metricNames: metrics,
-                    },
-                ],
-                evaluatorModelConfig: {
-                    bedrockEvaluatorModels: [
-                        { modelIdentifier: `arn:aws:bedrock:${config.cognitoRegion}::foundation-model/amazon.nova-pro-v1:0` },
-                    ],
-                },
-            },
-        },
-        inferenceConfig: {
-            ragConfigs: [
-                {
-                    knowledgeBaseConfig: {
-                        retrieveAndGenerateConfig: {
-                            type: "KNOWLEDGE_BASE",
-                            knowledgeBaseConfiguration: {
-                                knowledgeBaseId: config.knowledgeBaseId,
-                                modelArn: "global.anthropic.claude-sonnet-4-6",
-                            },
-                        },
-                    },
-                },
-            ],
-        },
-        outputDataConfig: {
-            s3Uri: outputPrefix,
-        },
-    }));
-
-    return response.jobArn || response.jobIdentifier || "";
-}
-
-/**
- * Get evaluation job status.
- */
-export async function getEvalJob(jobId: string, idToken: string): Promise<EvalJobSummary> {
-    const credentials = await getAwsCredentials(idToken);
-    const bedrock = getBedrockClient(credentials);
-
-    const response = await bedrock.send(new GetEvaluationJobCommand({
-        jobIdentifier: jobId,
-    }));
-
+function toJob(body: JobResponse): EvalJob {
     return {
-        jobId: response.jobArn || jobId,
-        jobName: response.jobName || "",
-        status: response.status || "Unknown",
-        createdAt: response.creationTime || new Date(),
+        jobId: body.jobId,
+        jobArn: body.jobArn,
+        jobName: body.jobName,
+        status: body.status || "InProgress",
+        createdAt: body.createdAt ? new Date(body.createdAt) : new Date(),
     };
 }
 
 /**
- * List recent evaluation jobs.
+ * Start an evaluation of the Knowledge Base over the given questions.
+ *
+ * The API writes the dataset, names the job and picks its output location, all
+ * derived from the caller's token.
  */
-export async function listEvalJobs(idToken: string): Promise<EvalJobSummary[]> {
-    const credentials = await getAwsCredentials(idToken);
-    const bedrock = getBedrockClient(credentials);
-
-    const response = await bedrock.send(new ListEvaluationJobsCommand({
-        maxResults: 20,
-        sortBy: "CreationTime",
-        sortOrder: "Descending",
-    }));
-
-    return (response.jobSummaries || []).map(job => ({
-        jobId: job.jobArn || "",
-        jobName: job.jobName || "",
-        status: job.status || "Unknown",
-        createdAt: job.creationTime || new Date(),
-    }));
+export async function createEvalJob(
+    questions: EvalQuestion[],
+    metrics: string[],
+    idToken: string,
+): Promise<EvalJob> {
+    const body = await apiRequest<JobResponse>("/evaluations", idToken, {
+        method: "POST",
+        body: JSON.stringify({ questions, metrics }),
+    });
+    return toJob(body);
 }
 
 /**
- * Read evaluation results from S3 output location.
+ * Get the status of one of the caller's own jobs. Refused for anyone else's.
+ */
+export async function getEvalJob(jobArn: string, idToken: string): Promise<EvalJob> {
+    const body = await apiRequest<JobResponse>(
+        `/evaluations/status?jobArn=${encodeURIComponent(jobArn)}`,
+        idToken,
+    );
+    return toJob(body);
+}
+
+/**
+ * List the caller's recent evaluation jobs.
+ */
+export async function listEvalJobs(idToken: string): Promise<EvalJobSummary[]> {
+    const { jobs } = await apiRequest<{ jobs: JobResponse[] }>("/evaluations", idToken);
+    return jobs.map(toJob);
+}
+
+/**
+ * Read a finished job's scores. Null until the output has been written.
  */
 export async function getEvalResults(
-    userEmail: string,
     jobId: string,
     idToken: string,
 ): Promise<EvalResults | null> {
-    const config = getRuntimeConfig();
-    const credentials = await getAwsCredentials(idToken);
-    const s3 = getS3Client(credentials);
-
-    const safeEmail = userEmail.replace(/[^-!_*'().a-z0-9A-Z]/g, "_");
-    const key = `evaluations/${safeEmail}/${jobId}/output/results.jsonl`;
-
-    try {
-        const response = await s3.send(new GetObjectCommand({
-            Bucket: config.dataBucketName,
-            Key: key,
-        }));
-        const content = await response.Body!.transformToString();
-        const lines = content.trim().split("\n").map(l => JSON.parse(l));
-
-        const aggregateMap: Record<string, number[]> = {};
-        const perQuestion: EvalQuestionResult[] = [];
-
-        for (const line of lines) {
-            const question = line.conversationTurnContent?.prompt?.content?.[0]?.text || "";
-            const answer = line.output?.text || "";
-            const metricResults: EvalMetricResult[] = [];
-
-            for (const [metricName, value] of Object.entries(line.scores || {})) {
-                const score = typeof value === "number" ? value : parseFloat(value as string);
-                metricResults.push({ metricName, score });
-                if (!aggregateMap[metricName]) aggregateMap[metricName] = [];
-                aggregateMap[metricName].push(score);
-            }
-
-            perQuestion.push({ question, generatedAnswer: answer, metrics: metricResults });
-        }
-
-        const aggregateScores = Object.entries(aggregateMap).map(([metricName, scores]) => ({
-            metricName,
-            score: scores.reduce((a, b) => a + b, 0) / scores.length,
-        }));
-
-        return { aggregateScores, perQuestion };
-    } catch {
-        return null;
-    }
+    const { results } = await apiRequest<{ results: EvalResults | null }>(
+        `/evaluations/results?jobId=${encodeURIComponent(jobId)}`,
+        idToken,
+    );
+    return results;
 }

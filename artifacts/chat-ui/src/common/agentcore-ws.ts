@@ -33,7 +33,10 @@ interface CachedCredentials {
 
 let cachedCreds: CachedCredentials | null = null;
 
-export async function getAwsCredentials(idToken: string): Promise<CachedCredentials> {
+// Deliberately not exported: these credentials exist only to SigV4-sign the
+// AgentCore WebSocket handshake. Everything else the UI needs goes through the
+// app API with the ID token, so nothing outside this module should hold them.
+async function getAwsCredentials(idToken: string): Promise<CachedCredentials> {
     // Return cached creds if still valid (5min buffer)
     if (cachedCreds && cachedCreds.expiration > Date.now() + 300_000) {
         return cachedCreds;

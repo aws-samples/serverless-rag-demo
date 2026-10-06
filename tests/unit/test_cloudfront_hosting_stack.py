@@ -12,8 +12,7 @@ def test_creates_s3_bucket(app, stack):
     nested = CloudFrontHostingStack(stack, "TestCF",
         cognito_user_pool_id="pool-123",
         cognito_client_id="client-456",
-        rest_endpoint_url="https://api.example.com/test/rag/",
-        websocket_url="wss://ws.example.com/test")
+        cognito_identity_pool_id="us-east-1:00000000-0000-0000-0000-000000000000")
     template = Template.from_stack(nested)
     template.has_resource_properties("AWS::S3::Bucket", {
         "PublicAccessBlockConfiguration": {
@@ -30,7 +29,6 @@ def test_creates_cloudfront_distribution(app, stack):
     nested = CloudFrontHostingStack(stack, "TestCF2",
         cognito_user_pool_id="pool-123",
         cognito_client_id="client-456",
-        rest_endpoint_url="https://api.example.com/test/rag/",
-        websocket_url="wss://ws.example.com/test")
+        cognito_identity_pool_id="us-east-1:00000000-0000-0000-0000-000000000000")
     template = Template.from_stack(nested)
     template.resource_count_is("AWS::CloudFront::Distribution", 1)

@@ -5,10 +5,10 @@ export interface RuntimeConfig {
     cognitoRegion: string;
     ragRuntimeArn: string;
     multiAgentRuntimeArn: string;
-    dataBucketName: string;
-    knowledgeBaseId: string;
-    dataSourceId: string;
-    evalRoleArn: string;
+    // Base URL of the authenticated API. The bucket name, knowledge base id and
+    // evaluation role ARN used to live here too, for browser-side S3 and Bedrock
+    // calls; those calls now go through the API, which does the per-user checks.
+    apiUrl: string;
 }
 
 let cachedConfig: RuntimeConfig | null = null;

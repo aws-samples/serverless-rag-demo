@@ -6,7 +6,7 @@ import {
 import { LoadingBar } from "@cloudscape-design/chat-components";
 import { AppContext } from "../../common/context";
 import {
-  listDocuments, getUploadPresignedUrl, uploadMetadata,
+  listDocuments, getUploadPresignedUrl,
   deleteDocument, syncKnowledgeBase, getIngestionStatus,
   DocumentInfo, IngestionStatus
 } from "../../common/document-service";
@@ -26,10 +26,6 @@ export function UploadUI(props: UploadDocProps) {
   const [syncStatus, setSyncStatus] = useState<IngestionStatus | null>(null);
   const PAGE_SIZE = 20;
   const appData = useContext(AppContext);
-
-  const getUserEmail = (): string => {
-    return appData.userinfo?.signInDetails?.loginId || appData.userinfo?.username || "";
-  };
 
   const getIdToken = (): string => {
     return appData.userinfo?.tokens?.idToken?.toString() || "";
@@ -51,7 +47,7 @@ export function UploadUI(props: UploadDocProps) {
   const refreshFileList = async () => {
     setIsLoading(true);
     try {
-      const docs = await listDocuments(getUserEmail(), getIdToken(), globalView);
+      const docs = await listDocuments(getIdToken(), globalView);
       setUserFiles(docs);
     } catch (err: any) {
       notify(`Failed to list documents: ${err.message}`, "error");
@@ -78,14 +74,14 @@ export function UploadUI(props: UploadDocProps) {
     setIsLoading(true);
     setIsModalVisible(false);
 
-    const email = getUserEmail();
     const idToken = getIdToken();
 
     try {
       for (const file of value) {
-        // Get presigned URL for upload
+        // The API derives the key from the verified token and writes the
+        // Knowledge Base metadata sidecar itself.
         const presignedUrl = await getUploadPresignedUrl(
-          email, file.name, file.type || "application/octet-stream", idToken
+          file.name, file.type || "application/octet-stream", idToken
         );
 
         // Upload file via presigned URL
@@ -98,9 +94,6 @@ export function UploadUI(props: UploadDocProps) {
         if (!response.ok) {
           throw new Error(`Upload failed: ${response.statusText}`);
         }
-
-        // Upload metadata sidecar
-        await uploadMetadata(email, file.name, idToken);
       }
 
       notify("Files uploaded successfully. Syncing knowledge base...", "info");

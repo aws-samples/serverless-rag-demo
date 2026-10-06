@@ -10,17 +10,34 @@ MODEL_ID = os.getenv("MODEL_ID", "global.anthropic.claude-sonnet-4-6")
 
 bedrock_agent_runtime = boto3.client("bedrock-agent-runtime", region_name=REGION)
 
+# Only this exact value opts into searching every user's documents.
+SHARED_CORPUS_SCOPE = "all"
 
-async def rag_query_stream(query: str, model_id: str = None, user_email: str = None, search_scope: str = "all", search_type: str = "HYBRID", chat_history: list = None):
+
+def _retrieval_filter(user_email: str, search_scope: str) -> dict | None:
+    """Return the Knowledge Base filter for this caller, failing closed.
+
+    Anything other than an explicit "all" scopes retrieval to the caller's own
+    documents. That matters because the UI has sent "user" where this module
+    previously expected "my_docs", which silently disabled the filter and
+    searched the whole corpus; an unrecognised scope must narrow, not widen.
+    """
+    if search_scope == SHARED_CORPUS_SCOPE:
+        return None
+
+    if not user_email:
+        raise ValueError(
+            f"user_email is required unless search_scope is '{SHARED_CORPUS_SCOPE}'"
+        )
+
+    return {"equals": {"key": "user_email", "value": user_email}}
+
+
+async def rag_query_stream(query: str, model_id: str = None, user_email: str = None, search_scope: str = "my_docs", search_type: str = "HYBRID", chat_history: list = None):
     """Stream RAG query response with native citations via retrieve_and_generate_stream."""
     model_id = model_id or MODEL_ID
 
-    # Build retrieval filter for per-user search
-    filter_config = None
-    if search_scope == "my_docs" and user_email:
-        filter_config = {
-            "equals": {"key": "user_email", "value": user_email}
-        }
+    filter_config = _retrieval_filter(user_email, search_scope)
 
     retrieval_config = {
         "knowledgeBaseConfiguration": {
@@ -107,7 +124,7 @@ async def rag_query_stream(query: str, model_id: str = None, user_email: str = N
                     citations_sent = True
 
 
-async def _fallback_rag_stream(query: str, model_id: str = None, user_email: str = None, search_scope: str = "all", search_type: str = "HYBRID", chat_history: list = None):
+async def _fallback_rag_stream(query: str, model_id: str = None, user_email: str = None, search_scope: str = "my_docs", search_type: str = "HYBRID", chat_history: list = None):
     """Fallback: separate Retrieve + ConverseStream if retrieve_and_generate_stream unavailable."""
     model_id = model_id or MODEL_ID
     bedrock_runtime = boto3.client("bedrock-runtime", region_name=REGION)
@@ -119,10 +136,9 @@ async def _fallback_rag_stream(query: str, model_id: str = None, user_email: str
         }
     }
 
-    if search_scope == "my_docs" and user_email:
-        retrieval_config["vectorSearchConfiguration"]["filter"] = {
-            "equals": {"key": "user_email", "value": user_email}
-        }
+    filter_config = _retrieval_filter(user_email, search_scope)
+    if filter_config:
+        retrieval_config["vectorSearchConfiguration"]["filter"] = filter_config
 
     response = bedrock_agent_runtime.retrieve(
         knowledgeBaseId=KB_ID,
