@@ -99,15 +99,13 @@ echo "  [D] Deploying AgentCore Runtimes..."
 COGNITO_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"userpoolid\")) | .value" cdk-outputs.json)
 COGNITO_CLIENT_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"clientid\")) | .value" cdk-outputs.json)
 COGNITO_IDENTITY_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"identitypoolid\")) | .value" cdk-outputs.json)
-EVAL_ROLE_ARN=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"evalrolearn\")) | .value" cdk-outputs.json)
 
 # Get Knowledge Base values from CDK outputs
 KB_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"kbid\")) | .value" cdk-outputs.json)
-DATA_BUCKET=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | startswith(\"databucket\")) | .value" cdk-outputs.json)
 DATA_SOURCE_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"datasourceid\")) | .value" cdk-outputs.json)
 
-# Document API base URL (all per-user document access goes through this)
-DOCUMENT_API_URL=$(jq -r ".[\"SRD-DocumentApi-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"documentapiurl\")) | .value" cdk-outputs.json)
+# App API base URL (documents, evaluations and feedback all go through this)
+APP_API_URL=$(jq -r ".[\"SRD-AppApi-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"appapiurl\")) | .value" cdk-outputs.json)
 
 # Get ECR image URIs from CDK outputs (CDK strips hyphens from output keys)
 RAG_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"ragqueryimage\")) | .value" cdk-outputs.json)
@@ -210,10 +208,7 @@ cat <<RCEOF | aws s3 cp - "s3://${UI_BUCKET_NAME}/runtime-config.json" --content
   "cognitoRegion": "$REGION",
   "ragRuntimeArn": "$RAG_RUNTIME_ARN",
   "multiAgentRuntimeArn": "$MA_RUNTIME_ARN",
-  "dataBucketName": "$DATA_BUCKET",
-  "knowledgeBaseId": "$KB_ID",
-  "evalRoleArn": "$EVAL_ROLE_ARN",
-  "documentApiUrl": "$DOCUMENT_API_URL"
+  "apiUrl": "$APP_API_URL"
 }
 RCEOF
 echo "  Updated runtime-config.json with AgentCore endpoints"

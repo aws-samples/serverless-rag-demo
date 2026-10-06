@@ -17,15 +17,21 @@ from constructs import Construct
 import cdk_nag as _cdk_nag
 
 
-class DocumentApiStack(Stack):
-    """Server-side document API.
+class AppApiStack(Stack):
+    """Server-side API for everything that needs per-user authorisation.
 
-    Browsers hold Cognito Identity Pool credentials, which cannot carry a
-    per-user condition for an email-keyed S3 prefix: IAM exposes
-    cognito-identity.amazonaws.com:sub but no variable for the email claim. So
-    rather than grant the browser S3 access and try to constrain it, document
-    access lives behind this API, where the caller's email comes from a JWT that
-    API Gateway has verified against the User Pool.
+    Browsers hold Cognito Identity Pool credentials, and those cannot express
+    "only this user's data" for the resources this app keeps per user:
+
+      * documents and evaluation output are keyed by email, and IAM exposes
+        cognito-identity.amazonaws.com:sub but no variable for the email claim
+      * bedrock:CreateEvaluationJob and bedrock:ListEvaluationJobs have no
+        resource-level support at all, so they can only be granted on "*"
+
+    Granting any of that to the browser means granting it for every user. So the
+    permissions sit on this Lambda role, which no user controls, and the handler
+    decides what each request may touch using the email claim API Gateway has
+    already verified against the User Pool.
     """
 
     def __init__(
@@ -35,6 +41,7 @@ class DocumentApiStack(Stack):
         data_bucket_name: str,
         knowledge_base_id: str,
         data_source_id: str,
+        eval_role_arn: str,
         **kwargs
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -44,10 +51,10 @@ class DocumentApiStack(Stack):
         account_id = os.getenv("CDK_DEFAULT_ACCOUNT", "123456789012")
         region = os.getenv("CDK_DEFAULT_REGION", "us-east-1")
 
-        document_prefix = f"arn:aws:s3:::{data_bucket_name}/documents/*"
+        bucket_arn = f"arn:aws:s3:::{data_bucket_name}"
 
         handler_role = iam.Role(
-            self, f"srd-document-api-role-{env_name}",
+            self, f"srd-app-api-role-{env_name}",
             assumed_by=iam.ServicePrincipal("lambda.amazonaws.com"),
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name(
@@ -55,20 +62,34 @@ class DocumentApiStack(Stack):
                 ),
             ],
             inline_policies={
-                # The handler needs the whole documents/* prefix because it serves
-                # every user. Restricting an individual request to its caller is
-                # done in the handler, from the verified email claim.
-                "DocumentObjects": iam.PolicyDocument(statements=[
+                # The handler serves every user, so it needs the whole prefix.
+                # Restricting an individual request to its caller is done in the
+                # handler, from the verified email claim.
+                "DataObjects": iam.PolicyDocument(statements=[
                     iam.PolicyStatement(
-                        sid="ReadWriteDocumentObjects",
+                        sid="ReadWriteDocuments",
                         actions=["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
-                        resources=[document_prefix],
+                        resources=[f"{bucket_arn}/documents/*"],
                     ),
                     iam.PolicyStatement(
-                        sid="ListDocumentObjects",
+                        sid="ReadWriteEvaluations",
+                        actions=["s3:GetObject", "s3:PutObject"],
+                        resources=[f"{bucket_arn}/evaluations/*"],
+                    ),
+                    iam.PolicyStatement(
+                        sid="WriteFeedback",
+                        actions=["s3:PutObject"],
+                        resources=[f"{bucket_arn}/feedback/*"],
+                    ),
+                    iam.PolicyStatement(
+                        sid="ListDataObjects",
                         actions=["s3:ListBucket"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}"],
-                        conditions={"StringLike": {"s3:prefix": ["documents/*"]}},
+                        resources=[bucket_arn],
+                        conditions={
+                            "StringLike": {
+                                "s3:prefix": ["documents/*", "evaluations/*"],
+                            },
+                        },
                     ),
                 ]),
                 "KnowledgeBaseSync": iam.PolicyDocument(statements=[
@@ -82,23 +103,54 @@ class DocumentApiStack(Stack):
                         ],
                     ),
                 ]),
+                "Evaluations": iam.PolicyDocument(statements=[
+                    iam.PolicyStatement(
+                        sid="ReadOwnEvaluationJob",
+                        actions=["bedrock:GetEvaluationJob"],
+                        resources=[
+                            f"arn:aws:bedrock:{region}:{account_id}:evaluation-job/*"
+                        ],
+                    ),
+                    iam.PolicyStatement(
+                        # Neither action supports resource-level permissions, so
+                        # "*" is the only form IAM accepts. The handler names
+                        # every job with an opaque per-user tag and filters on it,
+                        # so a caller still only ever sees its own jobs.
+                        sid="CreateAndListEvaluationJobs",
+                        actions=[
+                            "bedrock:CreateEvaluationJob",
+                            "bedrock:ListEvaluationJobs",
+                        ],
+                        resources=["*"],
+                    ),
+                    iam.PolicyStatement(
+                        sid="PassEvalRole",
+                        actions=["iam:PassRole"],
+                        resources=[eval_role_arn],
+                        conditions={
+                            "StringEquals": {
+                                "iam:PassedToService": "bedrock.amazonaws.com",
+                            },
+                        },
+                    ),
+                ]),
             },
         )
 
         log_group = logs.LogGroup(
-            self, f"srd-document-api-logs-{env_name}",
-            log_group_name=f"/aws/lambda/srd-document-api-{env_name}",
+            self, f"srd-app-api-logs-{env_name}",
+            log_group_name=f"/aws/lambda/srd-app-api-{env_name}",
             retention=logs.RetentionDays.ONE_MONTH,
             removal_policy=RemovalPolicy.DESTROY,
         )
 
         handler = _lambda.Function(
-            self, f"srd-document-api-fn-{env_name}",
-            function_name=f"srd-document-api-{env_name}",
+            self, f"srd-app-api-fn-{env_name}",
+            function_name=f"srd-app-api-{env_name}",
             runtime=_lambda.Runtime.PYTHON_3_12,
             handler="index.handler",
             code=_lambda.Code.from_asset(
-                os.path.join(os.path.dirname(__file__), "lambdas", "documents")
+                os.path.join(os.path.dirname(__file__), "lambdas", "api")
             ),
             timeout=Duration.seconds(30),
             memory_size=512,
@@ -109,19 +161,24 @@ class DocumentApiStack(Stack):
                 "DATA_BUCKET_NAME": data_bucket_name,
                 "KNOWLEDGE_BASE_ID": knowledge_base_id,
                 "DATA_SOURCE_ID": data_source_id,
+                "EVAL_ROLE_ARN": eval_role_arn,
+                "EVALUATOR_MODEL_ARN": (
+                    f"arn:aws:bedrock:{region}::foundation-model/amazon.nova-pro-v1:0"
+                ),
+                "GENERATOR_MODEL_ARN": "global.anthropic.claude-sonnet-4-6",
             },
         )
 
         # Verifies signature, expiry and audience against the User Pool before the
         # handler runs, so claims reaching the handler are trustworthy.
         authorizer = apigwv2_authorizers.HttpUserPoolAuthorizer(
-            f"srd-document-api-authorizer-{env_name}",
+            f"srd-app-api-authorizer-{env_name}",
             cognito.UserPool.from_user_pool_id(
-                self, f"srd-document-api-user-pool-{env_name}", user_pool_id
+                self, f"srd-app-api-user-pool-{env_name}", user_pool_id
             ),
             user_pool_clients=[
                 cognito.UserPoolClient.from_user_pool_client_id(
-                    self, f"srd-document-api-client-{env_name}", user_pool_client_id
+                    self, f"srd-app-api-client-{env_name}", user_pool_client_id
                 ),
             ],
             identity_source=["$request.header.Authorization"],
@@ -134,12 +191,12 @@ class DocumentApiStack(Stack):
         # the browser's same-origin policy already prevents. Deployers who know
         # their distribution domain should set the allowed_origins context value
         # to it rather than leaving the default.
-        allowed_origins = self.node.try_get_context("document_api_allowed_origins") or ["*"]
+        allowed_origins = self.node.try_get_context("app_api_allowed_origins") or ["*"]
 
         http_api = apigwv2.HttpApi(
-            self, f"srd-document-api-{env_name}",
-            api_name=f"srd-document-api-{env_name}",
-            description="Per-user document management for serverless-rag-demo",
+            self, f"srd-app-api-{env_name}",
+            api_name=f"srd-app-api-{env_name}",
+            description="Authenticated per-user API for serverless-rag-demo",
             cors_preflight=apigwv2.CorsPreflightOptions(
                 allow_origins=allowed_origins,
                 allow_methods=[
@@ -153,7 +210,7 @@ class DocumentApiStack(Stack):
         )
 
         integration = apigwv2_integrations.HttpLambdaIntegration(
-            f"srd-document-api-integration-{env_name}", handler
+            f"srd-app-api-integration-{env_name}", handler
         )
 
         for method, path in [
@@ -163,6 +220,11 @@ class DocumentApiStack(Stack):
             (apigwv2.HttpMethod.DELETE, "/documents"),
             (apigwv2.HttpMethod.POST, "/documents/sync"),
             (apigwv2.HttpMethod.GET, "/documents/ingestion-status"),
+            (apigwv2.HttpMethod.POST, "/evaluations"),
+            (apigwv2.HttpMethod.GET, "/evaluations"),
+            (apigwv2.HttpMethod.GET, "/evaluations/status"),
+            (apigwv2.HttpMethod.GET, "/evaluations/results"),
+            (apigwv2.HttpMethod.POST, "/feedback"),
         ]:
             http_api.add_routes(
                 path=path,
@@ -173,9 +235,9 @@ class DocumentApiStack(Stack):
 
         self.api_url = http_api.api_endpoint
 
-        CfnOutput(self, f"documentapiurl-{env_name}",
+        CfnOutput(self, f"appapiurl-{env_name}",
                   value=http_api.api_endpoint,
-                  description="Document API base URL")
+                  description="Authenticated app API base URL")
 
         _cdk_nag.NagSuppressions.add_stack_suppressions(self, [
             _cdk_nag.NagPackSuppression(
@@ -185,9 +247,11 @@ class DocumentApiStack(Stack):
             _cdk_nag.NagPackSuppression(
                 id="AwsSolutions-IAM5",
                 reason=(
-                    "The handler serves all users so it needs documents/*; the "
-                    "per-caller restriction is enforced in the handler against the "
-                    "API Gateway-verified email claim"
+                    "The handler serves all users so it needs the documents/, "
+                    "evaluations/ and feedback/ prefixes, and the Bedrock evaluation "
+                    "create/list actions accept no resource. Per-caller restriction "
+                    "is enforced in the handler against the API Gateway-verified "
+                    "email claim"
                 ),
             ),
             _cdk_nag.NagPackSuppression(

@@ -104,9 +104,9 @@ class CloudFrontHostingStack(Stack):
             "cognitoClientId": cognito_client_id,
             "cognitoIdentityPoolId": cognito_identity_pool_id,
             "cognitoRegion": region,
-            "ragWebSocketUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
-            "multiAgentWebSocketUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
-            "documentApiUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
+            "ragRuntimeArn": "PLACEHOLDER_SET_BY_DEPLOY_SH",
+            "multiAgentRuntimeArn": "PLACEHOLDER_SET_BY_DEPLOY_SH",
+            "apiUrl": "PLACEHOLDER_SET_BY_DEPLOY_SH",
         }
 
         s3_deploy.BucketDeployment(

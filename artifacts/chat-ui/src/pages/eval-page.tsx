@@ -11,10 +11,8 @@ import { EvalInput } from "../components/eval-ui/eval-input";
 import { EvalDashboard } from "../components/eval-ui/eval-dashboard";
 import {
     EvalQuestion, EvalResults, EvalJobSummary,
-    uploadEvalDataset, createEvalJob, getEvalJob,
-    getEvalResults, listEvalJobs,
+    createEvalJob, getEvalJob, getEvalResults, listEvalJobs,
 } from "../common/evaluation-service";
-import { getRuntimeConfig } from "../runtime-config";
 
 function EvalPageContent(props: AppPage) {
     const appData = useContext(AppContext);
@@ -34,9 +32,6 @@ function EvalPageContent(props: AppPage) {
     const getIdToken = (): string =>
         appData.userinfo?.tokens?.idToken?.toString() || "";
 
-    const getUserEmail = (): string =>
-        appData.userinfo?.signInDetails?.loginId || appData.userinfo?.username || "";
-
     const refreshJobs = async () => {
         try {
             const jobs = await listEvalJobs(getIdToken());
@@ -54,24 +49,18 @@ function EvalPageContent(props: AppPage) {
         setError("");
 
         const idToken = getIdToken();
-        const userEmail = getUserEmail();
-        const jobId = crypto.randomUUID();
-        const jobName = `srd-eval-${Date.now()}`;
 
         try {
-            const datasetUri = await uploadEvalDataset(questions, jobId, userEmail, idToken);
-            const config = getRuntimeConfig();
-            const safeEmail = userEmail.replace(/[^-!_*'().a-z0-9A-Z]/g, "_");
-            const outputPrefix = `s3://${config.dataBucketName}/evaluations/${safeEmail}/${jobId}/output/`;
-
-            const jobArn = await createEvalJob(jobName, datasetUri, outputPrefix, metrics, idToken);
+            // The API writes the dataset, names the job and picks its output
+            // location, all keyed to the caller's token.
+            const { jobId, jobArn } = await createEvalJob(questions, metrics, idToken);
 
             const pollInterval = setInterval(async () => {
                 try {
                     const job = await getEvalJob(jobArn, idToken);
                     if (job.status === "Completed") {
                         clearInterval(pollInterval);
-                        const evalResults = await getEvalResults(userEmail, jobId, idToken);
+                        const evalResults = await getEvalResults(jobId, idToken);
                         setResults(evalResults);
                         setIsRunning(false);
                         refreshJobs();

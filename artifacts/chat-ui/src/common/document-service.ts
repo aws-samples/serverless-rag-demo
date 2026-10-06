@@ -1,18 +1,12 @@
 /**
  * Document management client.
  *
- * Every S3 and Knowledge Base operation runs server-side behind the document
- * API. That endpoint takes the caller's identity from the verified Cognito ID
- * token, so this client never states who it is and the browser holds no S3
- * permissions of its own. The owning user's email is therefore not a parameter
- * to any call here.
+ * Every S3 and Knowledge Base operation runs server-side behind the app API, so
+ * the browser holds no S3 permissions of its own and the owning user's email is
+ * not a parameter to any call here.
  */
 
-import { getRuntimeConfig } from "../runtime-config";
-
-function apiBase(): string {
-    return `${getRuntimeConfig().documentApiUrl.replace(/\/+$/, "")}/documents`;
-}
+import { apiRequest } from "./api-client";
 
 export interface DocumentInfo {
     key: string;
@@ -32,33 +26,8 @@ export interface IngestionStatus {
     documentsFailed?: number;
 }
 
-async function request<T>(
-    path: string,
-    idToken: string,
-    init: RequestInit = {},
-): Promise<T> {
-    const response = await fetch(`${apiBase()}${path}`, {
-        ...init,
-        headers: {
-            ...(init.body ? { "Content-Type": "application/json" } : {}),
-            ...init.headers,
-            Authorization: idToken,
-        },
-    });
-
-    if (!response.ok) {
-        // The API returns {"message": "..."} for handled errors.
-        let message = response.statusText;
-        try {
-            const body = await response.json();
-            if (body?.message) message = body.message;
-        } catch {
-            // Non-JSON error body: fall back to the status text.
-        }
-        throw new Error(message);
-    }
-
-    return response.json() as Promise<T>;
+function request<T>(path: string, idToken: string, init: RequestInit = {}): Promise<T> {
+    return apiRequest<T>(`/documents${path}`, idToken, init);
 }
 
 /**
