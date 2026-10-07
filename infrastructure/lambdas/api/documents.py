@@ -15,7 +15,9 @@ from common import (
     DATA_BUCKET,
     Forbidden,
     REGION,
+    SHARED_CORPUS_GROUP,
     body,
+    may_read_shared_corpus,
     response,
     s3,
 )
@@ -26,6 +28,10 @@ DATA_SOURCE_ID = os.environ["DATA_SOURCE_ID"]
 PRESIGN_EXPIRY_SECONDS = 300
 DOCUMENT_PREFIX = "documents/"
 METADATA_SUFFIX = ".metadata.json"
+
+# A presigned PUT is otherwise unbounded, so the signature pins the length the
+# caller declared: without this one URL can be replayed to fill the bucket.
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 
 bedrock_agent = boto3.client("bedrock-agent", region_name=REGION)
 
@@ -74,14 +80,21 @@ def assert_owned(email: str, key: str) -> str:
 def list_documents(event: dict, email: str) -> dict:
     """List documents. Defaults to the caller's own; `scope=all` lists every owner.
 
-    `scope=all` is retained because the UI offers a shared-corpus view, but it
-    only ever exposes file names and owners, never content: fetching a document
-    still requires ownership.
+    `scope=all` only ever exposes file names and owners, never content: fetching
+    a document still requires ownership. Even so it is a cross-user read, so it
+    is gated on the caller's Cognito group — asking for the shared corpus is not
+    the same as being allowed it.
     """
     params = event.get("queryStringParameters") or {}
     scope = params.get("scope", "mine")
     if scope not in ("mine", "all"):
         raise BadRequest("scope must be 'mine' or 'all'")
+
+    if scope == "all" and not may_read_shared_corpus(event):
+        raise Forbidden(
+            f"Listing all documents requires membership of the "
+            f"{SHARED_CORPUS_GROUP} group"
+        )
 
     prefix = DOCUMENT_PREFIX if scope == "all" else _user_prefix(email)
 
@@ -110,6 +123,16 @@ def list_documents(event: dict, email: str) -> dict:
     return response(200, {"documents": documents})
 
 
+def _content_length(data: dict) -> int:
+    value = data.get("contentLength")
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise BadRequest("contentLength is required and must be an integer")
+    if value <= 0 or value > MAX_UPLOAD_BYTES:
+        raise BadRequest(
+            f"contentLength must be between 1 and {MAX_UPLOAD_BYTES} bytes")
+    return value
+
+
 def create_upload_url(event: dict, email: str) -> dict:
     """Presign a PUT for the caller's own prefix and write the KB metadata sidecar.
 
@@ -123,10 +146,17 @@ def create_upload_url(event: dict, email: str) -> dict:
         raise BadRequest("contentType must be a string of at most 255 characters")
 
     key = own_key(email, data.get("fileName"))
+    content_length = _content_length(data)
 
     url = s3.generate_presigned_url(
         "put_object",
-        Params={"Bucket": DATA_BUCKET, "Key": key, "ContentType": content_type},
+        Params={
+            "Bucket": DATA_BUCKET,
+            "Key": key,
+            "ContentType": content_type,
+            # Signed, so S3 rejects a body of any other size.
+            "ContentLength": content_length,
+        },
         ExpiresIn=PRESIGN_EXPIRY_SECONDS,
     )
 

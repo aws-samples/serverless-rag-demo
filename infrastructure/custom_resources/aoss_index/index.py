@@ -6,14 +6,24 @@ The Lambda role is pre-authorized in the AOSS data access policy.
 
 import json
 import os
+import re
 import time
 import hashlib
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 import boto3
 from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
+
+# Both of these arrive in the invocation payload and are concatenated into a URL
+# that is then fetched with the Lambda's own SigV4 credentials, so they are
+# validated rather than trusted: an arbitrary endpoint would make this a signed
+# request to wherever the caller chose.
+AOSS_ENDPOINT = re.compile(
+    r"^https://[a-z0-9-]+\.[a-z0-9-]+\.aoss\.amazonaws\.com$")
+INDEX_NAME = re.compile(r"^[a-z0-9][a-z0-9_-]{0,254}$")
 
 
 def signed_request(method, url, region, body=None):
@@ -53,7 +63,19 @@ def on_event(event, context):
     if not collection_endpoint:
         return {"status": "ERROR", "message": "No CollectionEndpoint provided"}
 
-    index_url = f"{collection_endpoint}/{index_name}"
+    endpoint = collection_endpoint.rstrip("/")
+    if not AOSS_ENDPOINT.match(endpoint):
+        return {"status": "ERROR", "message": "CollectionEndpoint is not an AOSS endpoint"}
+    if not isinstance(index_name, str) or not INDEX_NAME.match(index_name):
+        return {"status": "ERROR", "message": "IndexName is not a valid index name"}
+    if not 1 <= vector_dims <= 16000:
+        return {"status": "ERROR", "message": "VectorDimensions is out of range"}
+
+    index_url = f"{endpoint}/{index_name}"
+    # Belt and braces: the two patterns above should make this unreachable, but
+    # the request is signed, so confirm the host one more time before it is sent.
+    if urlparse(index_url).hostname != urlparse(endpoint).hostname:
+        return {"status": "ERROR", "message": "Refusing to build a cross-host URL"}
 
     # Check if index already exists
     status, resp = signed_request("HEAD", index_url, region)

@@ -11,6 +11,9 @@ from aws_cdk import (
 from constructs import Construct
 import cdk_nag as _cdk_nag
 
+# Kept in step with SHARED_CORPUS_GROUP in the API handler and both containers.
+SHARED_CORPUS_GROUP = "corpus-readers"
+
 
 class CognitoStack(Stack):
 
@@ -55,6 +58,18 @@ class CognitoStack(Stack):
             generate_secret=False,
             auth_flows=cognito.AuthFlow(user_password=True, user_srp=True),
             id_token_validity=Duration.days(1),
+        )
+
+        # Membership of this group is what grants the shared-corpus view: the
+        # right to list every owner's file names and to search across all
+        # documents. It is deliberately empty on a fresh deployment, so
+        # self-signed-up users only ever see their own documents until an
+        # administrator adds them.
+        cognito.CfnUserPoolGroup(
+            self, f"srd-corpus-readers-{env_name}",
+            user_pool_id=user_pool.user_pool_id,
+            group_name=SHARED_CORPUS_GROUP,
+            description="May list and search every user's documents",
         )
 
         # Identity Pool — vends temporary AWS credentials to authenticated browser users

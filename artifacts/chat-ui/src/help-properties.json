@@ -1,38 +1,38 @@
 {
     "home": {
         "title": "Help",
-        "description" : "<a href='https://aws.amazon.com/bedrock'>Amazon Bedrock</a> offers access to a diverse range of large language models. This demo showcases how foundation models can be accessed through a single Bedrock API to serve multiple usecases"
+        "description": "[Amazon Bedrock](https://aws.amazon.com/bedrock) offers access to a diverse range of large language models. This demo showcases how foundation models can be accessed through a single Bedrock API to serve multiple usecases"
     },
     "404": {
         "title": "Not Found",
-        "description" : "<b>You have landed on wrong page</b>"
+        "description": "**You have landed on wrong page**"
     },
-    "doc-chat":{
-        "title":"Document Chat",
-        "description":"Store your documents on <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon Opensearch serverless service</a> and query those documents in natural language. Supports multiple languages and multiple FMs on Amazon Bedrock"
+    "doc-chat": {
+        "title": "Document Chat",
+        "description": "Store your documents on [Amazon OpenSearch Serverless](https://aws.amazon.com/opensearch-service/features/serverless/) and query those documents in natural language. Supports multiple languages and multiple FMs on Amazon Bedrock"
     },
-    "doc-chat-manage":{
-        "title":"Manage Documents",
-        "description": "<p>Upload documents that are indexed into a <a href='https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html'>Bedrock Knowledge Base</a> backed by <a href='https://aws.amazon.com/opensearch-service/features/serverless/'>Amazon OpenSearch Serverless (NextGen)</a>.</p><h3>Sync Status</h3><p>After uploading or deleting documents, an ingestion job syncs your files to the Knowledge Base index. The status indicator above the table shows:</p><ul><li><b>Sync in progress</b> — Files are being processed (auto-refreshes every 5s)</li><li><b>Last sync complete</b> — Shows timestamp, documents indexed, and any failures</li><li><b>Last sync failed</b> — Check file formats or permissions</li></ul><p>Supported formats: PDF, TXT, MD, HTML, DOC, DOCX, CSV.</p><p><b>Tip:</b> Files become searchable in Document Chat within 1–3 minutes after sync completes.</p>"
+    "doc-chat-manage": {
+        "title": "Manage Documents",
+        "description": "Upload documents that are indexed into a [Bedrock Knowledge Base](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html) backed by [Amazon OpenSearch Serverless (NextGen)](https://aws.amazon.com/opensearch-service/features/serverless/).\n\n### Sync Status\n\nAfter uploading or deleting documents, an ingestion job syncs your files to the Knowledge Base index. The status indicator above the table shows:\n\n- **Sync in progress** — Files are being processed (auto-refreshes every 5s)\n- **Last sync complete** — Shows timestamp, documents indexed, and any failures\n- **Last sync failed** — Check file formats or permissions\n\nSupported formats: PDF, TXT, MD, HTML, DOC, DOCX, CSV.\n\n**Tip:** Files become searchable in Document Chat within 1–3 minutes after sync completes.\n\nYou only ever see your own documents. The *Show all users* view appears for members of the `corpus-readers` group, and even then it lists file names and owners only — opening a document still requires owning it."
     },
     "sentiment": {
         "title": "Sentiment Analysis",
-        "description" : "Identify the sentiment of customer reviews/tweets/posts etc..."
+        "description": "Identify the sentiment of customer reviews/tweets/posts etc..."
     },
     "multi-agent": {
         "title": "Multi Agent",
-        "description" : "Here we have multiple GenAI agents working together to solve a user problem. You could use agents to generate presentations/search the web/build applications, games and much more. All of this in a few seconds without writing any code"
+        "description": "Here we have multiple GenAI agents working together to solve a user problem. You could use agents to generate presentations/search the web/build applications, games and much more. All of this in a few seconds without writing any code.\n\nWeb research uses AgentCore's managed web search, so the agents can search the web but cannot be talked into fetching an arbitrary URL."
     },
     "ocr": {
         "title": "OCR",
-        "description" : "Extract text from images or PDFs all through foundation models on Amazon Bedrock"
+        "description": "Extract text from images or PDFs all through foundation models on Amazon Bedrock"
     },
     "pii": {
         "title": "PII",
-        "description" : "Redact PII data"
+        "description": "Redact PII data"
     },
     "evaluation": {
         "title": "RAG Evaluation",
-        "description": "<p>Evaluate your RAG system's quality using <a href='https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation.html'>Amazon Bedrock Evaluations</a>.</p><h3>Manual Entry (Reference-Free)</h3><p>Type one question per line. The system will generate answers from your Knowledge Base and score them without needing expected answers.</p><pre>What is the join process?\nHow do I submit a claim?\nWhat are the waiting periods?</pre><h3>File Upload (Reference-Free)</h3><p>Upload a JSON file with an array of questions:</p><pre>[{\"question\": \"What is the join process?\"}, {\"question\": \"How do I submit a claim?\"}]</pre><h3>File Upload (Ground Truth)</h3><p>Enable <b>Ground Truth Mode</b> and upload a JSON file with questions and expected answers:</p><pre>[{\"question\": \"What is the join process?\", \"expected_answer\": \"Submit application online, receive email confirmation...\"}, {\"question\": \"How do I claim?\", \"expected_answer\": \"Log into member portal, select Claims...\"}]</pre><h3>Metrics</h3><ul><li><b>Faithfulness</b> — Is the answer grounded in retrieved context? (no hallucination)</li><li><b>Correctness</b> — Is it factually correct?</li><li><b>Completeness</b> — Does it cover all relevant info?</li><li><b>Helpfulness</b> — Is it useful to the user?</li><li><b>LogicalCoherence</b> — Is the reasoning sound?</li><li><b>ContextRelevance</b> — Are retrieved chunks relevant?</li><li><b>ContextCoverage</b> — Do chunks cover what's needed?</li></ul><p><b>Tip:</b> Evaluations are async and typically take 2–5 minutes. You can navigate away and check results later in the Recent Evaluations table.</p>"
+        "description": "Evaluate your RAG system's quality using [Amazon Bedrock Evaluations](https://docs.aws.amazon.com/bedrock/latest/userguide/evaluation.html).\n\n### Manual Entry (Reference-Free)\n\nType one question per line. The system will generate answers from your Knowledge Base and score them without needing expected answers.\n\n```\nWhat is the join process?\nHow do I submit a claim?\nWhat are the waiting periods?\n```\n\n### File Upload (Reference-Free)\n\nUpload a JSON file with an array of questions:\n\n```json\n[{\"question\": \"What is the join process?\"}, {\"question\": \"How do I submit a claim?\"}]\n```\n\n### File Upload (Ground Truth)\n\nEnable **Ground Truth Mode** and upload a JSON file with questions and expected answers:\n\n```json\n[{\"question\": \"What is the join process?\", \"expected_answer\": \"Submit application online, receive email confirmation...\"}, {\"question\": \"How do I claim?\", \"expected_answer\": \"Log into member portal, select Claims...\"}]\n```\n\n### Metrics\n\n- **Faithfulness** — Is the answer grounded in retrieved context? (no hallucination)\n- **Correctness** — Is it factually correct?\n- **Completeness** — Does it cover all relevant info?\n- **Helpfulness** — Is it useful to the user?\n- **LogicalCoherence** — Is the reasoning sound?\n- **ContextRelevance** — Are retrieved chunks relevant?\n- **ContextCoverage** — Do chunks cover what's needed?\n\n**Tip:** Evaluations are async and typically take 2–5 minutes. You can navigate away and check results later in the Recent Evaluations table."
     }
 }

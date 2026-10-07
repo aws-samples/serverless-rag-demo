@@ -10,6 +10,7 @@ import {
   deleteDocument, syncKnowledgeBase, getIngestionStatus,
   DocumentInfo, IngestionStatus
 } from "../../common/document-service";
+import { mayReadSharedCorpus } from "../../common/groups";
 
 export interface UploadDocProps {
   running?: boolean;
@@ -26,6 +27,9 @@ export function UploadUI(props: UploadDocProps) {
   const [syncStatus, setSyncStatus] = useState<IngestionStatus | null>(null);
   const PAGE_SIZE = 20;
   const appData = useContext(AppContext);
+  // The API enforces this too; here it just avoids offering a toggle that
+  // would come back 403.
+  const canSeeAllUsers = mayReadSharedCorpus(appData?.userinfo);
 
   const getIdToken = (): string => {
     return appData.userinfo?.tokens?.idToken?.toString() || "";
@@ -81,7 +85,7 @@ export function UploadUI(props: UploadDocProps) {
         // The API derives the key from the verified token and writes the
         // Knowledge Base metadata sidecar itself.
         const presignedUrl = await getUploadPresignedUrl(
-          file.name, file.type || "application/octet-stream", idToken
+          file.name, file.type || "application/octet-stream", file.size, idToken
         );
 
         // Upload file via presigned URL
@@ -144,12 +148,14 @@ export function UploadUI(props: UploadDocProps) {
         <Header
           actions={
             <SpaceBetween direction="horizontal" size="s">
-              <Toggle
-                checked={globalView}
-                onChange={({ detail }) => { setGlobalView(detail.checked); setCurrentPage(1); }}
-              >
-                Show all users
-              </Toggle>
+              {canSeeAllUsers && (
+                <Toggle
+                  checked={globalView}
+                  onChange={({ detail }) => { setGlobalView(detail.checked); setCurrentPage(1); }}
+                >
+                  Show all users
+                </Toggle>
+              )}
               <Button iconName="refresh" onClick={refreshFileList} disabled={isLoading}>
                 Refresh
               </Button>

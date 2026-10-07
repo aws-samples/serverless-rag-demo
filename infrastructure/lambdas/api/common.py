@@ -20,6 +20,10 @@ logger.setLevel(logging.INFO)
 REGION = os.environ["REGION"]
 DATA_BUCKET = os.environ["DATA_BUCKET_NAME"]
 
+# Membership of this Cognito group is what grants the shared-corpus view.
+# Without it a caller only ever sees their own documents.
+SHARED_CORPUS_GROUP = os.environ.get("SHARED_CORPUS_GROUP", "corpus-readers")
+
 # SigV4 is required for presigned URLs the browser uses directly.
 s3 = boto3.client("s3", region_name=REGION, config=Config(signature_version="s3v4"))
 
@@ -40,6 +44,15 @@ def response(status: int, body: dict) -> dict:
     }
 
 
+def _claims(event: dict) -> dict:
+    return (
+        event.get("requestContext", {})
+        .get("authorizer", {})
+        .get("jwt", {})
+        .get("claims", {})
+    )
+
+
 def caller_email(event: dict) -> str:
     """Return the email from the JWT claims API Gateway already verified.
 
@@ -47,18 +60,30 @@ def caller_email(event: dict) -> str:
     are invoked, so a claim present here is trustworthy. Absence means the route
     was misconfigured without an authorizer.
     """
-    claims = (
-        event.get("requestContext", {})
-        .get("authorizer", {})
-        .get("jwt", {})
-        .get("claims", {})
-    )
+    claims = _claims(event)
     email = claims.get("email")
     if not email:
         raise Forbidden("No verified email claim on the request")
     if claims.get("email_verified") not in (True, "true", "True"):
         raise Forbidden("Email claim is not verified")
     return email
+
+
+def caller_groups(event: dict) -> list:
+    """Return the caller's Cognito groups from the verified claims.
+
+    API Gateway flattens the claim, so `cognito:groups` arrives as a JSON array
+    or as a bracketed, space-separated string depending on the payload version.
+    Handle both rather than silently treating a string as a list of characters.
+    """
+    groups = _claims(event).get("cognito:groups") or []
+    if isinstance(groups, str):
+        groups = groups.strip().strip("[]").replace(",", " ").split()
+    return [g for g in groups if isinstance(g, str) and g]
+
+
+def may_read_shared_corpus(event: dict) -> bool:
+    return SHARED_CORPUS_GROUP in caller_groups(event)
 
 
 def user_tag(email: str) -> str:

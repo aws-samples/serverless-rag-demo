@@ -11,6 +11,7 @@ import { AppContext } from "../../common/context";
 import { getRuntimeConfig } from "../../runtime-config";
 import { createAgentCoreWebSocket, AgentCoreMessage } from "../../common/agentcore-ws";
 import { getDownloadPresignedUrl } from "../../common/document-service";
+import { mayReadSharedCorpus } from "../../common/groups";
 
 let ws: WebSocket | null = null;
 let chatHistory: { role: string; content: string }[] = [];
@@ -105,7 +106,11 @@ export default function ChatUIInputPanel(props: ChatUIInputPanelProps) {
     const sendQuery = () => {
       // "my_docs" is the value the backend scopes on; it previously received
       // "user", which matched nothing and silently searched every user's documents.
-      const searchScope = props.check_vector_db ? "my_docs" : "all";
+      // "all" is only offered to members of the shared-corpus group — the
+      // runtime checks the same claim against a signature it verifies itself,
+      // so asking for it without membership is refused rather than honoured.
+      const canSearchAll = mayReadSharedCorpus(appData?.userinfo);
+      const searchScope = props.check_vector_db || !canSearchAll ? "my_docs" : "all";
       const searchType = props.is_hybrid_search ? "HYBRID" : "SEMANTIC";
       ws!.send(JSON.stringify({
         query,

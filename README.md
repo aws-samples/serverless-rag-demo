@@ -125,7 +125,9 @@ cdk deploy --all --context environment_name=test --context is_aoss=yes --context
 │   ├── knowledge_base_stack.py       # Bedrock KB + S3 data source
 │   ├── agentcore_stack.py            # AgentCore container builds + IAM
 │   ├── cloudfront_hosting_stack.py   # S3 + CloudFront + runtime-config
-│   └── api_gw_stack.py               # Cognito + API Gateway + WebSocket
+│   ├── cognito_stack.py              # User Pool, Identity Pool, groups
+│   ├── app_api_stack.py              # HTTP API + per-user authorisation
+│   └── lambdas/api/                  # Documents, evaluations, feedback
 ├── containers/
 │   ├── multi-agent/                # Strands Graph multi-agent runtime
 │   │   ├── app.py                    # HTTP server (/ping, /invocations)
