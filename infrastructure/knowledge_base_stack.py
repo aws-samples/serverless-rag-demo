@@ -1,6 +1,7 @@
 import os
 from aws_cdk import (
     Stack,
+    Duration,
     RemovalPolicy,
     CfnOutput,
     aws_iam as iam,
@@ -33,6 +34,18 @@ class KnowledgeBaseStack(Stack):
         embed_model_id = env_params["embed_model_id"]
         bucket_name = env_params["s3_data_bucket"]
 
+        # Access logs for the document bucket. Reads and writes of other users'
+        # documents are the thing this app most needs to be able to reconstruct
+        # after the fact, and S3 server access logging is the only record of it.
+        access_logs_bucket = s3.Bucket(
+            self, f"srd-data-access-logs-{env_name}",
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            removal_policy=RemovalPolicy.RETAIN,
+            enforce_ssl=True,
+            versioned=True,
+            lifecycle_rules=[s3.LifecycleRule(expiration=Duration.days(90))],
+        )
+
         # S3 data bucket for documents
         data_bucket = s3.Bucket(
             self, f"srd-data-bucket-{env_name}",
@@ -40,8 +53,18 @@ class KnowledgeBaseStack(Stack):
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=RemovalPolicy.RETAIN,
             enforce_ssl=True,
+            # Deleting a document is a user action, and the metadata sidecar is
+            # what the Knowledge Base filters on — versioning means neither can
+            # be destroyed without a recoverable copy.
+            versioned=True,
+            server_access_logs_bucket=access_logs_bucket,
+            server_access_logs_prefix="data-bucket/",
+            # The browser only ever talks to this bucket to PUT a file to a
+            # presigned URL. Reads, deletes and listing all go through the app
+            # API with the ID token, so nothing else needs to be reachable
+            # cross-origin.
             cors=[s3.CorsRule(
-                allowed_methods=[s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.GET, s3.HttpMethods.DELETE, s3.HttpMethods.HEAD],
+                allowed_methods=[s3.HttpMethods.PUT, s3.HttpMethods.HEAD],
                 allowed_origins=["*"],
                 allowed_headers=["*"],
                 exposed_headers=["ETag"],
@@ -65,8 +88,17 @@ class KnowledgeBaseStack(Stack):
                         resources=[f"arn:aws:bedrock:{region}::foundation-model/{embed_model_id}"],
                     ),
                     iam.PolicyStatement(
-                        actions=["s3:GetObject", "s3:ListBucket"],
-                        resources=[data_bucket.bucket_arn, f"{data_bucket.bucket_arn}/*"],
+                        # The data source only ingests documents/, so that is
+                        # all the ingestion role needs to read: evaluation
+                        # output, feedback and generated artefacts share this
+                        # bucket and are none of its business.
+                        actions=["s3:GetObject"],
+                        resources=[f"{data_bucket.bucket_arn}/documents/*"],
+                    ),
+                    iam.PolicyStatement(
+                        actions=["s3:ListBucket"],
+                        resources=[data_bucket.bucket_arn],
+                        conditions={"StringLike": {"s3:prefix": ["documents/*"]}},
                     ),
                 ]),
             },
@@ -129,6 +161,6 @@ class KnowledgeBaseStack(Stack):
 
         # Nag suppressions
         _cdk_nag.NagSuppressions.add_stack_suppressions(self, [
-            _cdk_nag.NagPackSuppression(id="AwsSolutions-IAM5", reason="KB role needs wildcard for S3 objects"),
-            _cdk_nag.NagPackSuppression(id="AwsSolutions-S1", reason="Access logs not required for demo data bucket"),
+            _cdk_nag.NagPackSuppression(id="AwsSolutions-IAM5", reason="KB ingestion role needs a wildcard within documents/"),
+            _cdk_nag.NagPackSuppression(id="AwsSolutions-S1", reason="The access log bucket is itself the log destination"),
         ])

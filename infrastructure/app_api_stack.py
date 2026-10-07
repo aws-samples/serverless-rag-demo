@@ -16,6 +16,8 @@ from aws_cdk import (
 from constructs import Construct
 import cdk_nag as _cdk_nag
 
+from infrastructure.cognito_stack import SHARED_CORPUS_GROUP
+
 
 class AppApiStack(Stack):
     """Server-side API for everything that needs per-user authorisation.
@@ -166,6 +168,7 @@ class AppApiStack(Stack):
                     f"arn:aws:bedrock:{region}::foundation-model/amazon.nova-pro-v1:0"
                 ),
                 "GENERATOR_MODEL_ARN": "global.anthropic.claude-sonnet-4-6",
+                "SHARED_CORPUS_GROUP": SHARED_CORPUS_GROUP,
             },
         )
 

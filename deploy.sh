@@ -103,6 +103,7 @@ COGNITO_IDENTITY_POOL_ID=$(jq -r ".[\"SRD-Auth-$ENV_NAME\"] | to_entries[] | sel
 # Get Knowledge Base values from CDK outputs
 KB_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"kbid\")) | .value" cdk-outputs.json)
 DATA_SOURCE_ID=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"datasourceid\")) | .value" cdk-outputs.json)
+DATA_BUCKET=$(jq -r ".[\"SRD-KB-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"databucket\")) | .value" cdk-outputs.json)
 
 # App API base URL (documents, evaluations and feedback all go through this)
 APP_API_URL=$(jq -r ".[\"SRD-AppApi-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"appapiurl\")) | .value" cdk-outputs.json)
@@ -114,10 +115,79 @@ MULTI_AGENT_IMAGE=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | selec
 # Get IAM role ARNs (CDK strips hyphens from output keys)
 RAG_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"ragqueryrole\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
 MULTI_AGENT_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"multiagentrole\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
+GATEWAY_ROLE_ARN=$(jq -r ".[\"SRD-AgentCore-$ENV_NAME\"] | to_entries[] | select(.key | contains(\"gatewayrole\")) | .value" cdk-outputs.json 2>/dev/null || echo "")
+
+# Step D1: Web Search Gateway
+#
+# The multi-agent runtime reaches the web through AgentCore's managed web-search
+# connector rather than a general-purpose HTTP tool, so there is no URL for the
+# model to be talked into choosing. The Gateway is created here rather than in
+# CDK because connector targets need a newer bedrock-agentcore-control model
+# than the pinned CDK carries.
+#
+# Two things can make this unavailable, and neither should fail the deploy: the
+# connector only exists in three regions, and an older AWS CLI has no
+# "connector" member in the target configuration. Both leave GATEWAY_URL empty,
+# and the runtime then reports web search as unavailable.
+GATEWAY_URL=""
+WEB_SEARCH_REGIONS=("us-east-1" "eu-west-1" "ap-northeast-1")
+GATEWAY_NAME="srd-web-search-$ENV_NAME"
+
+if [[ ! " ${WEB_SEARCH_REGIONS[*]} " =~ " $REGION " ]]; then
+    echo "  [D1] Web search connector is not available in $REGION — skipping Gateway."
+elif ! aws bedrock-agentcore-control create-gateway-target --generate-cli-skeleton 2>/dev/null | grep -q '"connector"'; then
+    echo "  [D1] This AWS CLI has no web-search connector support — skipping Gateway."
+    echo "       Upgrade the AWS CLI and re-run to enable web search."
+elif [[ -z "$GATEWAY_ROLE_ARN" || "$GATEWAY_ROLE_ARN" == "null" ]]; then
+    echo "  [D1] No Gateway service role in the CDK outputs — skipping Gateway."
+else
+    echo "  [D1] Configuring Web Search Gateway..."
+
+    GATEWAY_ID=$(aws bedrock-agentcore-control list-gateways --region "$REGION" \
+        --query "items[?name=='$GATEWAY_NAME'].gatewayId | [0]" --output text 2>/dev/null || echo "None")
+
+    if [[ "$GATEWAY_ID" == "None" || -z "$GATEWAY_ID" ]]; then
+        GATEWAY_ID=$(aws bedrock-agentcore-control create-gateway \
+            --name "$GATEWAY_NAME" \
+            --role-arn "$GATEWAY_ROLE_ARN" \
+            --protocol-type MCP \
+            --authorizer-type AWS_IAM \
+            --region "$REGION" \
+            --query 'gatewayId' --output text) && echo "      Gateway created: $GATEWAY_ID"
+    else
+        echo "      Gateway exists: $GATEWAY_ID"
+    fi
+
+    if [[ -n "$GATEWAY_ID" && "$GATEWAY_ID" != "None" ]]; then
+        # One target per gateway; creating it twice is a no-op we can ignore.
+        TARGET_EXISTS=$(aws bedrock-agentcore-control list-gateway-targets \
+            --gateway-identifier "$GATEWAY_ID" --region "$REGION" \
+            --query "items[?name=='web-search-tool'] | length(@)" --output text 2>/dev/null || echo "0")
+
+        if [[ "$TARGET_EXISTS" == "0" ]]; then
+            aws bedrock-agentcore-control create-gateway-target \
+                --gateway-identifier "$GATEWAY_ID" \
+                --name "web-search-tool" \
+                --target-configuration '{"mcp":{"connector":{"source":{"connectorId":"web-search","version":"1.1.0"},"configurations":[{"name":"WebSearch","parameterValues":{}}]}}}' \
+                --credential-provider-configurations '[{"credentialProviderType":"GATEWAY_IAM_ROLE"}]' \
+                --region "$REGION" > /dev/null && echo "      Web search target created"
+        else
+            echo "      Web search target exists"
+        fi
+
+        GATEWAY_URL=$(aws bedrock-agentcore-control get-gateway \
+            --gateway-identifier "$GATEWAY_ID" --region "$REGION" \
+            --query 'gatewayUrl' --output text 2>/dev/null || echo "")
+        [[ "$GATEWAY_URL" == "None" ]] && GATEWAY_URL=""
+    fi
+fi
 
 # Environment variables for containers (dynamically extracted from CDK outputs)
-# COGNITO_* are needed by rag-query to verify caller ID tokens against the User Pool.
-RUNTIME_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-opus-4-6-v1\",\"COGNITO_USER_POOL_ID\":\"$COGNITO_POOL_ID\",\"COGNITO_CLIENT_ID\":\"$COGNITO_CLIENT_ID\"}"
+# COGNITO_* are needed by both runtimes to verify caller ID tokens against the
+# User Pool. S3_BUCKET_NAME is where the multi-agent runtime writes generated
+# decks and HTML; GATEWAY_URL is the managed web-search endpoint, empty when the
+# connector is unavailable here.
+RUNTIME_ENV_VARS="{\"KNOWLEDGE_BASE_ID\":\"$KB_ID\",\"REGION\":\"$REGION\",\"MODEL_ID\":\"global.anthropic.claude-opus-4-6-v1\",\"COGNITO_USER_POOL_ID\":\"$COGNITO_POOL_ID\",\"COGNITO_CLIENT_ID\":\"$COGNITO_CLIENT_ID\",\"SHARED_CORPUS_GROUP\":\"corpus-readers\",\"S3_BUCKET_NAME\":\"$DATA_BUCKET\",\"GATEWAY_URL\":\"$GATEWAY_URL\"}"
 
 # Helper: deploy a single AgentCore runtime (idempotent — creates or updates)
 # Prints the runtime ARN to stdout; logs to stderr

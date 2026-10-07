@@ -94,6 +94,10 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
       ws!.send(JSON.stringify({
         query,
         chat_history: chatHistory.slice(-10),
+        // Retrieval is scoped to the caller's own documents. The backend derives
+        // who that is from this token rather than trusting a plain email field.
+        search_scope: "my_docs",
+        id_token: appData.userinfo?.tokens?.idToken?.toString() || "",
       }));
     };
 
@@ -146,7 +150,7 @@ export default function AgentChatUIInputPanel(props: AgentChatUIInputPanelProps)
     if (ws == null || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
       try {
         const config = getRuntimeConfig();
-        const idToken = appData.userinfo.tokens.idToken.toString();
+        const idToken = appData.userinfo?.tokens?.idToken?.toString() || "";
         ws = await createAgentCoreWebSocket(
           config.multiAgentRuntimeArn,
           idToken,

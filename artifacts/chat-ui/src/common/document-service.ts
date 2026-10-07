@@ -61,11 +61,14 @@ export async function listDocuments(
 export async function getUploadPresignedUrl(
     fileName: string,
     contentType: string,
+    contentLength: number,
     idToken: string,
 ): Promise<string> {
     const { url } = await request<{ url: string; key: string }>("/upload-url", idToken, {
         method: "POST",
-        body: JSON.stringify({ fileName, contentType }),
+        // The length is part of what gets signed, so the URL cannot be replayed
+        // with a larger body than the file the user picked.
+        body: JSON.stringify({ fileName, contentType, contentLength }),
     });
     return url;
 }

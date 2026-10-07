@@ -103,6 +103,41 @@ def test_authenticated_role_is_free_of_per_user_grants(app, stack, grant):
     assert grant not in json.dumps(_authenticated_role(template))
 
 
+def test_the_shared_corpus_group_exists_and_starts_empty(app, stack):
+    """Cross-user listing is opt-in, so no one is in the group on a fresh deploy."""
+    from infrastructure.cognito_stack import SHARED_CORPUS_GROUP
+
+    template = Template.from_stack(CognitoStack(
+        stack, "TestAuth",
+        data_bucket_name="srd-data-bucket",
+        knowledge_base_id="KB123456",
+    ))
+    groups = [
+        r["Properties"] for r in template.to_json()["Resources"].values()
+        if r["Type"] == "AWS::Cognito::UserPoolGroup"
+    ]
+    assert [g["GroupName"] for g in groups] == [SHARED_CORPUS_GROUP]
+    # Membership is granted deliberately; nothing here puts a user in it.
+    assert "AWS::Cognito::UserPoolUserToGroupAttachment" not in \
+        json.dumps(template.to_json())
+
+
+def test_the_group_name_is_the_same_everywhere(app, stack, common):
+    """Three copies of the name decide the same thing and must not drift."""
+    from infrastructure.cognito_stack import SHARED_CORPUS_GROUP
+
+    assert common.SHARED_CORPUS_GROUP == SHARED_CORPUS_GROUP
+    _app_api_template(stack).has_resource_properties("AWS::Lambda::Function", {
+        "Environment": {"Variables": {"SHARED_CORPUS_GROUP": SHARED_CORPUS_GROUP}},
+    })
+
+    with open(os.path.join("containers", "rag-query", "auth.py")) as f:
+        assert f'"{SHARED_CORPUS_GROUP}"' in f.read()
+    with open(os.path.join(
+            "artifacts", "chat-ui", "src", "common", "groups.ts")) as f:
+        assert f'"{SHARED_CORPUS_GROUP}"' in f.read()
+
+
 # --- the API surface ----------------------------------------------------------
 
 def test_every_route_requires_a_verified_jwt(app, stack):
@@ -179,10 +214,11 @@ def common(api):
     return api["common"]
 
 
-def _event(email, verified=True):
-    return {"requestContext": {"authorizer": {"jwt": {"claims": {
-        "email": email, "email_verified": verified,
-    }}}}}
+def _event(email, verified=True, groups=None):
+    claims = {"email": email, "email_verified": verified}
+    if groups is not None:
+        claims["cognito:groups"] = groups
+    return {"requestContext": {"authorizer": {"jwt": {"claims": claims}}}}
 
 
 def test_caller_email_comes_from_the_verified_claim(common):
@@ -197,6 +233,33 @@ def test_caller_email_comes_from_the_verified_claim(common):
 def test_caller_email_rejects_missing_or_unverified_claims(common, event):
     with pytest.raises(common.Forbidden):
         common.caller_email(event)
+
+
+@pytest.mark.parametrize("groups, expected", [
+    (["corpus-readers"], True),
+    (["other", "corpus-readers"], True),
+    # API Gateway flattens the array to a bracketed string in payload 1.0.
+    ("[corpus-readers]", True),
+    ("[other corpus-readers]", True),
+    ("other,corpus-readers", True),
+    (["corpus-reader"], False),
+    ([], False),
+    ("", False),
+    ("[]", False),
+    (None, False),
+])
+def test_shared_corpus_membership_is_read_from_the_claim(common, groups, expected):
+    event = _event("alice@example.com", groups=groups)
+    assert common.may_read_shared_corpus(event) is expected
+
+
+def test_group_membership_cannot_be_asserted_by_the_caller(common):
+    """The group must come from the claim, not from anything in the request."""
+    event = _event("alice@example.com")
+    event["queryStringParameters"] = {"cognito:groups": "corpus-readers"}
+    event["body"] = json.dumps({"cognito:groups": ["corpus-readers"]})
+    event["headers"] = {"cognito:groups": "corpus-readers"}
+    assert common.may_read_shared_corpus(event) is False
 
 
 def test_every_route_is_reachable_and_unknown_routes_are_not(api):
@@ -244,6 +307,119 @@ def test_own_key_rejects_traversal_and_metadata_overwrites(api, common, file_nam
 def test_own_key_builds_a_prefixed_key(api):
     assert api["documents"].own_key("alice@example.com", "notes.txt") == \
         "documents/alice@example.com/notes.txt"
+
+
+@pytest.mark.parametrize("groups", [None, [], ["other"], "[other]"])
+def test_listing_all_owners_requires_the_group(api, common, groups):
+    with pytest.raises(common.Forbidden):
+        api["documents"].list_documents(
+            {**_event("alice@example.com", groups=groups),
+             "queryStringParameters": {"scope": "all"}},
+            "alice@example.com",
+        )
+
+
+def _listing(api, monkeypatch, event):
+    """Run list_documents against a stubbed bucket and return the keys listed."""
+    seen = {}
+
+    class FakePaginator:
+        def paginate(self, **kwargs):
+            seen.update(kwargs)
+            return [{"Contents": [
+                {"Key": "documents/alice@example.com/mine.txt", "Size": 1},
+                {"Key": "documents/bob@example.com/theirs.txt", "Size": 2},
+            ]}]
+
+    monkeypatch.setattr(api["documents"].s3, "get_paginator",
+                        lambda _name: FakePaginator())
+    result = api["documents"].list_documents(event, "alice@example.com")
+    return seen, json.loads(result["body"])["documents"]
+
+
+def test_listing_defaults_to_the_callers_own_prefix(api, monkeypatch):
+    seen, documents = _listing(api, monkeypatch, _event("alice@example.com"))
+    assert seen["Prefix"] == "documents/alice@example.com/"
+    assert all(d["isOwner"] for d in documents if d["userEmail"] == "alice@example.com")
+
+
+def test_a_group_member_may_list_every_owner(api, monkeypatch):
+    event = {**_event("alice@example.com", groups=["corpus-readers"]),
+             "queryStringParameters": {"scope": "all"}}
+    seen, documents = _listing(api, monkeypatch, event)
+    assert seen["Prefix"] == "documents/"
+    # Names and owners only — content still needs assert_owned.
+    assert {d["userEmail"] for d in documents} == \
+        {"alice@example.com", "bob@example.com"}
+    assert [d["isOwner"] for d in documents] == [True, False]
+
+
+@pytest.mark.parametrize("scope", ["everything", "ALL", "mine ", 1])
+def test_listing_rejects_an_unknown_scope(api, common, scope):
+    with pytest.raises(common.BadRequest):
+        api["documents"].list_documents(
+            {**_event("alice@example.com"),
+             "queryStringParameters": {"scope": scope}},
+            "alice@example.com",
+        )
+
+
+@pytest.mark.parametrize("content_length", [
+    None, "1024", 0, -1, True, 1.5,
+    # A presigned PUT is otherwise unbounded.
+    50 * 1024 * 1024 + 1,
+])
+def test_upload_size_must_be_a_sane_integer(api, common, content_length):
+    with pytest.raises(common.BadRequest):
+        api["documents"]._content_length({"contentLength": content_length})
+
+
+def test_upload_url_signs_the_declared_length(api, monkeypatch):
+    documents = api["documents"]
+    signed = {}
+
+    def fake_presign(operation, Params, ExpiresIn):
+        signed.update(Params)
+        return "https://example.invalid/put"
+
+    monkeypatch.setattr(documents.s3, "generate_presigned_url", fake_presign)
+    monkeypatch.setattr(documents.s3, "put_object", lambda **kwargs: {})
+
+    documents.create_upload_url(
+        {**_event("alice@example.com"), "body": json.dumps({
+            "fileName": "notes.txt",
+            "contentType": "text/plain",
+            "contentLength": 1024,
+        })},
+        "alice@example.com",
+    )
+    # Signed, so the URL cannot be replayed with a body of a different size.
+    assert signed["ContentLength"] == 1024
+    assert signed["Key"] == "documents/alice@example.com/notes.txt"
+
+
+def test_upload_url_stamps_the_sidecar_with_the_verified_email(api, monkeypatch):
+    documents = api["documents"]
+    written = {}
+
+    monkeypatch.setattr(documents.s3, "generate_presigned_url",
+                        lambda *a, **k: "https://example.invalid/put")
+    monkeypatch.setattr(documents.s3, "put_object",
+                        lambda **kwargs: written.update(kwargs) or {})
+
+    documents.create_upload_url(
+        {**_event("alice@example.com"), "body": json.dumps({
+            "fileName": "notes.txt",
+            "contentLength": 1024,
+            # A caller tagging their upload as someone else must not be believed:
+            # this attribute is what the Knowledge Base filters retrieval on.
+            "userEmail": "bob@example.com",
+        })},
+        "alice@example.com",
+    )
+    sidecar = json.loads(written["Body"])
+    assert sidecar["metadataAttributes"]["user_email"] == "alice@example.com"
+    assert written["Key"] == "documents/alice@example.com/notes.txt.metadata.json"
 
 
 # --- evaluations --------------------------------------------------------------

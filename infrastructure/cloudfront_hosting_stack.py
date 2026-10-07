@@ -55,6 +55,55 @@ class CloudFrontHostingStack(Stack):
             enforce_ssl=True,
         )
 
+        # Security headers for every response.
+        #
+        # The app holds Cognito tokens in the page, so the Content-Security
+        # Policy is the backstop for the XSS class: 'self' for scripts means an
+        # injected inline script does not run even if one gets rendered.
+        # frame-src is needed because generated artefacts are displayed from
+        # presigned S3 URLs in a sandboxed iframe; style-src allows inline
+        # styles because Cloudscape injects them at runtime.
+        response_headers = cloudfront.ResponseHeadersPolicy(
+            self, f"srd-security-headers-{env_name}",
+            security_headers_behavior=cloudfront.ResponseSecurityHeadersBehavior(
+                content_security_policy=cloudfront.ResponseHeadersContentSecurityPolicy(
+                    content_security_policy="; ".join([
+                        "default-src 'self'",
+                        "script-src 'self'",
+                        "style-src 'self' 'unsafe-inline'",
+                        "img-src 'self' data: blob:",
+                        "font-src 'self' data:",
+                        "connect-src 'self' https://*.amazonaws.com wss://*.amazonaws.com",
+                        "frame-src 'self' blob: https://*.amazonaws.com",
+                        "object-src 'none'",
+                        "base-uri 'self'",
+                        "form-action 'self'",
+                        "frame-ancestors 'none'",
+                    ]),
+                    override=True,
+                ),
+                content_type_options=cloudfront.ResponseHeadersContentTypeOptions(
+                    override=True,
+                ),
+                frame_options=cloudfront.ResponseHeadersFrameOptions(
+                    frame_option=cloudfront.HeadersFrameOption.DENY,
+                    override=True,
+                ),
+                referrer_policy=cloudfront.ResponseHeadersReferrerPolicy(
+                    referrer_policy=cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+                    override=True,
+                ),
+                strict_transport_security=cloudfront.ResponseHeadersStrictTransportSecurity(
+                    access_control_max_age=cdk.Duration.days(365),
+                    include_subdomains=True,
+                    override=True,
+                ),
+                xss_protection=cloudfront.ResponseHeadersXSSProtection(
+                    protection=True, mode_block=True, override=True,
+                ),
+            ),
+        )
+
         # CloudFront distribution with S3 origin
         distribution = cloudfront.Distribution(
             self, f"srd-distribution-{env_name}",
@@ -62,6 +111,7 @@ class CloudFrontHostingStack(Stack):
                 origin=origins.S3BucketOrigin.with_origin_access_control(site_bucket),
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                response_headers_policy=response_headers,
             ),
             default_root_object="index.html",
             error_responses=[

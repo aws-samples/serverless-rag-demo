@@ -75,8 +75,64 @@ class AgentCoreStack(Stack):
                         resources=[f"arn:aws:bedrock:{region}:{account_id}:knowledge-base/{knowledge_base_id}"],
                     ),
                     iam.PolicyStatement(
+                        sid="GeneratedArtefacts",
+                        # The runtime writes generated decks and HTML, then
+                        # presigns them for download — a presigned URL carries
+                        # the signer's permissions, so GetObject is needed here
+                        # too. Both are confined to the two prefixes it owns:
+                        # users' documents live under documents/ and must stay
+                        # out of reach of an agent the model is driving.
                         actions=["s3:PutObject", "s3:GetObject"],
-                        resources=[f"arn:aws:s3:::{data_bucket_name}/*"],
+                        resources=[
+                            f"arn:aws:s3:::{data_bucket_name}/generated-code/*",
+                            f"arn:aws:s3:::{data_bucket_name}/generated-ppt/*",
+                        ],
+                    ),
+                    iam.PolicyStatement(
+                        sid="InvokeWebSearchGateway",
+                        actions=["bedrock-agentcore:InvokeGateway"],
+                        resources=[
+                            f"arn:aws:bedrock-agentcore:{region}:{account_id}:gateway/*"
+                        ],
+                    ),
+                ]),
+            },
+        )
+
+        # Service role the Web Search Gateway assumes. The Gateway is created by
+        # deploy.sh rather than CDK because connector targets need a newer
+        # bedrock-agentcore-control model than the pinned CDK/CLI carries, so the
+        # role is created here and its ARN handed over.
+        gateway_role = iam.Role(
+            self, f"srd-gateway-role-{env_name}",
+            assumed_by=iam.ServicePrincipal(
+                "bedrock-agentcore.amazonaws.com",
+                conditions={
+                    "StringEquals": {"aws:SourceAccount": account_id},
+                    "ArnLike": {
+                        "aws:SourceArn":
+                            f"arn:aws:bedrock-agentcore:{region}:{account_id}:gateway/*"
+                    },
+                },
+            ),
+            inline_policies={
+                "WebSearchGatewayPolicy": iam.PolicyDocument(statements=[
+                    iam.PolicyStatement(
+                        sid="InvokeGateway",
+                        actions=["bedrock-agentcore:InvokeGateway"],
+                        resources=[
+                            f"arn:aws:bedrock-agentcore:{region}:{account_id}:gateway/*"
+                        ],
+                    ),
+                    iam.PolicyStatement(
+                        sid="InvokeWebSearch",
+                        # A service-owned ARN, checked per request. It is the
+                        # only outbound destination the agent can now reach:
+                        # there is no URL for the model to choose.
+                        actions=["bedrock-agentcore:InvokeWebSearch"],
+                        resources=[
+                            f"arn:aws:bedrock-agentcore:{region}:aws:tool/web-search.v1"
+                        ],
                     ),
                 ]),
             },
@@ -113,6 +169,7 @@ class AgentCoreStack(Stack):
         self.rag_query_image_uri = rag_query_image.image_uri
         self.multi_agent_role_arn = multi_agent_role.role_arn
         self.rag_query_role_arn = rag_query_role.role_arn
+        self.gateway_role_arn = gateway_role.role_arn
 
         CfnOutput(self, f"multi-agent-image-{env_name}",
                   value=multi_agent_image.image_uri,
@@ -126,6 +183,9 @@ class AgentCoreStack(Stack):
         CfnOutput(self, f"rag-query-role-{env_name}",
                   value=rag_query_role.role_arn,
                   description="RAG Query IAM role ARN")
+        CfnOutput(self, f"gateway-role-{env_name}",
+                  value=gateway_role.role_arn,
+                  description="Web Search Gateway service role ARN")
 
         _cdk_nag.NagSuppressions.add_stack_suppressions(self, [
             _cdk_nag.NagPackSuppression(id="AwsSolutions-IAM5",

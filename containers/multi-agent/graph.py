@@ -49,8 +49,13 @@ async def run_graph_stream(query: str, context: dict):
 async def _stream_retrieval(query: str, context: dict):
     """Stream retrieval-augmented response."""
     user_email = context.get("user_email")
-    search_scope = context.get("search_scope", "all")
-    kb_context = retrieve(query, user_email=user_email, search_scope=search_scope)
+    search_scope = context.get("search_scope", "my_docs")
+    kb_context = retrieve(
+        query,
+        user_email=user_email,
+        search_scope=search_scope,
+        may_read_shared_corpus=context.get("may_read_shared_corpus", False),
+    )
 
     if kb_context == "No relevant documents found.":
         yield {"type": "token", "text": kb_context}
