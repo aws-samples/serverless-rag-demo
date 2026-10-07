@@ -4,6 +4,6 @@ python-pptx==1.0.2
 Pillow==12.3.0
 boto3==1.42.83
 # [crypto] pulls in the RSA backend needed to verify Cognito's RS256 ID tokens.
-PyJWT[crypto]==2.10.1
+PyJWT[crypto]==2.15.0
 # SigV4-signed MCP transport for the AgentCore Gateway's web-search connector.
 mcp-proxy-for-aws==1.7.0
